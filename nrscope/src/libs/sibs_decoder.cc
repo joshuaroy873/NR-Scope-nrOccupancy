@@ -1,0 +1,105 @@
+#include "nrscope/hdr/sibs_decoder.h"
+
+SIBsDecoder::SIBsDecoder(){
+  data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
+  if (data_pdcch == NULL) {
+    ERROR("Error malloc");
+  }
+}
+
+SIBsDecoder::~SIBsDecoder(){
+    
+}
+
+int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_ue_dl_nr_t* ue_dl,
+                                                  srsran_slot_cfg_t* slot,
+                                                  srsran_ue_dl_nr_sratescs_info arg_scs,
+                                                  srsran_carrier_nr_t* base_carrier,
+                                                  srsran_sch_hl_cfg_nr_t* pdsch_hl_cfg,
+                                                  srsran_softbuffer_rx_t* softbuffer,
+                                                  asn1::rrc_nr::sib1_s* sib1
+                                                  ){
+  srsran_dci_dl_nr_t dci_sibs;
+  // Check the fft plan and how does it manipulate the buffer
+  srsran_ue_dl_nr_estimate_fft_nrscope(ue_dl, slot, arg_scs);
+  // Blind search
+  int nof_found_dci = srsran_ue_dl_nr_find_dl_dci(ue_dl, slot, 0xFFFF, 
+                                                  srsran_rnti_type_si, &dci_sibs, 1);
+  if (nof_found_dci < SRSRAN_SUCCESS) {
+    ERROR("Error in blind search");
+    return SRSRAN_ERROR;
+  }
+  // Print PDCCH blind search candidates
+  for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl->pdcch_info_count; pdcch_idx++) {
+    const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl->pdcch_info[pdcch_idx]);
+    printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
+    "nof_bits=%d; crc=%s;\n",
+    srsran_rnti_type_str_short(info->dci_ctx.rnti_type),
+    info->dci_ctx.rnti,
+    info->dci_ctx.coreset_id,
+    srsran_ss_type_str(info->dci_ctx.ss_type),
+    info->dci_ctx.location.ncce,
+    info->dci_ctx.location.L,
+    info->measure.epre_dBfs,
+    info->measure.rsrp_dBfs,
+    info->measure.norm_corr,
+    info->nof_bits,
+    info->result.crc ? "OK" : "KO");
+  }
+  if (nof_found_dci < 1) {
+    printf("No DCI found :'(\n");
+    return SRSRAN_ERROR;
+  }
+
+  char str[1024] = {};
+  srsran_dci_dl_nr_to_str(&(ue_dl->dci), &dci_sibs, str, (uint32_t)sizeof(str));
+  printf("Found DCI: %s\n", str);
+
+  srsran_sch_cfg_nr_t pdsch_cfg = {};
+  if (srsran_ra_dl_dci_to_grant_nr(base_carrier, slot, pdsch_hl_cfg, 
+    &dci_sibs, &pdsch_cfg, &pdsch_cfg.grant) < SRSRAN_SUCCESS) {
+    ERROR("Error decoding PDSCH search");
+    return SRSRAN_ERROR;
+  }
+  srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
+  printf("PDSCH_cfg:\n%s", str);
+  pdsch_cfg.grant.tb[0].softbuffer.rx = softbuffer; // Set softbuffer
+  srsran_pdsch_res_nr_t pdsch_res = {}; // Prepare PDSCH result
+  pdsch_res.tb[0].payload = data_pdcch;
+
+  // Decode PDSCH
+  if (srsran_ue_dl_nr_decode_pdsch(ue_dl, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
+    printf("Error decoding PDSCH search\n");
+    return SRSRAN_ERROR;
+  }
+  if (!pdsch_res.tb[0].crc) {
+    printf("Error decoding PDSCH (CRC)\n");
+    return SRSRAN_ERROR;
+  }
+  printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
+  srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+
+   // check payload is not all null
+  bool all_zero = true;
+  for (int i = 0; i < pdsch_cfg.grant.tb[0].tbs / 8; ++i) {
+    if (pdsch_res.tb[0].payload[i] != 0x0) {
+      all_zero = false;
+      break;
+    }
+  }
+  if (all_zero) {
+    ERROR("PDSCH payload is all zeros");
+    return SRSRAN_ERROR;
+  }
+  std::cout << "Decoding SIB 1..." << std::endl;
+  asn1::rrc_nr::bcch_dl_sch_msg_s dlsch_msg;
+  asn1::cbit_ref dlsch_bref(pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+  asn1::SRSASN_CODE err = dlsch_msg.unpack(dlsch_bref);
+  *sib1 = dlsch_msg.msg.c1().sib_type1();
+  std::cout << "SIB 1 Decoded." << std::endl;
+
+  asn1::json_writer js;
+  (*sib1).to_json(js);
+  printf("Decoded SIB1: %s\n", js.to_string().c_str());
+  return SRSRAN_SUCCESS;
+}

@@ -1,0 +1,18 @@
+nof_usrp_dev: 1
+usrp_setting_0:
+  dl_freq: 3565920000 #3561600000 #1842050000 #2528550000 #3565920000 #2524950000 #2523750000 # 3565920000 # 2527350000 #3408960000  # should be set to the ssb frequency of the cell
+  rf_args: "clock=external" #"type=x300" #"clock=external"
+  rx_gain: 30 # for x310, max rx gain is 31.5, for b210, it's around 80
+  srate_hz: 23040000
+  nof_carriers: 1
+  nof_antennas: 1
+  scs_index: 1 #(0: 15kHz, 1: 30kHz, ..., the u in standard)
+  rf_log_level: "debug"
+  dl_log_name: "/home/wanhr/Documents/data/nrscope/evaluation/bw_eval_4ue_dl_1.txt"
+  ul_log_name: "/home/wanhr/Documents/data/nrscope/evaluation/bw_eval_4ue_ul_1.txt"
+
+  # nof_thread: 2
+
+# dci_log_config:
+#   log_dl: true
+#   log_ul: true

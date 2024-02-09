@@ -1,0 +1,31 @@
+file(GLOB_RECURSE SOURCES "*.cc" "*.c")
+add_library(test_libs STATIC ${SOURCES})
+
+# message(${PROJECT_SOURCE_DIR})
+# target_include_directories(ngscope_dci PUBLIC ${PROJECT_SOURCE_DIR}/ngscope/hdr)
+
+if(ENABLE_GUI AND SRSGUI_FOUND)
+  target_link_libraries(test_libs ${SRSGUI_LIBRARIES})
+
+target_link_libraries(test_libs ${SRSRAN_SOURCES}
+                                   ${SRSUE_SOURCES})
+endif()
+
+add_executable(test_comm test_comm_path.cc)
+target_link_libraries(test_comm srsue_phy
+                                srsran_common
+                                srsran_phy
+                                srsran_radio
+                                rrc_nr_asn1
+                                nrscope_libs
+                                test_libs
+                                ${SRSUE_SOURCES} 
+                                ${SRSRAN_SOURCES}
+                                ${CMAKE_THREAD_LIBS_INIT}
+                                ${Boost_LIBRARIES}
+                                ${YAML_CPP_LIBRARIES})
+
+
+if (LIBASN5G)
+  target_link_libraries(test_libs ${LIBASN5G_LIBRARY})
+endif(LIBASN5G)

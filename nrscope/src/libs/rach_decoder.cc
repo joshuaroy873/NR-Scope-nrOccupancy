@@ -1,0 +1,278 @@
+#include "nrscope/hdr/rach_decoder.h"
+
+std::mutex lock_rach;
+
+// struct SubframeData{
+//   uint32_t nof_samples;
+//   cf_t* uplink_buffer;
+//   bool new_data;
+// };
+
+// SubframeData subframe_data;
+
+RachDecoder::RachDecoder(){
+  // rach_dl_ul_info = {false, false, false, false, false};
+  sib1 = {};
+  prach_cfg_nr = {};
+  prach = {};
+  prach_cfg = {};
+
+  data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
+  if (data_pdcch == NULL) {
+    ERROR("Error malloc");
+  }
+}
+
+RachDecoder::~RachDecoder(){
+
+}
+
+int RachDecoder::RachDecoderInit(asn1::rrc_nr::sib1_s sib1_input, srsran_carrier_nr_t carrier_input){
+  sib1 = sib1_input;
+  base_carrier = carrier_input;
+  srsran::srsran_band_helper bands;
+  uint16_t band = bands.get_band_from_dl_freq_Hz(base_carrier.dl_center_frequency_hz);
+
+  uint32_t cfg_idx = sib1.serving_cell_cfg_common.ul_cfg_common.
+    init_ul_bwp.rach_cfg_common.setup().rach_cfg_generic.prach_cfg_idx;
+  uint32_t sul_idx; // sul_id for ra-rnti calculation
+  std::vector<uint32_t> t_idx; // t_id for ra-rnti calculation
+  if(bands.get_duplex_mode(band) == SRSRAN_DUPLEX_MODE_TDD){
+    prach_cfg_nr = *srsran_prach_nr_get_cfg_fr1_unpaired(cfg_idx);
+    sul_idx = 0;
+  }else if (bands.get_duplex_mode(band) == SRSRAN_DUPLEX_MODE_FDD){
+    prach_cfg_nr = *srsran_prach_nr_get_cfg_fr1_paired(cfg_idx);
+    sul_idx = 0;
+  }else if (bands.get_duplex_mode(band) == SRSRAN_DUPLEX_MODE_SUL){
+    sul_idx = 1;
+  }
+  t_idx.reserve(prach_cfg_nr.nof_subframe_number);
+  ra_rnti = (uint16_t*) malloc(prach_cfg_nr.nof_subframe_number * sizeof(uint16_t));
+  // ra_rnti.reserve(prach_cfg_nr.nof_subframe_number);
+  nof_ra_rnti = prach_cfg_nr.nof_subframe_number;
+  printf("rach_uplink.prach_cfg_nr.nof_subframe_number %u\n", prach_cfg_nr.nof_subframe_number);
+
+  // Set the config for prach_cfg
+  prach_cfg.is_nr = true;
+  prach_cfg.config_idx = cfg_idx;
+  
+  if(sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.rach_cfg_common.setup().prach_root_seq_idx.type() == 0) {
+    // 0 as l839 and 1 as l139, check /lib/include/srsran/asn1/rrc_nr.h
+    prach_cfg.root_seq_idx = sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.
+      rach_cfg_common.setup().prach_root_seq_idx.l839();
+    for(uint32_t t_idx_id = 0; t_idx_id < prach_cfg_nr.nof_subframe_number; t_idx_id++){
+      t_idx[t_idx_id] = prach_cfg_nr.subframe_number[t_idx_id];
+    }
+  }else if(sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.rach_cfg_common.setup().prach_root_seq_idx.type() == 1) {
+    // 0 as l839 and 1 as l139, check /lib/include/srsran/asn1/rrc_nr.h
+    t_idx.reserve(prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs));
+    ra_rnti = (uint16_t*) malloc(prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) * sizeof(uint16_t));
+    // ra_rnti.reserve(prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs));
+    nof_ra_rnti = prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs);
+    prach_cfg.root_seq_idx = sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.
+      rach_cfg_common.setup().prach_root_seq_idx.l139();
+    for(uint32_t t_idx_id = 0; t_idx_id < prach_cfg_nr.nof_subframe_number; t_idx_id++){
+      for(uint32_t slot_idx = 0; slot_idx < SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs); slot_idx++){
+        t_idx[t_idx_id*SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) + slot_idx] = 
+          prach_cfg_nr.subframe_number[t_idx_id] * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) + slot_idx;
+        printf("prach_cfg_nr.subframe_number[t_idx_id] * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) + slot_idx: %u\n", prach_cfg_nr.subframe_number[t_idx_id] * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) + slot_idx);
+      }
+    }
+  }else{
+    ERROR("Invalid PRACH preamble type.");
+  }
+  prach_cfg.zero_corr_zone = sib1.serving_cell_cfg_common.ul_cfg_common.
+    init_ul_bwp.rach_cfg_common.setup().rach_cfg_generic.zero_correlation_zone_cfg;
+  prach_cfg.freq_offset = sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.
+    rach_cfg_common.setup().rach_cfg_generic.msg1_freq_start;
+
+  if(bands.get_duplex_mode(band) == SRSRAN_DUPLEX_MODE_TDD){
+    prach_cfg.tdd_config.configured = true;
+  }
+
+  // See 38.321, 5.1.3 - Random Access Preamble transmission.
+  // RA-RNTI = 1 + s_id + 14 × t_id + 14 × 80 × f_id + 14 × 80 × 8 × ul_carrier_id.
+  // s_id = index of the first OFDM symbol of the (first, for short formats) PRACH occasion (0 <= s_id < 14).
+  // t_id = index of the first slot of the PRACH occasion in a system frame (0 <= t_id < 80); the numerology of
+  // reference for t_id is 15kHz for long PRACH Formats, regardless of the SCS common; whereas, for short PRACH formats,
+  // it coincides with SCS common (this can be inferred from Section 5.1.3, TS 38.321, and from Section 5.3.2,
+  // TS 38.211).
+  // f_id = index of the PRACH occation in the freq domain (0 <= f_id < 8).
+  // ul_carrier_id = 0 for NUL and 1 for SUL carrier.
+  printf("nof_ra_rnti: %u\n", nof_ra_rnti);
+  for(uint32_t i = 0; i < nof_ra_rnti; i++){
+    printf("t_id[%u]: %d\n", i, t_idx[i]);
+    ra_rnti[i] = 1 + prach_cfg_nr.starting_symbol + 
+          14 * t_idx[i] + 
+          14 * 80 * 0 + 14 * 80 * 8 * sul_idx;
+    printf("ra_rnti[%u]: %u\n", i, ra_rnti[i]);
+  }  
+
+  return SRSRAN_SUCCESS;
+}
+
+int RachDecoder::decode_and_parse_msg4_from_slot(srsran_ue_dl_nr_t* ue_dl,
+                                                  srsran_slot_cfg_t* slot,
+                                                  srsran_ue_dl_nr_sratescs_info arg_scs,
+                                                  srsran_carrier_nr_t* base_carrier,
+                                                  srsran_sch_hl_cfg_nr_t* pdsch_hl_cfg,
+                                                  srsran_softbuffer_rx_t* softbuffer,
+                                                  asn1::rrc_nr::rrc_setup_s* rrc_setup,
+                                                  asn1::rrc_nr::cell_group_cfg_s* master_cell_group,
+                                                  uint16_t* known_rntis,
+                                                  uint32_t* nof_known_rntis
+                                                  ){
+  srsran_dci_dl_nr_t dci_rach;
+  uint16_t tc_rnti;
+  uint16_t c_rnti;
+  srsran_ue_dl_nr_estimate_fft_nrscope(ue_dl, slot, arg_scs);
+
+  int nof_found_dci = srsran_ue_dl_nr_find_dl_dci_nrscope(ue_dl, slot, ra_rnti, nof_ra_rnti, srsran_rnti_type_tc, &dci_rach, 1);
+
+  if (nof_found_dci < SRSRAN_SUCCESS) {
+    ERROR("Error in blind search");
+    return SRSRAN_ERROR;
+  }
+  for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl->pdcch_info_count; pdcch_idx++) {
+    const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl->pdcch_info[pdcch_idx]);
+    printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
+      "nof_bits=%d; crc=%s;\n",
+      srsran_rnti_type_str_short(info->dci_ctx.rnti_type),
+      info->dci_ctx.rnti,
+      info->dci_ctx.coreset_id,
+      srsran_ss_type_str(info->dci_ctx.ss_type),
+      info->dci_ctx.location.ncce,
+      info->dci_ctx.location.L,
+      info->measure.epre_dBfs,
+      info->measure.rsrp_dBfs,
+      info->measure.norm_corr,
+      info->nof_bits,
+      info->result.crc ? "OK" : "KO");
+  }
+
+  if (nof_found_dci < 1) {
+    printf("No DCI found :'(\n");
+    return SRSRAN_ERROR;
+  }
+
+  char str[1024] = {};
+  srsran_dci_dl_nr_to_str(&(ue_dl->dci), &dci_rach, str, (uint32_t)sizeof(str));
+  printf("Found DCI: %s\n", str);
+  tc_rnti = dci_rach.ctx.rnti;
+
+  srsran_sch_cfg_nr_t pdsch_cfg = {};
+  
+  if (srsran_ra_dl_dci_to_grant_nr(base_carrier, slot, pdsch_hl_cfg, &dci_rach, &pdsch_cfg, &pdsch_cfg.grant) <
+      SRSRAN_SUCCESS) {
+    ERROR("Error decoding PDSCH search");
+    return SRSRAN_ERROR;
+  }
+
+  srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
+  printf("PDSCH_cfg:\n%s", str);
+
+  if (srsran_softbuffer_rx_init_guru(softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
+      SRSRAN_SUCCESS) {
+    ERROR("Error init soft-buffer");
+    return SRSRAN_ERROR;
+  }
+
+  data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
+  if (data_pdcch == NULL) {
+    ERROR("Error malloc");
+    return SRSRAN_ERROR;
+  }
+
+  // Set softbuffer
+  pdsch_cfg.grant.tb[0].softbuffer.rx = softbuffer;
+
+  // Prepare PDSCH result
+  srsran_pdsch_res_nr_t pdsch_res = {};
+  pdsch_res.tb[0].payload         = data_pdcch;
+
+  // Decode PDSCH
+  if (srsran_ue_dl_nr_decode_pdsch(ue_dl, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
+    printf("Error decoding PDSCH search\n");
+    return SRSRAN_ERROR;
+  }
+
+  printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
+  srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+  uint32_t bytes_offset = 0;
+
+  for (uint32_t pdsch_res_idx = 0; pdsch_res_idx < (uint32_t)pdsch_cfg.grant.tb[0].tbs / 8 - 1; pdsch_res_idx ++){
+    if(pdsch_res.tb[0].payload[pdsch_res_idx] == 0x20 && pdsch_res.tb[0].payload[pdsch_res_idx+1] == 0x40){
+      bytes_offset = pdsch_res_idx;
+      break;
+    }
+  }
+
+  if (!pdsch_res.tb[0].crc) {
+    printf("Error decoding PDSCH (CRC)\n");
+    return SRSRAN_ERROR;
+  }
+
+  // Check payload is not all null.
+  bool all_zero = true;
+  for (int i = 0; i < pdsch_cfg.grant.tb[0].tbs / 8; ++i) {
+    if (pdsch_res.tb[0].payload[i] != 0x0) {
+      all_zero = false;
+      break;
+    }
+  }
+  if (all_zero) {
+    ERROR("PDSCH payload is all zeros");
+    return SRSRAN_ERROR;
+  }
+
+  std::cout << "Decoding Msg 4..." << std::endl;
+  asn1::rrc_nr::dl_ccch_msg_s dlcch_msg;
+  // What the first few bytes are? In srsgNB there are 10 extra bytes and for small cell there are 3 extra bytes
+  // before the RRCSetup message.
+  asn1::cbit_ref dlcch_bref(pdsch_res.tb[0].payload + bytes_offset, pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
+  asn1::SRSASN_CODE err = dlcch_msg.unpack(dlcch_bref);
+  if (err != asn1::SRSASN_SUCCESS) {
+    ERROR("Failed to unpack DL-CCCH message (%d B)", pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
+  }
+
+  *rrc_setup = dlcch_msg.msg.c1().rrc_setup();
+  std::cout << "Msg 4 Decoded." << std::endl;
+  switch (dlcch_msg.msg.c1().type().value) {
+    case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_reject: {
+      std::cout << "Unfortunately, it's a rrc_reject ;(" << std::endl;
+      return SRSRAN_ERROR; // We need to search for RRCSetup.
+    }break;
+    case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_setup: {
+      std::cout << "It's a rrc_setup, hooray!" << std::endl;
+      printf("rrc-TransactionIdentifier: %u\n", (*rrc_setup).rrc_transaction_id);
+    }break;
+    default: {
+      std::cout << "None detected, skip." << std::endl;
+      return SRSRAN_ERROR;
+    }
+    break;
+  }
+  asn1::json_writer js_msg4;
+  rrc_setup->to_json(js_msg4);
+  printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
+  asn1::cbit_ref bref_cg((*rrc_setup).crit_exts.rrc_setup().master_cell_group.data(),
+                    (*rrc_setup).crit_exts.rrc_setup().master_cell_group.size());
+  if (master_cell_group->unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
+    ERROR("Could not unpack master cell group config.");
+    return SRSRAN_ERROR;
+  }        
+  
+  asn1::json_writer js;
+  master_cell_group->to_json(js);
+  printf("masterCellGroup: %s\n", js.to_string().c_str());
+
+  if (!master_cell_group->sp_cell_cfg.recfg_with_sync.new_ue_id){
+    c_rnti = tc_rnti;
+  }else{
+    c_rnti = master_cell_group->sp_cell_cfg.recfg_with_sync.new_ue_id;
+  }
+  std::cout << "c-rnti: " << c_rnti << std::endl;
+  known_rntis[*nof_known_rntis] = c_rnti;
+  *nof_known_rntis = *nof_known_rntis + 1;
+  return SRSRAN_SUCCESS;
+}

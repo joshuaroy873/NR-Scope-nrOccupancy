@@ -269,7 +269,6 @@ int Radio::DecodeMIB(){
   cell.u = (int)args_t.ssb_scs; 
   coreset0_args_t.n_0 = (coreset_zero_cfg.O * (int)pow(2, cell.u) + 
     (int)floor(cell.mib.ssb_idx * coreset_zero_cfg.M)) % SRSRAN_NSLOTS_X_FRAME_NR(cell.u);
-  // std::cout << "slot position for coreset 0: " << coreset0_args_t.n_0 << std::endl;
   // sfn_c = 0, in even system frame, sfn_c = 1, in odd system frame    
   coreset0_args_t.sfn_c = (int)(floor(coreset_zero_cfg.O * pow(2, cell.u) + 
     floor(cell.mib.ssb_idx * coreset_zero_cfg.M)) / SRSRAN_NSLOTS_X_FRAME_NR(cell.u)) % 2;
@@ -339,9 +338,7 @@ int Radio::SyncandDownlinkInit(){
   // scs to calculate the correct subframe size 
   arg_scs.srate = args_t.srate_hz;
   arg_scs.scs = cell.mib.scs_common;
-  // radio->release_freq(0);
-  // radio->set_rx_freq(0, coreset0_args_t.coreset0_center_freq_hz);
-  // arg_scs.coreset_offset_scs = 0;
+
   arg_scs.coreset_offset_scs = (cs_args.ssb_freq_hz - coreset0_args_t.coreset0_center_freq_hz) / cell.abs_pdcch_scs;// + 12;
   arg_scs.coreset_slot = (uint32_t)coreset0_args_t.n_0;
   arg_scs.phase_diff_first_second_half = 0;

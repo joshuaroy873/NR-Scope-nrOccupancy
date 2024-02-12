@@ -107,10 +107,31 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
                                      srsran_carrier_nr_t* base_carrier_,
                                      cell_search_result_t cell_,
                                      cf_t* input[SRSRAN_MAX_PORTS],
-                                     srsran_dci_cfg_nr_t* dci_cfg_,
-                                     srsran_ue_dl_nr_args_t* ue_dl_args_,
                                      srsran_coreset_t* coreset0_t_){
   memcpy(&coreset0_t, coreset0_t_, sizeof(srsran_coreset_t));
+
+  dci_cfg.bwp_dl_initial_bw   = 275;
+  dci_cfg.bwp_ul_initial_bw   = 275;
+  dci_cfg.bwp_dl_active_bw    = 275;
+  dci_cfg.bwp_ul_active_bw    = 275;
+  dci_cfg.monitor_common_0_0  = true;
+  dci_cfg.monitor_0_0_and_1_0 = true;
+  dci_cfg.monitor_0_1_and_1_1 = true;
+  // set coreset0 bandwidth
+  dci_cfg.coreset0_bw = srsran_coreset_get_bw(&coreset0_t);
+
+  pdcch_cfg.coreset_present[0] = true;
+  search_space = &pdcch_cfg.search_space[0];
+  pdcch_cfg.search_space_present[0]   = true;
+  search_space->id                    = 0;
+  search_space->coreset_id            = 0;
+  search_space->type                  = srsran_search_space_type_common_0;
+  search_space->formats[0]            = srsran_dci_format_nr_1_0;
+  search_space->nof_formats           = 1;
+  for (uint32_t L = 0; L < SRSRAN_SEARCH_SPACE_NOF_AGGREGATION_LEVELS_NR; L++) {
+    search_space->nof_candidates[L] = srsran_pdcch_nr_max_candidates_coreset(&coreset0_t, L);
+  }
+  pdcch_cfg.coreset[0] = coreset0_t;
 
   pdcch_cfg.search_space_present[0]      = true;
   pdcch_cfg.search_space[0].id           = 1;
@@ -141,10 +162,15 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
   memcpy(&base_carrier, base_carrier_, sizeof(srsran_carrier_nr_t));
   cell = cell_;
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
-  memcpy(&dci_cfg, dci_cfg_, sizeof(srsran_dci_cfg_nr_t));
-  memcpy(&ue_dl_args, ue_dl_args_, sizeof(srsran_ue_dl_nr_args_t));
-  // memcpy(&pdcch_cfg, pdcch_cfg_, sizeof(srsran_pdcch_cfg_nr_t));
-  
+
+  ue_dl_args.nof_rx_antennas               = 1;
+  ue_dl_args.pdsch.sch.disable_simd        = false;
+  ue_dl_args.pdsch.sch.decoder_use_flooded = false;
+  ue_dl_args.pdsch.measure_evm             = true;
+  ue_dl_args.pdcch.disable_simd            = false;
+  ue_dl_args.pdcch.measure_evm             = true;
+  ue_dl_args.nof_max_prb                   = 275;  
+
   if (srsran_ue_dl_nr_init_nrscope(&ue_dl_rach, input, &ue_dl_args, arg_scs)) {
     ERROR("Error UE DL");
     return SRSRAN_ERROR;

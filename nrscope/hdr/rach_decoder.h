@@ -1,3 +1,6 @@
+#ifndef RACH_DECODER_H
+#define RACH_DECODER_H
+
 #include <mutex>
 #include <iostream>
 
@@ -29,6 +32,7 @@ class RachDecoder{
     
     cell_search_result_t cell;
     srsran_coreset_t coreset0_t;
+    srsran_search_space_t* search_space;
 
     uint8_t* data_pdcch;
 
@@ -41,8 +45,6 @@ class RachDecoder{
                             srsran_carrier_nr_t* base_carrier_,
                             cell_search_result_t cell_,
                             cf_t* input[SRSRAN_MAX_PORTS],
-                            srsran_dci_cfg_nr_t* dci_cfg_,
-                            srsran_ue_dl_nr_args_t* ue_dl_args_,
                             srsran_coreset_t* coreset0_t_);
 
 
@@ -52,3 +54,5 @@ class RachDecoder{
                                         uint16_t* known_rntis,
                                         uint32_t* nof_known_rntis);
 };
+
+#endif

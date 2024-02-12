@@ -33,7 +33,6 @@ Radio::Radio() :
   outcome = {};
   ue_sync_nr_args = {};
   sync_cfg = {};
-  data_pdcch = NULL;
 
   nof_known_rntis = 0;
 }
@@ -172,6 +171,11 @@ int Radio::RadioInitandStart(){
         return NR_FAILURE;
       }
 
+      if(InitTaskScheduler() < SRSRAN_SUCCESS){
+        ERROR("Error init task scheduler");
+        return NR_FAILURE;
+      }
+
       if(SIB1Loop() < SRSRAN_SUCCESS){
         ERROR("Error in SIB1Loop");
         return NR_FAILURE;
@@ -296,7 +300,6 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
 }
 
 int Radio::SyncandDownlinkInit(){
-  // coreset0_t.offset_rb = 1; // for debugging
   //***** DL args Config Start *****//
   // this part of bw is set according to the coreset0_bw
   dci_cfg.bwp_dl_initial_bw   = 275;
@@ -306,6 +309,8 @@ int Radio::SyncandDownlinkInit(){
   dci_cfg.monitor_common_0_0  = true;
   dci_cfg.monitor_0_0_and_1_0 = true;
   dci_cfg.monitor_0_1_and_1_1 = true;
+  // set coreset0 bandwidth
+  dci_cfg.coreset0_bw = srsran_coreset_get_bw(&coreset0_t);
 
   ue_dl_args.nof_rx_antennas               = 1;
   ue_dl_args.pdsch.sch.disable_simd        = false;
@@ -315,24 +320,22 @@ int Radio::SyncandDownlinkInit(){
   ue_dl_args.pdcch.measure_evm             = true;
   ue_dl_args.nof_max_prb                   = 275;
 
-  pdcch_cfg.coreset_present[0] = true;
   // Setup PDSCH DMRS (also signaled through MIB)
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
   pusch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
-  // set coreset0 bandwidth
-  dci_cfg.coreset0_bw = srsran_coreset_get_bw(&coreset0_t);
   
-  search_space = &pdcch_cfg.search_space[0];
-  pdcch_cfg.search_space_present[0]   = true;
-  search_space->id                    = 0;
-  search_space->coreset_id            = 0;
-  search_space->type                  = srsran_search_space_type_common_0;
-  search_space->formats[0]            = srsran_dci_format_nr_1_0;
-  search_space->nof_formats           = 1;
-  for (uint32_t L = 0; L < SRSRAN_SEARCH_SPACE_NOF_AGGREGATION_LEVELS_NR; L++) {
-    search_space->nof_candidates[L] = srsran_pdcch_nr_max_candidates_coreset(&coreset0_t, L);
-  }
-  pdcch_cfg.coreset[0] = coreset0_t; 
+  // pdcch_cfg.coreset_present[0] = true;
+  // search_space = &pdcch_cfg.search_space[0];
+  // pdcch_cfg.search_space_present[0]   = true;
+  // search_space->id                    = 0;
+  // search_space->coreset_id            = 0;
+  // search_space->type                  = srsran_search_space_type_common_0;
+  // search_space->formats[0]            = srsran_dci_format_nr_1_0;
+  // search_space->nof_formats           = 1;
+  // for (uint32_t L = 0; L < SRSRAN_SEARCH_SPACE_NOF_AGGREGATION_LEVELS_NR; L++) {
+  //   search_space->nof_candidates[L] = srsran_pdcch_nr_max_candidates_coreset(&coreset0_t, L);
+  // }
+  // pdcch_cfg.coreset[0] = coreset0_t; 
 
   // it appears the srsRAN is build on 15kHz scs, we need to use the srate and 
   // scs to calculate the correct subframe size 
@@ -344,27 +347,27 @@ int Radio::SyncandDownlinkInit(){
   arg_scs.phase_diff_first_second_half = 0;
   // std::cout << "arg_scs.coreset_offset_scs: " << arg_scs.coreset_offset_scs << std::endl; 
 
-  // we need to set ue_dl.sf_symbols here to set the out_buffer correctly.
-  if (srsran_ue_dl_nr_init_nrscope(&ue_dl, rf_buffer_t.to_cf_t(), &ue_dl_args, arg_scs)) {
-    ERROR("Error UE DL");
-    return SRSRAN_ERROR;
-  }
+  // // we need to set ue_dl.sf_symbols here to set the out_buffer correctly.
+  // if (srsran_ue_dl_nr_init_nrscope(&ue_dl, rf_buffer_t.to_cf_t(), &ue_dl_args, arg_scs)) {
+  //   ERROR("Error UE DL");
+  //   return SRSRAN_ERROR;
+  // }
 
-  if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl, &args_t.base_carrier, arg_scs)) {
-    ERROR("Error setting SCH NR carrier");
-    return SRSRAN_ERROR;
-  }
+  // if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl, &args_t.base_carrier, arg_scs)) {
+  //   ERROR("Error setting SCH NR carrier");
+  //   return SRSRAN_ERROR;
+  // }
 
-  if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl, &pdcch_cfg, &dci_cfg)) {
-    ERROR("Error setting CORESET");
-    return SRSRAN_ERROR;
-  }
+  // if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl, &pdcch_cfg, &dci_cfg)) {
+  //   ERROR("Error setting CORESET");
+  //   return SRSRAN_ERROR;
+  // }
 
-  if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
-      SRSRAN_SUCCESS) {
-    ERROR("Error init soft-buffer");
-    return SRSRAN_ERROR;
-  }
+  // if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
+  //     SRSRAN_SUCCESS) {
+  //   ERROR("Error init soft-buffer");
+  //   return SRSRAN_ERROR;
+  // }
 
   //***** DL args Config End *****//
   //***** Slot Sync Start *****//
@@ -404,8 +407,21 @@ int Radio::SyncandDownlinkInit(){
   return SRSRAN_SUCCESS;
 }
 
+int Radio::InitTaskScheduler(){
+
+
+  return SRSASN_SUCCESS;
+}
+
 int Radio::SIB1Loop(){
   std::cout << "SIB1 Loop Starts..." << std::endl;     
+
+  if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &(args_t.base_carrier), cell, 
+     rf_buffer_t.to_cf_t(), &dci_cfg, &ue_dl_args, &coreset0_t) < SRSASN_SUCCESS){
+    ERROR("SIBsDecoder Init Error");
+    return NR_FAILURE;
+  }
+
   // Do sync and buffer moving.
   while(true){
     outcome.timestamp = last_rx_time.get(0);
@@ -429,8 +445,7 @@ int Radio::SIB1Loop(){
           if((outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2) || 
              (outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2 + 1)){
             
-            if(sibs_decoder.decode_and_parse_sib1_from_slot(&ue_dl, &slot, arg_scs, &(args_t.base_carrier), &pdsch_hl_cfg,
-                                                          &softbuffer, &sib1) == SRSASN_SUCCESS){
+            if(sibs_decoder.decode_and_parse_sib1_from_slot(&slot, &sib1) == SRSASN_SUCCESS){
               return SRSASN_SUCCESS;
             }else{
               continue;
@@ -445,50 +460,39 @@ int Radio::SIB1Loop(){
 
 int Radio::MSG2and4Loop(){
   std::cout << "MSG2 and 4 Loop starts...(please ignore the errors messages)" << std::endl;
-  rach_decoder.RachDecoderInit(sib1, args_t.base_carrier);
+  rach_decoder.rach_decoder_init(sib1, args_t.base_carrier);
 
   char str[1024] = {};
 
-  pdcch_cfg.search_space_present[0]      = true;
-  pdcch_cfg.search_space[0].id           = 1;
-  pdcch_cfg.search_space[0].coreset_id   = 0;
-  pdcch_cfg.search_space[0].type         = srsran_search_space_type_common_1;
-  pdcch_cfg.search_space[0].formats[0]   = srsran_dci_format_nr_1_0;
-  pdcch_cfg.search_space[0].nof_formats  = 1;
+  // pdcch_cfg.search_space_present[0]      = true;
+  // pdcch_cfg.search_space[0].id           = 1;
+  // pdcch_cfg.search_space[0].coreset_id   = 0;
+  // pdcch_cfg.search_space[0].type         = srsran_search_space_type_common_1;
+  // pdcch_cfg.search_space[0].formats[0]   = srsran_dci_format_nr_1_0;
+  // pdcch_cfg.search_space[0].nof_formats  = 1;
 
-  pdcch_cfg.coreset[0] = coreset0_t; 
+  // pdcch_cfg.coreset[0] = coreset0_t; 
 
-  pdcch_cfg.search_space[0].nof_candidates[0] = sib1.serving_cell_cfg_common.dl_cfg_common.
-                                       init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
-                                       nrof_candidates.aggregation_level1;
-  pdcch_cfg.search_space[0].nof_candidates[1] = sib1.serving_cell_cfg_common.dl_cfg_common.
-                                       init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
-                                       nrof_candidates.aggregation_level2;
-  pdcch_cfg.search_space[0].nof_candidates[2] = sib1.serving_cell_cfg_common.dl_cfg_common.
-                                       init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
-                                       nrof_candidates.aggregation_level4;
-  pdcch_cfg.search_space[0].nof_candidates[3] = sib1.serving_cell_cfg_common.dl_cfg_common.
-                                       init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
-                                       nrof_candidates.aggregation_level8;
-  pdcch_cfg.search_space[0].nof_candidates[4] = sib1.serving_cell_cfg_common.dl_cfg_common.
-                                       init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
-                                       nrof_candidates.aggregation_level16;
+  // pdcch_cfg.search_space[0].nof_candidates[0] = sib1.serving_cell_cfg_common.dl_cfg_common.
+  //                                      init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
+  //                                      nrof_candidates.aggregation_level1;
+  // pdcch_cfg.search_space[0].nof_candidates[1] = sib1.serving_cell_cfg_common.dl_cfg_common.
+  //                                      init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
+  //                                      nrof_candidates.aggregation_level2;
+  // pdcch_cfg.search_space[0].nof_candidates[2] = sib1.serving_cell_cfg_common.dl_cfg_common.
+  //                                      init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
+  //                                      nrof_candidates.aggregation_level4;
+  // pdcch_cfg.search_space[0].nof_candidates[3] = sib1.serving_cell_cfg_common.dl_cfg_common.
+  //                                      init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
+  //                                      nrof_candidates.aggregation_level8;
+  // pdcch_cfg.search_space[0].nof_candidates[4] = sib1.serving_cell_cfg_common.dl_cfg_common.
+  //                                      init_dl_bwp.pdcch_cfg_common.setup().common_search_space_list[0].
+  //                                      nrof_candidates.aggregation_level16;
 
-  if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl, &pdcch_cfg, &dci_cfg)) {
-    ERROR("Error setting CORESET");
-    return SRSRAN_ERROR;
-  }
-
-  if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
-      SRSRAN_SUCCESS) {
-    ERROR("Error init soft-buffer");
-    return SRSRAN_ERROR;
-  }
-
-  data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
-  if (data_pdcch == NULL) {
-    ERROR("Error malloc");
-    return SRSRAN_ERROR;
+  if(rach_decoder.rach_reception_init(arg_scs, &(args_t.base_carrier), cell, 
+     rf_buffer_t.to_cf_t(), &dci_cfg, &ue_dl_args, &coreset0_t) < SRSASN_SUCCESS){
+    ERROR("RACHDecoder Init Error");
+    return NR_FAILURE;
   }
 
   while(true){
@@ -511,8 +515,7 @@ int Radio::MSG2and4Loop(){
         // Processing for each slot
         srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);
 
-        if(rach_decoder.decode_and_parse_msg4_from_slot(&ue_dl, &slot, arg_scs, &(args_t.base_carrier), &pdsch_hl_cfg, &softbuffer,
-                                                    &rrc_setup, &master_cell_group, known_rntis, &nof_known_rntis) == SRSASN_SUCCESS){
+        if(rach_decoder.decode_and_parse_msg4_from_slot(&slot, &rrc_setup, &master_cell_group, known_rntis, &nof_known_rntis) == SRSASN_SUCCESS){
           return SRSASN_SUCCESS;
         }else{
           continue;

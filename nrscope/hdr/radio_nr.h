@@ -23,20 +23,6 @@
 // #include "nrscope/hdr/to_moonlight.h"
 #include "nrscope/hdr/harq_tracking.h"
 
-struct cell_search_result_t {
-  bool                        found           = false;
-  double                      ssb_abs_freq_hz = 0.0f;
-  srsran_subcarrier_spacing_t ssb_scs         = srsran_subcarrier_spacing_15kHz;
-  srsran_ssb_pattern_t        ssb_pattern     = SRSRAN_SSB_PATTERN_A;
-  srsran_duplex_mode_t        duplex_mode     = SRSRAN_DUPLEX_MODE_FDD;
-  srsran_mib_nr_t             mib             = {};
-  uint32_t                    pci             = 0;
-  uint32_t                    k_ssb           = 0;
-  double                      abs_ssb_scs     = 0.0;
-  double                      abs_pdcch_scs   = 0.0;
-  int                         u = (int) ssb_scs;
-  };
-
 struct coreset0_args{
   uint32_t                    offset_rb       = 0; // CORESET offset rb
   double                      coreset0_lower_freq_hz = 0.0;
@@ -83,7 +69,6 @@ class Radio{
     srsran_ue_sync_nr_t                           ue_sync_nr;
     srsran_ue_sync_nr_outcome_t                   outcome;
     srsran_softbuffer_rx_t                        softbuffer;
-    uint8_t*                                      data_pdcch;
     
     double pointA;
     srsran_dci_dl_nr_t dci_1_0_coreset0;
@@ -131,9 +116,10 @@ class Radio{
     int RadioInitandStart();
     int DecodeMIB();
     int SyncandDownlinkInit();
+    int InitTaskScheduler();
+
     int SIB1Loop(); // downlink channel
     int MSG2and4Loop(); // downlink RAR
-    
     int DCILoop();
 
     void WriteLogFile(std::string filename, const char* szString);

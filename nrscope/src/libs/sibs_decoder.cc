@@ -11,27 +11,74 @@ SIBsDecoder::~SIBsDecoder(){
     
 }
 
-int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_ue_dl_nr_t* ue_dl,
-                                                  srsran_slot_cfg_t* slot,
-                                                  srsran_ue_dl_nr_sratescs_info arg_scs,
-                                                  srsran_carrier_nr_t* base_carrier,
-                                                  srsran_sch_hl_cfg_nr_t* pdsch_hl_cfg,
-                                                  srsran_softbuffer_rx_t* softbuffer,
-                                                  asn1::rrc_nr::sib1_s* sib1
-                                                  ){
+int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
+                                                srsran_carrier_nr_t* base_carrier_,
+                                                cell_search_result_t cell_,
+                                                cf_t* input[SRSRAN_MAX_PORTS],
+                                                srsran_dci_cfg_nr_t* dci_cfg_,
+                                                srsran_ue_dl_nr_args_t* ue_dl_args_,
+                                                srsran_coreset_t* coreset0_t_){
+  memcpy(&coreset0_t, coreset0_t_, sizeof(srsran_coreset_t));
+
+  pdcch_cfg.coreset_present[0] = true;
+  search_space = pdcch_cfg.search_space[0];
+  pdcch_cfg.search_space_present[0]   = true;
+  search_space.id                    = 0;
+  search_space.coreset_id            = 0;
+  search_space.type                  = srsran_search_space_type_common_0;
+  search_space.formats[0]            = srsran_dci_format_nr_1_0;
+  search_space.nof_formats           = 1;
+  for (uint32_t L = 0; L < SRSRAN_SEARCH_SPACE_NOF_AGGREGATION_LEVELS_NR; L++) {
+    search_space.nof_candidates[L] = srsran_pdcch_nr_max_candidates_coreset(&coreset0_t, L);
+  }
+  pdcch_cfg.coreset[0] = coreset0_t; 
+
+  arg_scs = arg_scs_;
+  memcpy(&base_carrier, base_carrier_, sizeof(srsran_carrier_nr_t));
+  cell = cell_;
+  pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
+  memcpy(&dci_cfg, dci_cfg_, sizeof(srsran_dci_cfg_nr_t));
+  memcpy(&ue_dl_args, ue_dl_args_, sizeof(srsran_ue_dl_nr_args_t));
+
+  if (srsran_ue_dl_nr_init_nrscope(&ue_dl_sibs, input, &ue_dl_args, arg_scs)) {
+    ERROR("Error UE DL");
+    return SRSRAN_ERROR;
+  }
+
+  if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl_sibs, &base_carrier, arg_scs)) {
+    ERROR("Error setting SCH NR carrier");
+    return SRSRAN_ERROR;
+  }
+
+  if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl_sibs, &pdcch_cfg, &dci_cfg)) {
+    ERROR("Error setting CORESET");
+    return SRSRAN_ERROR;
+  }
+
+  if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
+      SRSRAN_SUCCESS) {
+    ERROR("Error init soft-buffer");
+    return SRSRAN_ERROR;
+  }
+
+  return SRSRAN_SUCCESS;
+}
+
+int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
+                                                 asn1::rrc_nr::sib1_s* sib1){
   srsran_dci_dl_nr_t dci_sibs;
   // Check the fft plan and how does it manipulate the buffer
-  srsran_ue_dl_nr_estimate_fft_nrscope(ue_dl, slot, arg_scs);
+  srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_sibs, slot, arg_scs);
   // Blind search
-  int nof_found_dci = srsran_ue_dl_nr_find_dl_dci(ue_dl, slot, 0xFFFF, 
+  int nof_found_dci = srsran_ue_dl_nr_find_dl_dci(&ue_dl_sibs, slot, 0xFFFF, 
                                                   srsran_rnti_type_si, &dci_sibs, 1);
   if (nof_found_dci < SRSRAN_SUCCESS) {
     ERROR("Error in blind search");
     return SRSRAN_ERROR;
   }
   // Print PDCCH blind search candidates
-  for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl->pdcch_info_count; pdcch_idx++) {
-    const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl->pdcch_info[pdcch_idx]);
+  for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl_sibs.pdcch_info_count; pdcch_idx++) {
+    const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl_sibs.pdcch_info[pdcch_idx]);
     printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
     "nof_bits=%d; crc=%s;\n",
     srsran_rnti_type_str_short(info->dci_ctx.rnti_type),
@@ -52,23 +99,23 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_ue_dl_nr_t* ue_dl,
   }
 
   char str[1024] = {};
-  srsran_dci_dl_nr_to_str(&(ue_dl->dci), &dci_sibs, str, (uint32_t)sizeof(str));
+  srsran_dci_dl_nr_to_str(&(ue_dl_sibs.dci), &dci_sibs, str, (uint32_t)sizeof(str));
   printf("Found DCI: %s\n", str);
 
   srsran_sch_cfg_nr_t pdsch_cfg = {};
-  if (srsran_ra_dl_dci_to_grant_nr(base_carrier, slot, pdsch_hl_cfg, 
+  if (srsran_ra_dl_dci_to_grant_nr(&base_carrier, slot, &pdsch_hl_cfg, 
     &dci_sibs, &pdsch_cfg, &pdsch_cfg.grant) < SRSRAN_SUCCESS) {
     ERROR("Error decoding PDSCH search");
     return SRSRAN_ERROR;
   }
   srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
   printf("PDSCH_cfg:\n%s", str);
-  pdsch_cfg.grant.tb[0].softbuffer.rx = softbuffer; // Set softbuffer
+  pdsch_cfg.grant.tb[0].softbuffer.rx = &softbuffer; // Set softbuffer
   srsran_pdsch_res_nr_t pdsch_res = {}; // Prepare PDSCH result
   pdsch_res.tb[0].payload = data_pdcch;
 
   // Decode PDSCH
-  if (srsran_ue_dl_nr_decode_pdsch(ue_dl, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
+  if (srsran_ue_dl_nr_decode_pdsch(&ue_dl_sibs, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
     printf("Error decoding PDSCH search\n");
     return SRSRAN_ERROR;
   }

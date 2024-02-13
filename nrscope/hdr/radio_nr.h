@@ -63,21 +63,12 @@ class Radio{
     
     srsran_ssb_cfg_t ssb_cfg;
 
-    asn1::rrc_nr::sib1_s sib1;
-    asn1::rrc_nr::sib2_s sib2;
-
-    srsran_search_space_t* ra_search_space;
-    srsran::mac_rar_pdu_nr rar_pdu; // rar pdu
-    asn1::rrc_nr::rrc_setup_s rrc_setup;
-    asn1::rrc_nr::cell_group_cfg_s master_cell_group;
-
     TaskSchedulerNRScope task_scheduler_nrscope;
     RachDecoder rach_decoder; // processing for uplink in rach
     SIBsDecoder sibs_decoder;
     DCIDecoder dci_decoder;
     HarqTracker harq_tracker;
 
-    uint16_t rnti_lists[200];
     uint16_t known_rntis[200];
     uint32_t nof_known_rntis;
 
@@ -95,7 +86,7 @@ class Radio{
     int RadioInitandStart();
     int SyncandDownlinkInit();
 
-    int InitTaskScheduler();
+    int StartTasks();
 
     int RadioCapture();
 

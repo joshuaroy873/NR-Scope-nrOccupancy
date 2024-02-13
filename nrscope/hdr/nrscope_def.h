@@ -123,6 +123,19 @@ struct coreset0_args{
   int                         sfn_c = 0;
 };
 
+struct sib1_task_element{
+  srsran_ue_sync_nr_outcome_t outcome;
+  srsran_slot_cfg_t slot;
+};
+
+struct rach_task_element{
+
+};
+
+struct dci_task_element{
+
+};
+
 /**
   * Get the UNIX timestamp for now in microsecond.
   *

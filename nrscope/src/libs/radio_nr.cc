@@ -22,7 +22,6 @@ Radio::Radio() :
   srsran_searcher.init(srsran_searcher_args_t);
 
   ssb_cfg = {};
-
   ue_sync_nr = {};
   outcome = {};
   ue_sync_nr_args = {};
@@ -163,7 +162,7 @@ int Radio::RadioInitandStart(){
         return NR_FAILURE;
       }
 
-      if(InitTaskScheduler() < SRSASN_SUCCESS){
+      if(StartTasks() < SRSASN_SUCCESS){
         ERROR("Error initializing task scheduler");
         return NR_FAILURE;
       }
@@ -261,10 +260,57 @@ int Radio::SyncandDownlinkInit(){
   return SRSRAN_SUCCESS;
 }
 
-int Radio::InitTaskScheduler(){
-  task_scheduler_nrscope.decoders_init();
-  
+int Radio::StartTasks(){
+  // Start all the threads
+  sibs_decoder.sibs_thread(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t());
+  // rach_decoder.rach_thread();
+
+
   return SRSASN_SUCCESS;
+}
+
+int Radio::RadioCapture(){
+  while(true){
+    outcome.timestamp = last_rx_time.get(0);
+    if (srsran_ue_sync_nr_zerocopy(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome) < SRSRAN_SUCCESS) {
+      std::cout << "SYNC: error in zerocopy" << std::endl;
+      logger.error("SYNC: error in zerocopy");
+      return false;
+    }
+    // If in sync, update slot index. The synced data is stored in rf_buffer_t.to_cf_t()[0]
+    if (outcome.in_sync){
+      std::cout << "System frame idx: " << outcome.sfn << std::endl;
+      std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
+      // Find right slot position for SIB 1.
+      for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
+        srsran_slot_cfg_t slot = {0};
+        slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
+        // Move rx_buffer
+        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);    
+
+        // 1) Inform the 3 loops to attend to this slot by puting the slot and outcome into a queue
+        //     Problem: When the thread try to attend to the data and get the slot index from the queue, 
+        //              the buffer may already be flushed away to the next slot
+        // 2) Call the non-blocking functions for each processing here and join, which might be more reasonable.
+        task_scheduler_nrscope.push_queue(outcome, slot);
+
+
+        // if((coreset0_args_t.sfn_c == 0 && outcome.sfn % 2 == 0) || 
+        //    (coreset0_args_t.sfn_c == 1 && outcome.sfn % 2 == 1)) {
+        //   if((outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2) || 
+        //      (outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2 + 1)){
+            
+        //     if(sibs_decoder.decode_and_parse_sib1_from_slot(&slot, &sib1) == SRSASN_SUCCESS){
+        //       return SRSASN_SUCCESS;
+        //     }else{
+        //       continue;
+        //     }
+        //   } 
+        // }
+
+      } 
+    } 
+  }
 }
 
 int Radio::SIB1Loop(){
@@ -299,7 +345,7 @@ int Radio::SIB1Loop(){
           if((outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2) || 
              (outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2 + 1)){
             
-            if(sibs_decoder.decode_and_parse_sib1_from_slot(&slot, &sib1) == SRSASN_SUCCESS){
+            if(sibs_decoder.decode_and_parse_sib1_from_slot(&slot, &task_scheduler_nrscope.sib1) == SRSASN_SUCCESS){
               return SRSASN_SUCCESS;
             }else{
               continue;
@@ -314,7 +360,7 @@ int Radio::SIB1Loop(){
 
 int Radio::MSG2and4Loop(){
   std::cout << "MSG2 and 4 Loop starts...(please ignore the errors messages)" << std::endl;
-  rach_decoder.rach_decoder_init(sib1, args_t.base_carrier);
+  rach_decoder.rach_decoder_init(task_scheduler_nrscope.sib1, args_t.base_carrier);
 
   if(rach_decoder.rach_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), task_scheduler_nrscope.cell, 
      rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){
@@ -342,7 +388,8 @@ int Radio::MSG2and4Loop(){
         // Processing for each slot
         srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);
 
-        if(rach_decoder.decode_and_parse_msg4_from_slot(&slot, &rrc_setup, &master_cell_group, known_rntis, &nof_known_rntis) == SRSASN_SUCCESS){
+        if(rach_decoder.decode_and_parse_msg4_from_slot(&slot, &task_scheduler_nrscope.rrc_setup, 
+           &task_scheduler_nrscope.master_cell_group, known_rntis, &nof_known_rntis) == SRSASN_SUCCESS){
           return SRSASN_SUCCESS;
         }else{
           continue;
@@ -357,7 +404,8 @@ int Radio::DCILoop(){
   std::cout << "DCI Loop starts...(please ignore the error messages)" << std::endl;
 
   if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), task_scheduler_nrscope.cell, 
-     rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t), master_cell_group, rrc_setup , task_scheduler_nrscope.srsran_searcher_cfg_t, sib1) < SRSASN_SUCCESS){
+     rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t), task_scheduler_nrscope.master_cell_group, task_scheduler_nrscope.rrc_setup , 
+     task_scheduler_nrscope.srsran_searcher_cfg_t, task_scheduler_nrscope.sib1) < SRSASN_SUCCESS){
     ERROR("RACHDecoder Init Error");
     return NR_FAILURE;
   }

@@ -80,6 +80,13 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
 
 int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
                                                  asn1::rrc_nr::sib1_s* sib1){
+  // if((coreset0_args_t.sfn_c == 0 && outcome.sfn % 2 == 0) || 
+  //     (coreset0_args_t.sfn_c == 1 && outcome.sfn % 2 == 1)) {
+  //   if((outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2) || 
+  //       (outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2 + 1)){
+  //       }
+  //     }
+  
   srsran_dci_dl_nr_t dci_sibs;
   // Check the fft plan and how does it manipulate the buffer
   srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_sibs, slot, arg_scs);
@@ -163,4 +170,33 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   (*sib1).to_json(js);
   printf("Decoded SIB1: %s\n", js.to_string().c_str());
   return SRSRAN_SUCCESS;
+}
+
+int SIBsDecoder::sibs_thread(srsran_ue_dl_nr_sratescs_info arg_scs_, 
+                             TaskSchedulerNRScope* task_scheduler_nrscope, 
+                             cf_t* input[SRSRAN_MAX_PORTS]){
+  // Start initializing the sib decoder
+  if(sib_decoder_and_reception_init(arg_scs_, &(task_scheduler_nrscope->args_t.base_carrier), task_scheduler_nrscope->cell, 
+     input, &(task_scheduler_nrscope->coreset0_t)) < SRSASN_SUCCESS){
+    ERROR("SIBsDecoder Init Error");
+    return NR_FAILURE;
+  }
+
+  while(true){
+    sib1_task_element this_slot = task_scheduler_nrscope->sib1_queue.front();
+    task_scheduler_nrscope->sib1_queue.pop();
+    // get slot and 
+    if((task_scheduler_nrscope->coreset0_args_t.sfn_c == 0 && this_slot.outcome.sfn % 2 == 0) || 
+      (task_scheduler_nrscope->coreset0_args_t.sfn_c == 1 && this_slot.outcome.sfn % 2 == 1)) {
+      if((this_slot.outcome.sf_idx) == (uint32_t)(task_scheduler_nrscope->coreset0_args_t.n_0 / 2) || 
+          (this_slot.outcome.sf_idx) == (uint32_t)(task_scheduler_nrscope->coreset0_args_t.n_0 / 2 + 1)){
+        if(decode_and_parse_sib1_from_slot(&this_slot.slot, &task_scheduler_nrscope->sib1) == SRSASN_SUCCESS){
+          return SRSASN_SUCCESS;
+        }else{
+          continue;
+        }
+      } 
+    }
+  }
+
 }

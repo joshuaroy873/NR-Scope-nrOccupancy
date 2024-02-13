@@ -10,6 +10,7 @@
 #include "srsran/common/band_helper.h"
 
 #include "nrscope/hdr/nrscope_def.h"
+#include "nrscope/hdr/task_scheduler.h"
 
 class RachDecoder{
   public:
@@ -33,6 +34,7 @@ class RachDecoder{
     cell_search_result_t cell;
     srsran_coreset_t coreset0_t;
     srsran_search_space_t* search_space;
+    // srsran_search_space_t* ra_search_space;
 
     uint8_t* data_pdcch;
 
@@ -47,12 +49,13 @@ class RachDecoder{
                             cf_t* input[SRSRAN_MAX_PORTS],
                             srsran_coreset_t* coreset0_t_);
 
-
     int decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
                                         asn1::rrc_nr::rrc_setup_s* rrc_setup,
                                         asn1::rrc_nr::cell_group_cfg_s* master_cell_group,
                                         uint16_t* known_rntis,
                                         uint32_t* nof_known_rntis);
+    
+    int rach_thread(TaskSchedulerNRScope* task_scheduler_nrscope);
 };
 
 #endif

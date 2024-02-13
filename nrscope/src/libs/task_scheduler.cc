@@ -1,7 +1,9 @@
 #include "nrscope/hdr/task_scheduler.h"
 
 TaskSchedulerNRScope::TaskSchedulerNRScope(){
-
+  sib1_found = false;
+  nof_known_rntis = 0;
+  known_rntis.resize(nof_known_rntis);
 }
 
 int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_, 
@@ -94,7 +96,10 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
   return SRSRAN_SUCCESS;
 }
 
-int TaskSchedulerNRScope::decoders_init(){
+// The Radio grabs a slot of data and in this function the scheduler 
+// informs the other threads by pusing the nodes into the queue.
+int TaskSchedulerNRScope::push_queue(srsran_ue_sync_nr_outcome_t outcome_, srsran_slot_cfg_t slot_){
+  
   
 
 

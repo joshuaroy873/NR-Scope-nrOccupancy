@@ -1,4 +1,5 @@
 #include "nrscope/hdr/nrscope_def.h"
+#include "nrscope/hdr/task_scheduler.h"
 
 typedef struct _DCIFeedback{
   std::vector<srsran_dci_dl_nr_t> dl_dcis;
@@ -78,4 +79,6 @@ class DCIDecoder{
                                                uint16_t* known_rntis,
                                                uint32_t nof_known_rntis, 
                                                uint16_t target_rnti);
+
+    int dci_thread(TaskSchedulerNRScope* task_scheduler_nrscope);
 };

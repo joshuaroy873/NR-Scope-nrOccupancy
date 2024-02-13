@@ -22,14 +22,7 @@
 // #include "nrscope/hdr/to_sunshine.h"
 // #include "nrscope/hdr/to_moonlight.h"
 #include "nrscope/hdr/harq_tracking.h"
-
-struct coreset0_args{
-  uint32_t                    offset_rb       = 0; // CORESET offset rb
-  double                      coreset0_lower_freq_hz = 0.0;
-  double                      coreset0_center_freq_hz = 0.0;
-  int                         n_0 = 0;
-  int                         sfn_c = 0;
-};
+#include "nrscope/hdr/task_scheduler.h"
 
 class Radio{
   public:
@@ -78,6 +71,7 @@ class Radio{
     asn1::rrc_nr::rrc_setup_s rrc_setup;
     asn1::rrc_nr::cell_group_cfg_s master_cell_group;
 
+    TaskSchedulerNRScope task_scheduler_nrscope;
     RachDecoder rach_decoder; // processing for uplink in rach
     SIBsDecoder sibs_decoder;
     DCIDecoder dci_decoder;
@@ -99,13 +93,15 @@ class Radio{
 
     int RadioThread();
     int RadioInitandStart();
-    int DecodeMIB();
     int SyncandDownlinkInit();
+
     int InitTaskScheduler();
 
-    int SIB1Loop(); // downlink channel
-    int MSG2and4Loop(); // downlink RAR
-    int DCILoop();
+    int RadioCapture();
+
+    int SIB1Loop(); // Decode SIB 1
+    int MSG2and4Loop(); // Decode MSG 4
+    int DCILoop(); // Decode DCIs 
 
     void WriteLogFile(std::string filename, const char* szString);
     // int RadioStop();

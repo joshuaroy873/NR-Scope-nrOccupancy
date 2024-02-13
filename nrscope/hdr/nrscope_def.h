@@ -113,8 +113,15 @@ struct cell_search_result_t {
   double                      abs_ssb_scs     = 0.0;
   double                      abs_pdcch_scs   = 0.0;
   int                         u = (int) ssb_scs;
-  };
+};
 
+struct coreset0_args{
+  uint32_t                    offset_rb       = 0; // CORESET offset rb
+  double                      coreset0_lower_freq_hz = 0.0;
+  double                      coreset0_center_freq_hz = 0.0;
+  int                         n_0 = 0;
+  int                         sfn_c = 0;
+};
 
 /**
   * Get the UNIX timestamp for now in microsecond.

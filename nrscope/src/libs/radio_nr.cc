@@ -7,6 +7,7 @@ Radio::Radio() :
   srsran_searcher(logger),
   rf_buffer_t(1),
   slot_synchronizer(logger),
+  task_scheduler_nrscope(),
   rach_decoder(),
   sibs_decoder(),
   dci_decoder(4),
@@ -152,10 +153,8 @@ int Radio::RadioInitandStart(){
       std::cout << "N_id: " << cs_ret.ssb_res.N_id << std::endl;
       std::cout << "Decoding MIB..." << std::endl;
 
-      rx_uplink_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
-      
-      if(DecodeMIB() < SRSRAN_SUCCESS){
-        ERROR("Error decoding MIB");
+      if(task_scheduler_nrscope.decode_mib(&args_t, &cs_ret, &srsran_searcher_cfg_t) < SRSRAN_SUCCESS){
+        ERROR("Error init task scheduler");
         return NR_FAILURE;
       }
 
@@ -164,8 +163,13 @@ int Radio::RadioInitandStart(){
         return NR_FAILURE;
       }
 
-      if(InitTaskScheduler() < SRSRAN_SUCCESS){
-        ERROR("Error init task scheduler");
+      if(InitTaskScheduler() < SRSASN_SUCCESS){
+        ERROR("Error initializing task scheduler");
+        return NR_FAILURE;
+      }
+
+      if(RadioCapture() < SRSASN_SUCCESS){
+        ERROR("Error in RadioCapture");
         return NR_FAILURE;
       }
 
@@ -185,91 +189,6 @@ int Radio::RadioInitandStart(){
       }
     }
   }
-  return SRSRAN_SUCCESS;
-}
-
-int Radio::DecodeMIB(){
-  args_t.base_carrier.pci = cs_ret.ssb_res.N_id;
-
-  if(srsran_pbch_msg_nr_mib_unpack(&cs_ret.ssb_res.pbch_msg, &cell.mib) < SRSRAN_SUCCESS){
-    ERROR("Error decoding MIB");
-    return SRSRAN_ERROR;
-  }
-  printf("MIB payload: ");
-  for (int i =0; i<SRSRAN_PBCH_MSG_NR_MAX_SZ; i++){
-    printf("%hhu ", cs_ret.ssb_res.pbch_msg.payload[i]);
-  }
-  printf("\n");
-  std::cout << "cell.mib.ssb_offset: " << cell.mib.ssb_offset << std::endl;
-  std::cout << "((int)cs_ret.ssb_res.pbch_msg.k_ssb_msb): " << ((int)cs_ret.ssb_res.pbch_msg.k_ssb_msb) << std::endl;
-
-  cell.k_ssb = cell.mib.ssb_offset; // already added the msb of k_ssb
-  rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
-
-  // srsran_coreset0_ssb_offset returns the offset_rb relative to ssb
-  // nearly all bands in FR1 have min bandwidth 5 or 10 MHz, so there are only 5 entries here.  
-  coreset0_args_t.offset_rb = srsran_coreset0_ssb_offset(cell.mib.coreset0_idx, 
-    args_t.ssb_scs, cell.mib.scs_common);
-  // std::cout << "Coreset offset in rbs related to SSB: " << coreset0_args_t.offset_rb << std::endl;
-
-  coreset0_t = {};
-  // srsran_coreset_zero returns the offset_rb relative to pointA
-  if(srsran_coreset_zero(cs_ret.ssb_res.N_id, 
-                         0, //cell.k_ssb * SRSRAN_SUBC_SPACING_NR(srsran_subcarrier_spacing_15kHz), 
-                         args_t.ssb_scs, 
-                         cell.mib.scs_common, 
-                         cell.mib.coreset0_idx, 
-                         &coreset0_t) == SRSRAN_SUCCESS){
-    char freq_res_str[SRSRAN_CORESET_FREQ_DOMAIN_RES_SIZE] = {};
-    char coreset_info[512] = {};
-    srsran_coreset_to_str(&coreset0_t, coreset_info, sizeof(coreset_info));
-    printf("Coreset parameter: %s", coreset_info);
-  }
-  // To find the position of coreset0, we need to use the offset between SSB and CORESET0,
-  // because we don't know the ssb_pointA_freq_offset_Hz yet required by the srsran_coreset_zero function.
-  // coreset0_t low bound freq = ssb center freq - 120 * scs (half of sc in ssb) - 
-  // ssb_subcarrierOffset(from MIB) * scs - entry->offset_rb * 12(sc in one rb) * scs
-  cell.abs_ssb_scs = SRSRAN_SUBC_SPACING_NR(args_t.ssb_scs);
-  cell.abs_pdcch_scs = SRSRAN_SUBC_SPACING_NR(cell.mib.scs_common);
-  
-  srsran::srsran_band_helper bands;
-  coreset0_args_t.coreset0_lower_freq_hz = srsran_searcher_cfg_t.ssb_freq_hz - (SRSRAN_SSB_BW_SUBC / 2) *
-    cell.abs_ssb_scs - coreset0_args_t.offset_rb * NRSCOPE_NSC_PER_RB_NR * cell.abs_pdcch_scs - 
-    cell.k_ssb * SRSRAN_SUBC_SPACING_NR(srsran_subcarrier_spacing_15kHz); // defined by standards
-  coreset0_args_t.coreset0_center_freq_hz = coreset0_args_t.coreset0_lower_freq_hz + srsran_coreset_get_bw(&coreset0_t) / 2 * 
-    cell.abs_pdcch_scs * NRSCOPE_NSC_PER_RB_NR;
-
-  // std::cout << "k_ssb: " << cell.k_ssb << std::endl;
-  // std::cout << "ssb freq hz: " << srsran_searcher_cfg_t.ssb_freq_hz << std::endl;
-  // std::cout << "coreset0_lower freq hz: " << coreset0_args_t.coreset0_lower_freq_hz << std::endl;
-  // std::cout << "coreset0 center freq hz: " << coreset0_args_t.coreset0_center_freq_hz << std::endl;
-  // std::cout << "ssb_lower_freq hz: " << srsran_searcher_cfg_t.ssb_freq_hz - (SRSRAN_SSB_BW_SUBC / 2) *
-  //   cell.abs_ssb_scs << std::endl;
-  // std::cout << "coreset0_bw: " << srsran_coreset_get_bw(&coreset0_t) << std::endl;
-  // std::cout << "coreset0_nof_symb: " << coreset0_t.duration << std::endl;
-  // std::cout << "scs_common: " << cell.mib.scs_common << std::endl;
-  // // the total used prb for coreset0 is 48 -> 17.28 MHz bw
-  
-  // std::cout << "mib pdcch-configSIB1.coreset0_idx: " << cell.mib.coreset0_idx << std::endl;
-  // std::cout << "mib pdcch-configSIB1.searchSpaceZero: " << cell.mib.ss0_idx << std::endl;
-  // printf("mib ssb-index: %u\n", cell.mib.ssb_idx);
-
-  coreset_zero_t_f_entry_nrscope coreset_zero_cfg;
-  // Get coreset_zero's position in time domain, check table 38.213, 13-11, because USRP can only support FR1.
-  if(coreset_zero_t_f_nrscope(cell.mib.ss0_idx, cell.mib.ssb_idx, coreset0_t.duration, &coreset_zero_cfg) < 
-    SRSRAN_SUCCESS){
-    ERROR("Error checking table 13-11");
-    return SRSRAN_ERROR;
-  }
-
-  cell.u = (int)args_t.ssb_scs; 
-  coreset0_args_t.n_0 = (coreset_zero_cfg.O * (int)pow(2, cell.u) + 
-    (int)floor(cell.mib.ssb_idx * coreset_zero_cfg.M)) % SRSRAN_NSLOTS_X_FRAME_NR(cell.u);
-  // sfn_c = 0, in even system frame, sfn_c = 1, in odd system frame    
-  coreset0_args_t.sfn_c = (int)(floor(coreset_zero_cfg.O * pow(2, cell.u) + 
-    floor(cell.mib.ssb_idx * coreset_zero_cfg.M)) / SRSRAN_NSLOTS_X_FRAME_NR(cell.u)) % 2;
-  args_t.base_carrier.nof_prb = srsran_coreset_get_bw(&coreset0_t);
-
   return SRSRAN_SUCCESS;
 }
 
@@ -293,13 +212,15 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
 
 int Radio::SyncandDownlinkInit(){
   //***** DL args Config Start *****//
+  rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * slot_sz);
+
   // it appears the srsRAN is build on 15kHz scs, we need to use the srate and 
   // scs to calculate the correct subframe size 
-  arg_scs.srate = args_t.srate_hz;
-  arg_scs.scs = cell.mib.scs_common;
+  arg_scs.srate = task_scheduler_nrscope.args_t.srate_hz;
+  arg_scs.scs = task_scheduler_nrscope.cell.mib.scs_common;
 
-  arg_scs.coreset_offset_scs = (cs_args.ssb_freq_hz - coreset0_args_t.coreset0_center_freq_hz) / cell.abs_pdcch_scs;// + 12;
-  arg_scs.coreset_slot = (uint32_t)coreset0_args_t.n_0;
+  arg_scs.coreset_offset_scs = (cs_args.ssb_freq_hz - task_scheduler_nrscope.coreset0_args_t.coreset0_center_freq_hz) / task_scheduler_nrscope.cell.abs_pdcch_scs;// + 12;
+  arg_scs.coreset_slot = (uint32_t)task_scheduler_nrscope.coreset0_args_t.n_0;
   arg_scs.phase_diff_first_second_half = 0;
   //***** DL args Config End *****//
 
@@ -320,7 +241,7 @@ int Radio::SyncandDownlinkInit(){
   }
 
   // Be careful of all the frequency setting (SSB/center downlink and etc.)!
-  ssb_cfg.srate_hz       = args_t.srate_hz;
+  ssb_cfg.srate_hz       = task_scheduler_nrscope.args_t.srate_hz;
   ssb_cfg.center_freq_hz = cs_args.ssb_freq_hz;
   ssb_cfg.ssb_freq_hz    = cs_args.ssb_freq_hz;
   ssb_cfg.scs            = cs_args.ssb_scs;
@@ -328,9 +249,9 @@ int Radio::SyncandDownlinkInit(){
   ssb_cfg.duplex_mode    = cs_args.duplex_mode;
   ssb_cfg.periodicity_ms = 20; // for all in FR1
 
-  sync_cfg.N_id = cs_ret.ssb_res.N_id;
+  sync_cfg.N_id = task_scheduler_nrscope.cs_ret.ssb_res.N_id;
   sync_cfg.ssb = ssb_cfg;
-  sync_cfg.ssb.srate_hz = args_t.srate_hz;
+  sync_cfg.ssb.srate_hz = task_scheduler_nrscope.args_t.srate_hz;
   if (srsran_ue_sync_nr_set_cfg(&ue_sync_nr, &sync_cfg) < SRSRAN_SUCCESS) {
     printf("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);
     logger.error("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);
@@ -341,16 +262,16 @@ int Radio::SyncandDownlinkInit(){
 }
 
 int Radio::InitTaskScheduler(){
-
-
+  task_scheduler_nrscope.decoders_init();
+  
   return SRSASN_SUCCESS;
 }
 
 int Radio::SIB1Loop(){
   std::cout << "SIB1 Loop Starts..." << std::endl;     
 
-  if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &(args_t.base_carrier), cell, 
-     rf_buffer_t.to_cf_t(), &coreset0_t) < SRSASN_SUCCESS){
+  if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), task_scheduler_nrscope.cell, 
+     rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){
     ERROR("SIBsDecoder Init Error");
     return NR_FAILURE;
   }
@@ -395,8 +316,8 @@ int Radio::MSG2and4Loop(){
   std::cout << "MSG2 and 4 Loop starts...(please ignore the errors messages)" << std::endl;
   rach_decoder.rach_decoder_init(sib1, args_t.base_carrier);
 
-  if(rach_decoder.rach_reception_init(arg_scs, &(args_t.base_carrier), cell, 
-     rf_buffer_t.to_cf_t(), &coreset0_t) < SRSASN_SUCCESS){
+  if(rach_decoder.rach_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), task_scheduler_nrscope.cell, 
+     rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){
     ERROR("RACHDecoder Init Error");
     return NR_FAILURE;
   }
@@ -435,8 +356,8 @@ int Radio::MSG2and4Loop(){
 int Radio::DCILoop(){
   std::cout << "DCI Loop starts...(please ignore the error messages)" << std::endl;
 
-  if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &(args_t.base_carrier), cell, 
-     rf_buffer_t.to_cf_t(), &coreset0_t, master_cell_group, rrc_setup ,srsran_searcher_cfg_t, sib1) < SRSASN_SUCCESS){
+  if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), task_scheduler_nrscope.cell, 
+     rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t), master_cell_group, rrc_setup , task_scheduler_nrscope.srsran_searcher_cfg_t, sib1) < SRSASN_SUCCESS){
     ERROR("RACHDecoder Init Error");
     return NR_FAILURE;
   }

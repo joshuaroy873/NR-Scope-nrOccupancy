@@ -10,8 +10,8 @@ Radio::Radio() :
   task_scheduler_nrscope(),
   rach_decoder(),
   sibs_decoder(),
-  dci_decoder(4),
-  harq_tracker(4)
+  dci_decoder(100),
+  harq_tracker(100)
 {
   raido_shared = std::make_shared<srsran::radio>();
   radio = nullptr;
@@ -291,7 +291,6 @@ int Radio::RadioCapture(){
         //              the buffer may already be flushed away to the next slot.
         // 2) Call the non-blocking functions for each processing here and join, which might be more reasonable.
 
-        // Initialize the decoder if they are not
         if(!task_scheduler_nrscope.sib1_inited){
           if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), 
           task_scheduler_nrscope.cell, rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){

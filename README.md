@@ -86,12 +86,13 @@ sudo ./nrscope
 
 (Feb-8) Use a new repo for code release and next phase development.
 
+(Feb-14) Decoding other SIBs (2, 3 transmitted by the small cell, and potentially other SIBs in other cells) is finished. Now we use three concurrent threads to decode SIB, RACH and DCI for the same TTI, not in a producer-consumer style but in a non-blocking function way. Because we want the processing happens in the same time, which would be helpful for future carrier aggregation that requires synchronization between cells. However, after a while, NG-Scope can't decode any new DCIs for SIB, RACH and exisiting UEs, the behavior looks like the synchronization failure when the GPS clock is not used. The next step is to figure it out what makes the function unable to decode any new DCIs. One guess is that the processing time for SIB and RACH RRC decoding takes too long (~1000 us) in some TTIs, which drags the buffer and destroys the synchronization, however according to some observation, the last few DCIs' processing time before the "stop" is not so long.
+
 ## TODOs
 
 There are some on-going plans for the near future:
 
-* Copy the radio raw samples to multiple threads to decode SIB, RACH and DCI simultaneously.
-* Decode other SIBs of the cell.
+* Try to figure out what causes the "unable to decode DCI" problem.
+* Get a better logging functions, and add APIs (in logging class maybe) to send data to a Python server.
 * Try to decode RRC reconfiguration message.
-* Get a better logging functions.
 * Test the tool with different bandwidth, SCS, and different duplexing modes (TDD and FDD), with the help of Amarisoft.

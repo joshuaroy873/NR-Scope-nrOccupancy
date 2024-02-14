@@ -506,9 +506,6 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
   int total_dl_dci = 0;
   int total_ul_dci = 0;  
 
-  // srsran_dci_nr_t* ue_dci_dl = (srsran_dci_nr_t*) malloc(sizeof(srsran_dci_nr_t) * (nof_known_rntis));
-  // srsran_dci_nr_t* ue_dci_ul = (srsran_dci_nr_t*) malloc(sizeof(srsran_dci_nr_t) * (nof_known_rntis));
-
   for (uint32_t rnti_idx = 0; rnti_idx < task_scheduler_nrscope->nof_known_rntis; rnti_idx++){
     
     memcpy(ue_dl_tmp, &ue_dl_dci, sizeof(srsran_ue_dl_nr_t));
@@ -523,22 +520,16 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
 
     int nof_ul_dci = srsran_ue_dl_nr_find_ul_dci(ue_dl_tmp, slot_tmp, task_scheduler_nrscope->known_rntis[rnti_idx], srsran_rnti_type_c, dci_ul_tmp, 4);
 
-    // nof_dl_dci and nof_ul_dci are at most 1.
     if(nof_dl_dci > 0){
       dci_dl[rnti_idx] = dci_dl_tmp[0];
-      // ue_dci_dl[rnti_idx] = ue_dl->dci;
       total_dl_dci += nof_dl_dci;
     }
 
     if(nof_ul_dci > 0){
       dci_ul[rnti_idx] = dci_ul_tmp[0];
-      // ue_dci_ul[rnti_idx] = ue_dl->dci;
       total_ul_dci += nof_ul_dci;
     }
   }  
-
-  // printf("total_dl_dci: %d\n", total_dl_dci);
-  // printf("total_ul_dci: %d\n", total_ul_dci);
 
   if(total_dl_dci > 0){
     for (uint32_t dci_idx_dl = 0; dci_idx_dl < task_scheduler_nrscope->nof_known_rntis; dci_idx_dl++){
@@ -562,9 +553,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
           printf("PDSCH_cfg:\n%s", str);
 
           task_scheduler_nrscope->result.dl_grants[dci_idx_dl] = pdsch_cfg;
-          // result.total_dl_tbs += pdsch_cfg.grant.tb[0].tbs + pdsch_cfg.grant.tb[1].tbs;
           task_scheduler_nrscope->result.nof_dl_used_prbs += pdsch_cfg.grant.nof_prb * pdsch_cfg.grant.L;
-          // std::cout << "nof prb: " << result.nof_dl_used_prbs << std::endl;
 
           dl_prb_rate[dci_idx_dl] = (float)(pdsch_cfg.grant.tb[0].tbs + pdsch_cfg.grant.tb[1].tbs) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
           dl_prb_bits_rate[dci_idx_dl] = (float)(pdsch_cfg.grant.tb[0].nof_bits + pdsch_cfg.grant.tb[1].nof_bits) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
@@ -609,9 +598,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         printf("PUSCH_cfg:\n%s", str);
 
         task_scheduler_nrscope->result.ul_grants[dci_idx_ul] = pusch_cfg;
-        // result.total_ul_tbs += pusch_cfg.grant.tb[0].tbs + pusch_cfg.grant.tb[1].tbs;
         task_scheduler_nrscope->result.nof_ul_used_prbs += pusch_cfg.grant.nof_prb * pusch_cfg.grant.L;
-        // std::cout << "nof prb: " << result.nof_ul_used_prbs << std::endl;
         
         ul_prb_rate[dci_idx_ul] = (float)(pusch_cfg.grant.tb[0].tbs + pusch_cfg.grant.tb[1].tbs) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;
         ul_prb_bits_rate[dci_idx_ul] = (float)(pusch_cfg.grant.tb[0].nof_bits + pusch_cfg.grant.tb[1].nof_bits) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;

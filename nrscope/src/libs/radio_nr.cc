@@ -281,7 +281,10 @@ int Radio::RadioCapture(){
         srsran_slot_cfg_t slot = {0};
         slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
         // Move rx_buffer
-        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);    
+        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);  
+
+        struct timeval t0, t1;
+        gettimeofday(&t0, NULL);  
 
         // 1) Inform the 3 loops to attend to this slot by puting the slot and outcome into a queue
         //     Problem: When the thread try to attend to the data and get the slot index from the queue, 
@@ -331,6 +334,10 @@ int Radio::RadioCapture(){
         sib1_thread.join();
         rach_thread.join();
         dci_thread.join();
+
+        gettimeofday(&t1, NULL);  
+        task_scheduler_nrscope.result.processing_time_us = t1.tv_usec - t0.tv_usec;   
+        std::cout << "time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
       } 
     } 
   }

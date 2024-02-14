@@ -204,9 +204,11 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_SUCCESS;
   }
   
-  srsran_dci_dl_nr_t dci_rach;
   uint16_t tc_rnti;
   uint16_t c_rnti;
+
+  memset(&dci_rach, 0, sizeof(srsran_dci_dl_nr_t));
+  
   srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_rach, slot, arg_scs);
 
   int nof_found_dci = srsran_ue_dl_nr_find_dl_dci_nrscope(&ue_dl_rach, slot, ra_rnti, nof_ra_rnti, srsran_rnti_type_tc, &dci_rach, 1);
@@ -242,8 +244,8 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   printf("Found DCI: %s\n", str);
   tc_rnti = dci_rach.ctx.rnti;
 
-  srsran_sch_cfg_nr_t pdsch_cfg = {};
-  
+  pdsch_cfg = {};
+
   if (srsran_ra_dl_dci_to_grant_nr(&base_carrier, slot, &pdsch_hl_cfg, &dci_rach, &pdsch_cfg, &pdsch_cfg.grant) <
       SRSRAN_SUCCESS) {
     ERROR("Error decoding PDSCH search");
@@ -259,18 +261,15 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_ERROR;
   }
 
-  data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
-  if (data_pdcch == NULL) {
-    ERROR("Error malloc");
-    return SRSRAN_ERROR;
-  }
+  // Reset the data_pdcch to zeros
+  srsran_vec_u8_zero(data_pdcch, SRSRAN_SLOT_MAX_NOF_BITS_NR);
 
   // Set softbuffer
   pdsch_cfg.grant.tb[0].softbuffer.rx = &softbuffer;
 
   // Prepare PDSCH result
-  srsran_pdsch_res_nr_t pdsch_res = {};
-  pdsch_res.tb[0].payload         = data_pdcch;
+  pdsch_res = {};
+  pdsch_res.tb[0].payload = data_pdcch;
 
   // Decode PDSCH
   if (srsran_ue_dl_nr_decode_pdsch(&ue_dl_rach, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
@@ -359,6 +358,8 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   std::cout << "c-rnti: " << c_rnti << std::endl;
   task_scheduler_nrscope->nof_known_rntis += 1;
   task_scheduler_nrscope->known_rntis.emplace_back(c_rnti);
+
+  srsran_softbuffer_rx_free(&softbuffer);
 
   return SRSRAN_SUCCESS;
 }

@@ -80,13 +80,14 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
 
 int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
                                                 TaskSchedulerNRScope* task_scheduler_nrscope){
-  srsran_dci_dl_nr_t dci_sibs;
+  memset(&dci_sibs, 0, sizeof(srsran_dci_dl_nr_t));
+  
   // Check the fft plan and how does it manipulate the buffer
   srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_sibs, slot, arg_scs);
   // Blind search
   int nof_found_dci = srsran_ue_dl_nr_find_dl_dci(&ue_dl_sibs, slot, 0xFFFF, 
                                                   srsran_rnti_type_si, &dci_sibs, 1);
-  if (nof_found_dci < SRSRAN_SUCCESS) {
+  if (nof_found_dci < SRSRAN_SUCCESS){
     ERROR("Error in blind search");
     return SRSRAN_ERROR;
   }
@@ -116,7 +117,7 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   srsran_dci_dl_nr_to_str(&(ue_dl_sibs.dci), &dci_sibs, str, (uint32_t)sizeof(str));
   printf("Found DCI: %s\n", str);
 
-  srsran_sch_cfg_nr_t pdsch_cfg = {};
+  pdsch_cfg = {};
 
   if (srsran_ra_dl_dci_to_grant_nr(&base_carrier, slot, &pdsch_hl_cfg, &dci_sibs, &pdsch_cfg, &pdsch_cfg.grant) <
       SRSRAN_SUCCESS) {
@@ -133,14 +134,11 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_ERROR;
   }
 
-  data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
-  if (data_pdcch == NULL) {
-    ERROR("Error malloc");
-    return SRSRAN_ERROR;
-  }
+  // Reset the data_pdcch to zeros
+  srsran_vec_u8_zero(data_pdcch, SRSRAN_SLOT_MAX_NOF_BITS_NR);
   
   pdsch_cfg.grant.tb[0].softbuffer.rx = &softbuffer; // Set softbuffer
-  srsran_pdsch_res_nr_t pdsch_res = {}; // Prepare PDSCH result
+  pdsch_res = {}; // Prepare PDSCH result
   pdsch_res.tb[0].payload = data_pdcch;
 
   // Decode PDSCH
@@ -188,6 +186,8 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
     (task_scheduler_nrscope->sib1).to_json(js_sib1);
     printf("Decoded SIB1: %s\n", js_sib1.to_string().c_str());
   }
+
+  srsran_softbuffer_rx_free(&softbuffer);
 
   return SRSRAN_SUCCESS;
 }

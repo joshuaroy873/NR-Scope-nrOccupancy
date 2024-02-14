@@ -505,9 +505,6 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
 
   int total_dl_dci = 0;
   int total_ul_dci = 0;  
-  
-  struct timeval t0, t1;
-  gettimeofday(&t0, NULL);
 
   // srsran_dci_nr_t* ue_dci_dl = (srsran_dci_nr_t*) malloc(sizeof(srsran_dci_nr_t) * (nof_known_rntis));
   // srsran_dci_nr_t* ue_dci_ul = (srsran_dci_nr_t*) malloc(sizeof(srsran_dci_nr_t) * (nof_known_rntis));
@@ -637,9 +634,6 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
       task_scheduler_nrscope->result.spare_ul_bits[idx] = (int) ((float)task_scheduler_nrscope->result.spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
     }
   }
-  gettimeofday(&t1, NULL);  
-  task_scheduler_nrscope->result.processing_time_us = t1.tv_usec - t0.tv_usec;   
-  printf("time_spend:%ld (us)\n", t1.tv_usec - t0.tv_usec);
 
   return SRSRAN_SUCCESS;
 }

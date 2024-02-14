@@ -17,8 +17,11 @@ class SIBsDecoder{
 
     srsran_ue_dl_nr_t ue_dl_sibs;
     srsran_dci_cfg_nr_t dci_cfg;
+    srsran_dci_dl_nr_t dci_sibs;
     srsran_ue_dl_nr_args_t ue_dl_args;
     srsran_pdcch_cfg_nr_t  pdcch_cfg;
+    srsran_sch_cfg_nr_t pdsch_cfg;
+    srsran_pdsch_res_nr_t pdsch_res;
     
     srsran_coreset_t coreset0_t;
     srsran_search_space_t* search_space;

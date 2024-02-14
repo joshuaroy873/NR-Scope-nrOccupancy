@@ -50,12 +50,9 @@ class RachDecoder{
                             srsran_coreset_t* coreset0_t_);
 
     int decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
-                                        asn1::rrc_nr::rrc_setup_s* rrc_setup,
-                                        asn1::rrc_nr::cell_group_cfg_s* master_cell_group,
-                                        uint16_t* known_rntis,
-                                        uint32_t* nof_known_rntis);
+                                        TaskSchedulerNRScope* task_scheduler_nrscope);
     
-    int rach_thread(TaskSchedulerNRScope* task_scheduler_nrscope);
+    // int rach_thread(TaskSchedulerNRScope* task_scheduler_nrscope);
 };
 
 #endif

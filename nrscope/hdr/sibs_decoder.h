@@ -64,16 +64,16 @@ class SIBsDecoder{
     int decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
                                         TaskSchedulerNRScope* task_scheduler_nrscope);
 
-    /**
-    * A function that represents the SIB thread for a producer-consumer threading design,
-    * but currently we don't adopt such design.
-    * 
-    * @return SRSRAN_SUCCESS (0) if everything goes well. 
-    * SRSRAN_ERROR (-1) if something is wrong in the function.
-    */
-    int sibs_thread(srsran_ue_dl_nr_sratescs_info arg_scs_, 
-                    TaskSchedulerNRScope* task_scheduler_nrscope, 
-                    cf_t* input[SRSRAN_MAX_PORTS]);
+    // /**
+    // * A function that represents the SIB thread for a producer-consumer threading design,
+    // * but currently we don't adopt such design.
+    // * 
+    // * @return SRSRAN_SUCCESS (0) if everything goes well. 
+    // * SRSRAN_ERROR (-1) if something is wrong in the function.
+    // */
+    // int sibs_thread(srsran_ue_dl_nr_sratescs_info arg_scs_, 
+    //                 TaskSchedulerNRScope* task_scheduler_nrscope, 
+    //                 cf_t* input[SRSRAN_MAX_PORTS]);
 };
 
 #endif

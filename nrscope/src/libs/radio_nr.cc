@@ -162,11 +162,6 @@ int Radio::RadioInitandStart(){
         return NR_FAILURE;
       }
 
-      // if(StartTasks() < SRSASN_SUCCESS){
-      //   ERROR("Error initializing task scheduler");
-      //   return NR_FAILURE;
-      // }
-
       if(RadioCapture() < SRSASN_SUCCESS){
         ERROR("Error in RadioCapture");
         return NR_FAILURE;
@@ -260,14 +255,14 @@ int Radio::SyncandDownlinkInit(){
   return SRSRAN_SUCCESS;
 }
 
-int Radio::StartTasks(){
-  // Start all the threads
-  sibs_decoder.sibs_thread(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t());
-  // rach_decoder.rach_thread();
+// int Radio::StartTasks(){
+//   // Start all the threads
+//   sibs_decoder.sibs_thread(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t());
+//   // rach_decoder.rach_thread();
 
 
-  return SRSASN_SUCCESS;
-}
+//   return SRSASN_SUCCESS;
+// }
 
 int Radio::RadioCapture(){
   while(true){
@@ -300,6 +295,7 @@ int Radio::RadioCapture(){
             ERROR("SIBsDecoder Init Error");
             return NR_FAILURE;
           }
+          std::cout << "SIB Decoder Initialized.." << std::endl;
           task_scheduler_nrscope.sib1_inited = true;
         }
 
@@ -311,6 +307,7 @@ int Radio::RadioCapture(){
             ERROR("RACHDecoder Init Error");
             return NR_FAILURE;
           }
+          std::cout << "RACH Decoder Initialized.." << std::endl;
           task_scheduler_nrscope.rach_inited = true;
         }
 
@@ -322,17 +319,18 @@ int Radio::RadioCapture(){
             ERROR("DCIDecoder Init Error");
             return NR_FAILURE;
           }
+          std::cout << "DCI Decoder Initialized.." << std::endl;
           task_scheduler_nrscope.dci_inited = true;
         }
 
         // Then start each type of decoder, TODO
         std::thread sib1_thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
-        // std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, };
-        // std::thread dci_thread {&DCIDecoder::decode_and_parse_dci_from_slot, &dci_decoder, };
+        std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
+        std::thread dci_thread {&DCIDecoder::decode_and_parse_dci_from_slot, &dci_decoder, &slot, &task_scheduler_nrscope};
 
         sib1_thread.join();
-        // rach_thread.join();
-        // dci_thread.join();
+        rach_thread.join();
+        dci_thread.join();
       } 
     } 
   }
@@ -414,8 +412,7 @@ int Radio::MSG2and4Loop(){
         // Processing for each slot
         srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);
 
-        if(rach_decoder.decode_and_parse_msg4_from_slot(&slot, &task_scheduler_nrscope.rrc_setup, 
-           &task_scheduler_nrscope.master_cell_group, known_rntis, &nof_known_rntis) == SRSASN_SUCCESS){
+        if(rach_decoder.decode_and_parse_msg4_from_slot(&slot, &task_scheduler_nrscope) == SRSASN_SUCCESS){
           return SRSASN_SUCCESS;
         }else{
           continue;
@@ -482,7 +479,7 @@ int Radio::DCILoop(){
         std::cout << "<----- Slot idx: " << slot.idx << " ----->" << std::endl;
         std::cout << std::endl;
         srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);
-        auto result = dci_decoder.decode_and_parse_dci_from_slot(&slot, known_rntis, nof_known_rntis, known_rntis[0]);
+        auto result = dci_decoder.decode_and_parse_dci_from_slot(&slot, &task_scheduler_nrscope);
 
         // move the following into logger class
         for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
@@ -491,23 +488,25 @@ int Radio::DCILoop(){
         }
 
         for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          if(result.dl_grants[idx].grant.rnti == known_rntis[idx]){
-            is_dl_new_data[idx] = harq_tracker.is_new_data(idx, result.dl_grants[idx].grant.tb[0].ndi, result.dl_dcis[idx].pid, true);
+          if(task_scheduler_nrscope.result.dl_grants[idx].grant.rnti == known_rntis[idx]){
+            is_dl_new_data[idx] = harq_tracker.is_new_data(idx, task_scheduler_nrscope.result.dl_grants[idx].grant.tb[0].ndi, 
+                                  task_scheduler_nrscope.result.dl_dcis[idx].pid, true);
           }
         }
 
         for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          if(result.ul_grants[idx].grant.rnti == known_rntis[idx]){
-            is_ul_new_data[idx] = harq_tracker.is_new_data(idx, result.ul_grants[idx].grant.tb[0].ndi, result.ul_dcis[idx].pid, false);
+          if(task_scheduler_nrscope.result.ul_grants[idx].grant.rnti == known_rntis[idx]){
+            is_ul_new_data[idx] = harq_tracker.is_new_data(idx, task_scheduler_nrscope.result.ul_grants[idx].grant.tb[0].ndi, 
+                                  task_scheduler_nrscope.result.ul_dcis[idx].pid, false);
           }
         }
 
         // prb, tbs, bits calculation
         for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          if(result.dl_grants[idx].grant.rnti == known_rntis[idx] && is_dl_new_data[idx]){
-            rnti_dl_prbs[idx] = result.dl_grants[idx].grant.L * result.dl_grants[idx].grant.nof_prb;
-            rnti_dl_tbs[idx] = result.dl_grants[idx].grant.tb[0].tbs + result.dl_grants[idx].grant.tb[1].tbs;
-            rnti_dl_bits[idx] = result.dl_grants[idx].grant.tb[0].nof_bits + result.dl_grants[idx].grant.tb[1].nof_bits;
+          if(task_scheduler_nrscope.result.dl_grants[idx].grant.rnti == known_rntis[idx] && is_dl_new_data[idx]){
+            rnti_dl_prbs[idx] = task_scheduler_nrscope.result.dl_grants[idx].grant.L * task_scheduler_nrscope.result.dl_grants[idx].grant.nof_prb;
+            rnti_dl_tbs[idx] = task_scheduler_nrscope.result.dl_grants[idx].grant.tb[0].tbs + task_scheduler_nrscope.result.dl_grants[idx].grant.tb[1].tbs;
+            rnti_dl_bits[idx] = task_scheduler_nrscope.result.dl_grants[idx].grant.tb[0].nof_bits + task_scheduler_nrscope.result.dl_grants[idx].grant.tb[1].nof_bits;
           }else{
             rnti_dl_prbs[idx] = 0;
             rnti_dl_tbs[idx] = 0;
@@ -516,10 +515,10 @@ int Radio::DCILoop(){
         }  
 
         for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          if(result.ul_grants[idx].grant.rnti == known_rntis[idx] && is_ul_new_data[idx]){
-            rnti_ul_prbs[idx] = result.ul_grants[idx].grant.L * result.ul_grants[idx].grant.nof_prb;
-            rnti_ul_tbs[idx] = result.ul_grants[idx].grant.tb[0].tbs + result.ul_grants[idx].grant.tb[1].tbs;
-            rnti_ul_bits[idx] = result.ul_grants[idx].grant.tb[0].nof_bits + result.ul_grants[idx].grant.tb[1].nof_bits;
+          if(task_scheduler_nrscope.result.ul_grants[idx].grant.rnti == known_rntis[idx] && is_ul_new_data[idx]){
+            rnti_ul_prbs[idx] = task_scheduler_nrscope.result.ul_grants[idx].grant.L * task_scheduler_nrscope.result.ul_grants[idx].grant.nof_prb;
+            rnti_ul_tbs[idx] = task_scheduler_nrscope.result.ul_grants[idx].grant.tb[0].tbs + task_scheduler_nrscope.result.ul_grants[idx].grant.tb[1].tbs;
+            rnti_ul_bits[idx] = task_scheduler_nrscope.result.ul_grants[idx].grant.tb[0].nof_bits + task_scheduler_nrscope.result.ul_grants[idx].grant.tb[1].nof_bits;
           }else{
             rnti_ul_prbs[idx] = 0;
             rnti_ul_tbs[idx] = 0;

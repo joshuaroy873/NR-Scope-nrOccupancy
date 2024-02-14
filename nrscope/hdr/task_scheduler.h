@@ -28,16 +28,13 @@ class TaskSchedulerNRScope{
     bool rach_inited;
     bool dci_inited;
 
-    std::thread sib1_thread;
-    std::thread rach_thread;
-    std::thread dci_thread;
-
-    std::queue<sib1_task_element> sib1_queue;
-    std::queue<rach_task_element> rach_queue;
-    std::queue<dci_task_element> dci_queue;
+    // std::queue<sib1_task_element> sib1_queue;
+    // std::queue<rach_task_element> rach_queue;
+    // std::queue<dci_task_element> dci_queue;
 
     uint32_t nof_known_rntis;
     std::vector<uint16_t> known_rntis;
+    DCIFeedback result; // DCI decoding result for current TTI
 
     TaskSchedulerNRScope();
     ~TaskSchedulerNRScope();

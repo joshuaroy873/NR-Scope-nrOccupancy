@@ -123,6 +123,27 @@ struct coreset0_args{
   int                         sfn_c = 0;
 };
 
+typedef struct _DCIFeedback{
+  std::vector<srsran_dci_dl_nr_t> dl_dcis;
+  std::vector<srsran_dci_ul_nr_t> ul_dcis;
+  std::vector<srsran_sch_cfg_nr_t> dl_grants;
+  std::vector<srsran_sch_cfg_nr_t> ul_grants;
+  std::vector<int> spare_dl_prbs;
+  std::vector<int> spare_dl_tbs;
+  std::vector<int> spare_dl_bits;
+  std::vector<int> spare_ul_prbs;
+  std::vector<int> spare_ul_tbs;
+  std::vector<int> spare_ul_bits;
+
+  int nof_dl_used_prbs = 0;
+  int nof_dl_spare_prbs = 0;
+  int nof_ul_used_prbs = 0;
+  int nof_ul_spare_prbs = 0;
+
+  int processing_time_us = 0;
+
+} DCIFeedback;
+
 struct sib1_task_element{
   srsran_ue_sync_nr_outcome_t outcome;
   srsran_slot_cfg_t slot;

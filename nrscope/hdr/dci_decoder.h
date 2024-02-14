@@ -1,27 +1,6 @@
 #include "nrscope/hdr/nrscope_def.h"
 #include "nrscope/hdr/task_scheduler.h"
 
-typedef struct _DCIFeedback{
-  std::vector<srsran_dci_dl_nr_t> dl_dcis;
-  std::vector<srsran_dci_ul_nr_t> ul_dcis;
-  std::vector<srsran_sch_cfg_nr_t> dl_grants;
-  std::vector<srsran_sch_cfg_nr_t> ul_grants;
-  std::vector<int> spare_dl_prbs;
-  std::vector<int> spare_dl_tbs;
-  std::vector<int> spare_dl_bits;
-  std::vector<int> spare_ul_prbs;
-  std::vector<int> spare_ul_tbs;
-  std::vector<int> spare_ul_bits;
-
-  int nof_dl_used_prbs = 0;
-  int nof_dl_spare_prbs = 0;
-  int nof_ul_used_prbs = 0;
-  int nof_ul_spare_prbs = 0;
-
-  int processing_time_us = 0;
-
-} DCIFeedback;
-
 class DCIDecoder{
   public:
     srsran_carrier_nr_t base_carrier;
@@ -75,10 +54,8 @@ class DCIDecoder{
                                        srsue::nr::cell_search::cfg_t srsran_searcher_cfg_t_,
                                        asn1::rrc_nr::sib1_s sib1_);
 
-    DCIFeedback decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
-                                               uint16_t* known_rntis,
-                                               uint32_t nof_known_rntis, 
-                                               uint16_t target_rnti);
+    int decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
+                                       TaskSchedulerNRScope* task_scheduler_nrscope);
 
-    int dci_thread(TaskSchedulerNRScope* task_scheduler_nrscope);
+    // int dci_thread(TaskSchedulerNRScope* task_scheduler_nrscope);
 };

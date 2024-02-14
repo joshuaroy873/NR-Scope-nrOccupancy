@@ -97,8 +97,6 @@ class Radio{
     */
     int SyncandDownlinkInit();
 
-    int StartTasks();
-
     /**
     * After MIB decoding and synchronization, the USRP grabs 1ms data every time and dispatches the raw radio 
     * samples among SIB, RACH and DCI decoding threads. Also initialize these threads if they are not.

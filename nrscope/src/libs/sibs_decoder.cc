@@ -192,31 +192,30 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   return SRSRAN_SUCCESS;
 }
 
-int SIBsDecoder::sibs_thread(srsran_ue_dl_nr_sratescs_info arg_scs_, 
-                             TaskSchedulerNRScope* task_scheduler_nrscope, 
-                             cf_t* input[SRSRAN_MAX_PORTS]){
-  // Start initializing the sib decoder
-  if(sib_decoder_and_reception_init(arg_scs_, &(task_scheduler_nrscope->args_t.base_carrier), task_scheduler_nrscope->cell, 
-     input, &(task_scheduler_nrscope->coreset0_t)) < SRSASN_SUCCESS){
-    ERROR("SIBsDecoder Init Error");
-    return NR_FAILURE;
-  }
+// int SIBsDecoder::sibs_thread(srsran_ue_dl_nr_sratescs_info arg_scs_, 
+//                              TaskSchedulerNRScope* task_scheduler_nrscope, 
+//                              cf_t* input[SRSRAN_MAX_PORTS]){
+//   // Start initializing the sib decoder
+//   if(sib_decoder_and_reception_init(arg_scs_, &(task_scheduler_nrscope->args_t.base_carrier), task_scheduler_nrscope->cell, 
+//      input, &(task_scheduler_nrscope->coreset0_t)) < SRSASN_SUCCESS){
+//     ERROR("SIBsDecoder Init Error");
+//     return NR_FAILURE;
+//   }
 
-  while(true){
-    sib1_task_element this_slot = task_scheduler_nrscope->sib1_queue.front();
-    task_scheduler_nrscope->sib1_queue.pop();
-    // get slot and 
-    if((task_scheduler_nrscope->coreset0_args_t.sfn_c == 0 && this_slot.outcome.sfn % 2 == 0) || 
-      (task_scheduler_nrscope->coreset0_args_t.sfn_c == 1 && this_slot.outcome.sfn % 2 == 1)) {
-      if((this_slot.outcome.sf_idx) == (uint32_t)(task_scheduler_nrscope->coreset0_args_t.n_0 / 2) || 
-          (this_slot.outcome.sf_idx) == (uint32_t)(task_scheduler_nrscope->coreset0_args_t.n_0 / 2 + 1)){
-        if(decode_and_parse_sib1_from_slot(&this_slot.slot, task_scheduler_nrscope) == SRSASN_SUCCESS){
-          return SRSASN_SUCCESS;
-        }else{
-          continue;
-        }
-      } 
-    }
-  }
-
-}
+//   while(true){
+//     sib1_task_element this_slot = task_scheduler_nrscope->sib1_queue.front();
+//     task_scheduler_nrscope->sib1_queue.pop();
+//     // get slot and 
+//     if((task_scheduler_nrscope->coreset0_args_t.sfn_c == 0 && this_slot.outcome.sfn % 2 == 0) || 
+//       (task_scheduler_nrscope->coreset0_args_t.sfn_c == 1 && this_slot.outcome.sfn % 2 == 1)) {
+//       if((this_slot.outcome.sf_idx) == (uint32_t)(task_scheduler_nrscope->coreset0_args_t.n_0 / 2) || 
+//           (this_slot.outcome.sf_idx) == (uint32_t)(task_scheduler_nrscope->coreset0_args_t.n_0 / 2 + 1)){
+//         if(decode_and_parse_sib1_from_slot(&this_slot.slot, task_scheduler_nrscope) == SRSASN_SUCCESS){
+//           return SRSASN_SUCCESS;
+//         }else{
+//           continue;
+//         }
+//       } 
+//     }
+//   }
+// }

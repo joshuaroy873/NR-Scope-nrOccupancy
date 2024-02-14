@@ -15,12 +15,22 @@ class TaskSchedulerNRScope{
     srsran_coreset_t coreset0_t;
 
     asn1::rrc_nr::sib1_s sib1;
-    asn1::rrc_nr::sib2_s sib2;
+    asn1::rrc_nr::sys_info_s sibs;
+
     asn1::rrc_nr::rrc_setup_s rrc_setup;
     asn1::rrc_nr::cell_group_cfg_s master_cell_group;
     // srsran::mac_rar_pdu_nr rar_pdu; // rar pdu
 
     bool sib1_found; // SIB 1 decoded, we can start the RACH thread
+    bool rach_found;
+
+    bool sib1_inited;
+    bool rach_inited;
+    bool dci_inited;
+
+    std::thread sib1_thread;
+    std::thread rach_thread;
+    std::thread dci_thread;
 
     std::queue<sib1_task_element> sib1_queue;
     std::queue<rach_task_element> rach_queue;
@@ -30,6 +40,7 @@ class TaskSchedulerNRScope{
     std::vector<uint16_t> known_rntis;
 
     TaskSchedulerNRScope();
+    ~TaskSchedulerNRScope();
 
     int decode_mib(cell_searcher_args_t* args_t_, 
                    srsue::nr::cell_search::ret_t* cs_ret_,

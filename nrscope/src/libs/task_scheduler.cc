@@ -1,9 +1,19 @@
 #include "nrscope/hdr/task_scheduler.h"
 
 TaskSchedulerNRScope::TaskSchedulerNRScope(){
+  sib1_inited = false;
+  rach_inited = false;
+  dci_inited = false;
+
   sib1_found = false;
+  rach_found = false;
+
   nof_known_rntis = 0;
   known_rntis.resize(nof_known_rntis);
+}
+
+TaskSchedulerNRScope::~TaskSchedulerNRScope(){
+  
 }
 
 int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_, 

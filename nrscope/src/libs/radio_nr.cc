@@ -162,30 +162,30 @@ int Radio::RadioInitandStart(){
         return NR_FAILURE;
       }
 
-      if(StartTasks() < SRSASN_SUCCESS){
-        ERROR("Error initializing task scheduler");
-        return NR_FAILURE;
-      }
+      // if(StartTasks() < SRSASN_SUCCESS){
+      //   ERROR("Error initializing task scheduler");
+      //   return NR_FAILURE;
+      // }
 
       if(RadioCapture() < SRSASN_SUCCESS){
         ERROR("Error in RadioCapture");
         return NR_FAILURE;
       }
 
-      if(SIB1Loop() < SRSRAN_SUCCESS){
-        ERROR("Error in SIB1Loop");
-        return NR_FAILURE;
-      }
+      // if(SIB1Loop() < SRSRAN_SUCCESS){
+      //   ERROR("Error in SIB1Loop");
+      //   return NR_FAILURE;
+      // }
 
-      if(MSG2and4Loop() < SRSRAN_SUCCESS){
-        ERROR("Error in MSG2and4Loop");
-        return NR_FAILURE;
-      }
+      // if(MSG2and4Loop() < SRSRAN_SUCCESS){
+      //   ERROR("Error in MSG2and4Loop");
+      //   return NR_FAILURE;
+      // }
 
-      if(DCILoop() < SRSRAN_SUCCESS){
-        ERROR("Error in DCILoop");
-        return NR_FAILURE;
-      }
+      // if(DCILoop() < SRSRAN_SUCCESS){
+      //   ERROR("Error in DCILoop");
+      //   return NR_FAILURE;
+      // }
     }
   }
   return SRSRAN_SUCCESS;
@@ -281,7 +281,7 @@ int Radio::RadioCapture(){
     if (outcome.in_sync){
       std::cout << "System frame idx: " << outcome.sfn << std::endl;
       std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
-      // Find right slot position for SIB 1.
+
       for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
         srsran_slot_cfg_t slot = {0};
         slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
@@ -290,27 +290,53 @@ int Radio::RadioCapture(){
 
         // 1) Inform the 3 loops to attend to this slot by puting the slot and outcome into a queue
         //     Problem: When the thread try to attend to the data and get the slot index from the queue, 
-        //              the buffer may already be flushed away to the next slot
+        //              the buffer may already be flushed away to the next slot.
         // 2) Call the non-blocking functions for each processing here and join, which might be more reasonable.
-        task_scheduler_nrscope.push_queue(outcome, slot);
 
+        // Initialize the decoder if they are not
+        if(!task_scheduler_nrscope.sib1_inited){
+          if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), 
+          task_scheduler_nrscope.cell, rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){
+            ERROR("SIBsDecoder Init Error");
+            return NR_FAILURE;
+          }
+          task_scheduler_nrscope.sib1_inited = true;
+        }
 
-        // if((coreset0_args_t.sfn_c == 0 && outcome.sfn % 2 == 0) || 
-        //    (coreset0_args_t.sfn_c == 1 && outcome.sfn % 2 == 1)) {
-        //   if((outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2) || 
-        //      (outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2 + 1)){
-            
-        //     if(sibs_decoder.decode_and_parse_sib1_from_slot(&slot, &sib1) == SRSASN_SUCCESS){
-        //       return SRSASN_SUCCESS;
-        //     }else{
-        //       continue;
-        //     }
-        //   } 
-        // }
+        if(!task_scheduler_nrscope.rach_inited and task_scheduler_nrscope.sib1_found){
+          rach_decoder.rach_decoder_init(task_scheduler_nrscope.sib1, args_t.base_carrier);
 
+          if(rach_decoder.rach_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), 
+          task_scheduler_nrscope.cell, rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){
+            ERROR("RACHDecoder Init Error");
+            return NR_FAILURE;
+          }
+          task_scheduler_nrscope.rach_inited = true;
+        }
+
+        if(!task_scheduler_nrscope.dci_inited and task_scheduler_nrscope.rach_found){
+          if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), 
+          task_scheduler_nrscope.cell, rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t), 
+          task_scheduler_nrscope.master_cell_group, task_scheduler_nrscope.rrc_setup, 
+          task_scheduler_nrscope.srsran_searcher_cfg_t, task_scheduler_nrscope.sib1) < SRSASN_SUCCESS){
+            ERROR("DCIDecoder Init Error");
+            return NR_FAILURE;
+          }
+          task_scheduler_nrscope.dci_inited = true;
+        }
+
+        // Then start each type of decoder, TODO
+        std::thread sib1_thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
+        // std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, };
+        // std::thread dci_thread {&DCIDecoder::decode_and_parse_dci_from_slot, &dci_decoder, };
+
+        sib1_thread.join();
+        // rach_thread.join();
+        // dci_thread.join();
       } 
     } 
   }
+  return SRSRAN_SUCCESS;
 }
 
 int Radio::SIB1Loop(){
@@ -345,7 +371,7 @@ int Radio::SIB1Loop(){
           if((outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2) || 
              (outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2 + 1)){
             
-            if(sibs_decoder.decode_and_parse_sib1_from_slot(&slot, &task_scheduler_nrscope.sib1) == SRSASN_SUCCESS){
+            if(sibs_decoder.decode_and_parse_sib1_from_slot(&slot, &task_scheduler_nrscope) == SRSASN_SUCCESS){
               return SRSASN_SUCCESS;
             }else{
               continue;
@@ -406,7 +432,7 @@ int Radio::DCILoop(){
   if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), task_scheduler_nrscope.cell, 
      rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t), task_scheduler_nrscope.master_cell_group, task_scheduler_nrscope.rrc_setup , 
      task_scheduler_nrscope.srsran_searcher_cfg_t, task_scheduler_nrscope.sib1) < SRSASN_SUCCESS){
-    ERROR("RACHDecoder Init Error");
+    ERROR("DCIDecoder Init Error");
     return NR_FAILURE;
   }
 

@@ -79,14 +79,7 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
 }
 
 int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
-                                                 asn1::rrc_nr::sib1_s* sib1){
-  // if((coreset0_args_t.sfn_c == 0 && outcome.sfn % 2 == 0) || 
-  //     (coreset0_args_t.sfn_c == 1 && outcome.sfn % 2 == 1)) {
-  //   if((outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2) || 
-  //       (outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2 + 1)){
-  //       }
-  //     }
-  
+                                                TaskSchedulerNRScope* task_scheduler_nrscope){
   srsran_dci_dl_nr_t dci_sibs;
   // Check the fft plan and how does it manipulate the buffer
   srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_sibs, slot, arg_scs);
@@ -124,13 +117,28 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   printf("Found DCI: %s\n", str);
 
   srsran_sch_cfg_nr_t pdsch_cfg = {};
-  if (srsran_ra_dl_dci_to_grant_nr(&base_carrier, slot, &pdsch_hl_cfg, 
-    &dci_sibs, &pdsch_cfg, &pdsch_cfg.grant) < SRSRAN_SUCCESS) {
+
+  if (srsran_ra_dl_dci_to_grant_nr(&base_carrier, slot, &pdsch_hl_cfg, &dci_sibs, &pdsch_cfg, &pdsch_cfg.grant) <
+      SRSRAN_SUCCESS) {
     ERROR("Error decoding PDSCH search");
     return SRSRAN_ERROR;
   }
+
   srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
   printf("PDSCH_cfg:\n%s", str);
+
+  if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
+      SRSRAN_SUCCESS) {
+    ERROR("Error init soft-buffer");
+    return SRSRAN_ERROR;
+  }
+
+  data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
+  if (data_pdcch == NULL) {
+    ERROR("Error malloc");
+    return SRSRAN_ERROR;
+  }
+  
   pdsch_cfg.grant.tb[0].softbuffer.rx = &softbuffer; // Set softbuffer
   srsran_pdsch_res_nr_t pdsch_res = {}; // Prepare PDSCH result
   pdsch_res.tb[0].payload = data_pdcch;
@@ -159,16 +167,28 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
     ERROR("PDSCH payload is all zeros");
     return SRSRAN_ERROR;
   }
-  std::cout << "Decoding SIB 1..." << std::endl;
+  std::cout << "Try to decode SIBs..." << std::endl;
   asn1::rrc_nr::bcch_dl_sch_msg_s dlsch_msg;
   asn1::cbit_ref dlsch_bref(pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
   asn1::SRSASN_CODE err = dlsch_msg.unpack(dlsch_bref);
-  *sib1 = dlsch_msg.msg.c1().sib_type1();
-  std::cout << "SIB 1 Decoded." << std::endl;
 
-  asn1::json_writer js;
-  (*sib1).to_json(js);
-  printf("Decoded SIB1: %s\n", js.to_string().c_str());
+  // Try to decode the SIB 1 
+  if(srsran_unlikely(asn1::rrc_nr::bcch_dl_sch_msg_type_c::c1_c_::types_opts::sib_type1 != dlsch_msg.msg.c1().type())){
+    // Try to decode other SIBs
+    task_scheduler_nrscope->sibs = dlsch_msg.msg.c1().sys_info();
+    std::cout << "SIB > 1 Decoded." << std::endl;
+    asn1::json_writer js_sibs;
+    (task_scheduler_nrscope->sibs).to_json(js_sibs);
+    printf("Decoded SIBs: %s\n", js_sibs.to_string().c_str());
+  }else if(srsran_unlikely(asn1::rrc_nr::bcch_dl_sch_msg_type_c::c1_c_::types_opts::sys_info != dlsch_msg.msg.c1().type())){
+    task_scheduler_nrscope->sib1 = dlsch_msg.msg.c1().sib_type1();
+    std::cout << "SIB 1 Decoded." << std::endl;
+    task_scheduler_nrscope->sib1_found = true;
+    asn1::json_writer js_sib1;
+    (task_scheduler_nrscope->sib1).to_json(js_sib1);
+    printf("Decoded SIB1: %s\n", js_sib1.to_string().c_str());
+  }
+
   return SRSRAN_SUCCESS;
 }
 
@@ -190,7 +210,7 @@ int SIBsDecoder::sibs_thread(srsran_ue_dl_nr_sratescs_info arg_scs_,
       (task_scheduler_nrscope->coreset0_args_t.sfn_c == 1 && this_slot.outcome.sfn % 2 == 1)) {
       if((this_slot.outcome.sf_idx) == (uint32_t)(task_scheduler_nrscope->coreset0_args_t.n_0 / 2) || 
           (this_slot.outcome.sf_idx) == (uint32_t)(task_scheduler_nrscope->coreset0_args_t.n_0 / 2 + 1)){
-        if(decode_and_parse_sib1_from_slot(&this_slot.slot, &task_scheduler_nrscope->sib1) == SRSASN_SUCCESS){
+        if(decode_and_parse_sib1_from_slot(&this_slot.slot, task_scheduler_nrscope) == SRSASN_SUCCESS){
           return SRSASN_SUCCESS;
         }else{
           continue;

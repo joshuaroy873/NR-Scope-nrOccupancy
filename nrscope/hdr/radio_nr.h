@@ -1,26 +1,12 @@
 #ifndef RADIO_H
 #define RADIO_H
 
-// #include "srsran/common/band_helper.h"
-// #include "srsran/common/crash_handler.h"
-// #include "srsran/common/string_helpers.h"
-// #include "srsue/hdr/phy/phy_nr_sa.h"
-// #include "srsue/hdr/phy/nr/cell_search.h"
-// #include "test/phy/dummy_ue_stack.h"
-// #include "srsue/hdr/stack/ue_stack_nr.h"
-// #include <boost/program_options.hpp>
-// #include <boost/program_options/parsers.hpp>
-// #include "srsran/asn1/rrc_nr.h"
-// #include "srsran/asn1/asn1_utils.h"
-// #include "srsran/mac/mac_rar_pdu_nr.h"
 #include "cstdio"
 
 #include "nrscope/hdr/nrscope_def.h"
 #include "nrscope/hdr/rach_decoder.h"
 #include "nrscope/hdr/sibs_decoder.h"
 #include "nrscope/hdr/dci_decoder.h"
-// #include "nrscope/hdr/to_sunshine.h"
-// #include "nrscope/hdr/to_moonlight.h"
 #include "nrscope/hdr/harq_tracking.h"
 #include "nrscope/hdr/task_scheduler.h"
 
@@ -82,12 +68,44 @@ class Radio{
     Radio();  //constructor
     ~Radio(); //deconstructor
 
+    /**
+    * An entry to this class -- start the radio capture thread, and decode SIB, 
+    * RACH and DCI inside the capture loop.
+    * 
+    * @return SRSRAN_SUCCESS - 0 for successfuly exit
+    */
     int RadioThread();
+
+    /**
+    * This function first sets up some parameters related to the radio sample caputure according to the config file, 
+    * such as sampling frequency, SSB frequency and SCS. Then it will search the MIB within the range of 
+    * [SSB frequency - 0.7 * sampling frequency / 2, SSB frequency + 0.7 * sampling frequency / 2].
+    *   (1) If a cell is found, this functions notifies the parameters to task_scheduler_nrscope and start decoding 
+    *     SIB, RACH and DCIs.
+    *   (2) If no cell is found, it will return and the thread for this USRP ends.
+    * 
+    * @return SRSRAN_SUCCESS (0) if no cell is found. NR_FAILURE (-1) if something is wrong in the function.
+    */
     int RadioInitandStart();
+
+    /**
+    * After finding the cell and decoding the cell and synchronization signal, this function sets up the parameters
+    * related to downlink synchronization, in terms of mitigating the CFO and time adjustment.
+    * 
+    * @return SRSRAN_SUCCESS (0) these parameters are successfuly set. 
+    * SRSRAN_ERROR (-1) if something goes wrong.
+    */
     int SyncandDownlinkInit();
 
     int StartTasks();
 
+    /**
+    * After MIB decoding and synchronization, the USRP grabs 1ms data every time and dispatches the raw radio 
+    * samples among SIB, RACH and DCI decoding threads. Also initialize these threads if they are not.
+    * 
+    * @return SRSRAN_SUCCESS (0) if the function is stopped or it will run infinitely. 
+    * NR_FAILURE (-1) if something goes wrong.
+    */
     int RadioCapture();
 
     int SIB1Loop(); // Decode SIB 1

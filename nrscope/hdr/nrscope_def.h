@@ -101,6 +101,61 @@ struct cell_searcher_args_t {
   }
 };
 
+struct cell_search_result_t {
+  bool                        found           = false;
+  double                      ssb_abs_freq_hz = 0.0f;
+  srsran_subcarrier_spacing_t ssb_scs         = srsran_subcarrier_spacing_15kHz;
+  srsran_ssb_pattern_t        ssb_pattern     = SRSRAN_SSB_PATTERN_A;
+  srsran_duplex_mode_t        duplex_mode     = SRSRAN_DUPLEX_MODE_FDD;
+  srsran_mib_nr_t             mib             = {};
+  uint32_t                    pci             = 0;
+  uint32_t                    k_ssb           = 0;
+  double                      abs_ssb_scs     = 0.0;
+  double                      abs_pdcch_scs   = 0.0;
+  int                         u = (int) ssb_scs;
+};
+
+struct coreset0_args{
+  uint32_t                    offset_rb       = 0; // CORESET offset rb
+  double                      coreset0_lower_freq_hz = 0.0;
+  double                      coreset0_center_freq_hz = 0.0;
+  int                         n_0 = 0;
+  int                         sfn_c = 0;
+};
+
+typedef struct _DCIFeedback{
+  std::vector<srsran_dci_dl_nr_t> dl_dcis;
+  std::vector<srsran_dci_ul_nr_t> ul_dcis;
+  std::vector<srsran_sch_cfg_nr_t> dl_grants;
+  std::vector<srsran_sch_cfg_nr_t> ul_grants;
+  std::vector<int> spare_dl_prbs;
+  std::vector<int> spare_dl_tbs;
+  std::vector<int> spare_dl_bits;
+  std::vector<int> spare_ul_prbs;
+  std::vector<int> spare_ul_tbs;
+  std::vector<int> spare_ul_bits;
+
+  int nof_dl_used_prbs = 0;
+  int nof_dl_spare_prbs = 0;
+  int nof_ul_used_prbs = 0;
+  int nof_ul_spare_prbs = 0;
+
+  int processing_time_us = 0;
+
+} DCIFeedback;
+
+struct sib1_task_element{
+  srsran_ue_sync_nr_outcome_t outcome;
+  srsran_slot_cfg_t slot;
+};
+
+struct rach_task_element{
+
+};
+
+struct dci_task_element{
+
+};
 
 /**
   * Get the UNIX timestamp for now in microsecond.

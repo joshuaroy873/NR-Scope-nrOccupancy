@@ -376,7 +376,6 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
                                    pdsch_time_domain_alloc_list_present ? 
                                    master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
                                    pdsch_time_domain_alloc_list.setup().size() : 0; 
-
   dci_cfg.nof_aperiodic_zp       = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
                                    aperiodic_zp_csi_rs_res_sets_to_add_mod_list.size();
   dci_cfg.pdsch_nof_cbg          = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
@@ -538,7 +537,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         task_scheduler_nrscope->result.dl_dcis[dci_idx_dl] = dci_dl[dci_idx_dl];
         char str[1024] = {};
         srsran_dci_dl_nr_to_str(&(ue_dl_dci.dci), &dci_dl[dci_idx_dl], str, (uint32_t)sizeof(str));
-        printf("Found DCI: %s\n", str);
+        printf("DCIDecoder -- Found DCI: %s\n", str);
         // The grant may not be decoded correctly, since srsRAN's code is not complete.
         // We can calculate the DL bandwidth for this subframe by ourselves.
         if(dci_dl[dci_idx_dl].ctx.format == srsran_dci_format_nr_1_1) {
@@ -550,7 +549,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
             // return result;
           }
           srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
-          printf("PDSCH_cfg:\n%s", str);
+          printf("DCIDecoder -- PDSCH_cfg:\n%s", str);
 
           task_scheduler_nrscope->result.dl_grants[dci_idx_dl] = pdsch_cfg;
           task_scheduler_nrscope->result.nof_dl_used_prbs += pdsch_cfg.grant.nof_prb * pdsch_cfg.grant.L;
@@ -584,7 +583,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         task_scheduler_nrscope->result.ul_dcis[dci_idx_ul] = dci_ul[dci_idx_ul];
         char str[1024] = {};
         srsran_dci_ul_nr_to_str(&(ue_dl_dci.dci), &dci_ul[dci_idx_ul], str, (uint32_t)sizeof(str));
-        printf("Found DCI: %s\n", str);
+        printf("DCIDecoder -- Found DCI: %s\n", str);
         // The grant may not be decoded correctly, since srsRAN's code is not complete. 
         // We can calculate the UL bandwidth for this subframe by ourselves.
         srsran_sch_cfg_nr_t pusch_cfg = {};
@@ -595,7 +594,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
           // return result;
         }
         srsran_sch_cfg_nr_info(&pusch_cfg, str, (uint32_t)sizeof(str));
-        printf("PUSCH_cfg:\n%s", str);
+        printf("DCIDecoder -- PUSCH_cfg:\n%s", str);
 
         task_scheduler_nrscope->result.ul_grants[dci_idx_ul] = pusch_cfg;
         task_scheduler_nrscope->result.nof_ul_used_prbs += pusch_cfg.grant.nof_prb * pusch_cfg.grant.L;

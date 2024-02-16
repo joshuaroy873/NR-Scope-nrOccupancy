@@ -7,6 +7,7 @@ TaskSchedulerNRScope::TaskSchedulerNRScope(){
 
   sib1_found = false;
   rach_found = false;
+  sibs_vec_inited = false;
 
   nof_known_rntis = 0;
   known_rntis.resize(nof_known_rntis);

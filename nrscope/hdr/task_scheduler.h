@@ -15,7 +15,8 @@ class TaskSchedulerNRScope{
     srsran_coreset_t coreset0_t;
 
     asn1::rrc_nr::sib1_s sib1;
-    asn1::rrc_nr::sys_info_s sibs;
+    std::vector<asn1::rrc_nr::sys_info_s> sibs;
+    std::vector<int> found_sib; 
 
     asn1::rrc_nr::rrc_setup_s rrc_setup;
     asn1::rrc_nr::cell_group_cfg_s master_cell_group;
@@ -24,9 +25,12 @@ class TaskSchedulerNRScope{
     bool sib1_found; // SIB 1 decoded, we can start the RACH thread
     bool rach_found;
 
-    bool sib1_inited;
-    bool rach_inited;
-    bool dci_inited;
+    bool sibs_vec_inited; // Is the vector for other SIBs set according to SIB?
+    bool all_sibs_found; // All SIBs are decoded, we can stop the SIB thread from now.
+
+    bool sib1_inited; // SIBsDecoder is initialized.
+    bool rach_inited; // RACHDecoder is initialized.
+    bool dci_inited; // DCIDecoder is initialized.
 
     // std::queue<sib1_task_element> sib1_queue;
     // std::queue<rach_task_element> rach_queue;

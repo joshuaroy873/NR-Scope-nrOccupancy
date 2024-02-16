@@ -435,7 +435,7 @@ int srsran_ra_dl_nr_slot_nof_re(const srsran_sch_cfg_nr_t* pdsch_cfg, const srsr
   }
 
   // Compute total number of n_re used for PDSCH
-  printf("n_prb_dmrs: %d\n", n_prb_dmrs);
+  // printf("n_prb_dmrs: %d\n", n_prb_dmrs);
   uint32_t n_re_prime = SRSRAN_NRE * n_sh_symb - n_prb_dmrs - n_prb_oh;
 
   uint32_t n_prb = 0;

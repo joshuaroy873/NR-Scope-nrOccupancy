@@ -64,35 +64,36 @@ sudo ./nrscope
 
 ## Logs
 
-(Aug-9) Solved some problems in synchronization, see how to use external clock to perform the synchronization.
+(Aug 9, 2023) Solved some problems in synchronization, see how to use external clock to perform the synchronization.
 
-(Aug-11) DCI 1_0 and PDSCH are decoded for gNB in n41 with `ssb_freq=2523.75 MHz`. SIB 1 payload is verified with  `/srsue/src/stack/rrc_nr/test/ue_rrc_nr_test.cc` and [libasn1](https://github.com/j0lama/libasn).
+(Aug 11, 2023) DCI 1_0 and PDSCH are decoded for gNB in n41 with `ssb_freq=2523.75 MHz`. SIB 1 payload is verified with  `/srsue/src/stack/rrc_nr/test/ue_rrc_nr_test.cc` and [libasn1](https://github.com/j0lama/libasn).
 
-(Aug-13) DCI decoding is tested with the following settings using srsgNB: `n41, TDD, 20MHz, 30kHz SCS`; `n78, TDD, 20MHz, 30kHz SCS`; `n41, TDD, 20MHz, 15kHz SCS`; `n3, FDD, 20MHz, 15kHz SCS`; `n3, FDD, 10MHz, 15kHz SCS` and `n41, TDD, 10MHz, 15kHz SCS`.
+(Aug 13, 2023) DCI decoding is tested with the following settings using srsgNB: `n41, TDD, 20MHz, 30kHz SCS`; `n78, TDD, 20MHz, 30kHz SCS`; `n41, TDD, 20MHz, 15kHz SCS`; `n3, FDD, 20MHz, 15kHz SCS`; `n3, FDD, 10MHz, 15kHz SCS` and `n41, TDD, 10MHz, 15kHz SCS`.
 
-(Aug-21) Used all RA-RNTI to decode DCI 1_0 scrambled with RA-RNTI and decoded the RAR (Msg 2) bytes. Then we should use the TC-RNTI in Msg 2 to decode DCI 1_0 for Msg 4 (RRC ConnectionSetup).
+(Aug 21, 2023) Used all RA-RNTI to decode DCI 1_0 scrambled with RA-RNTI and decoded the RAR (Msg 2) bytes. Then we should use the TC-RNTI in Msg 2 to decode DCI 1_0 for Msg 4 (RRC ConnectionSetup).
 
-(Aug-26) Verified Msg 2 decoding and get TC-RNTI. Msg 4 successfully decoded and for UE tracked in RACH process, we can easily decode its other DCI in the following data communication.
+(Aug 26, 2023) Verified Msg 2 decoding and get TC-RNTI. Msg 4 successfully decoded and for UE tracked in RACH process, we can easily decode its other DCI in the following data communication.
 
-(Sep-2) Decoding DCIs for 1 UE is finished. But some settings that affects DCI's size setting are still not clear to me. They are set manually and should be set according to RRC messages in the future.
+(Sep 2, 2023) Decoding DCIs for 1 UE is finished. But some settings that affects DCI's size setting are still not clear to me. They are set manually and should be set according to RRC messages in the future.
 
-(Sep-4) Downlink DCI 1_1 and grants are decoded, and the inconsistency between srsRAN_4G and srsRAN_Project codes causes the DCI size problem. Now the downlink grants are correctly decoded. Uplink DCI 0_1 decoded, but there are some problems left -- the elements of the DCI 0_1 is not set correctly so the uplink grants may have some problems. This problem can be easily solved by more reading, but left for the testing phase.
+(Sep 4, 2023) Downlink DCI 1_1 and grants are decoded, and the inconsistency between srsRAN_4G and srsRAN_Project codes causes the DCI size problem. Now the downlink grants are correctly decoded. Uplink DCI 0_1 decoded, but there are some problems left -- the elements of the DCI 0_1 is not set correctly so the uplink grants may have some problems. This problem can be easily solved by more reading, but left for the testing phase.
 
-(Oct-1) Works for 30kHz SCS with 20MHz bandwidth in TDD bands (n41, n48, n78), both srsgNB and sercomm small cell, some bugs in different SCS and bandwidth settings, such as 15kHz+20MHz, 15kHz+10MHz and 30kHz+10MHz, in TDD band (n41) and FDD bands (n3).
+(Oct 1, 2023) Works for 30kHz SCS with 20MHz bandwidth in TDD bands (n41, n48, n78), both srsgNB and sercomm small cell, some bugs in different SCS and bandwidth settings, such as 15kHz+20MHz, 15kHz+10MHz and 30kHz+10MHz, in TDD band (n41) and FDD bands (n3).
 
-(Oct-7) A very rough fix for `n3, FDD, 20MHz, 15kHz SCS` and `n3, FDD, 10MHz, 15kHz SCS` settings, in `lib/src/phy/dft/ofdm.c` function `srsran_ofdm_set_phase_compensation_nrscope(..)`, I added some fixed phase compensation for such settings. Now the code can decode SIB 1 for such settings, but we cannot verify them because the real phone cannot attach. Will move on to work with small cell (`n48, TDD, 20MHz, 30kHz SCS`) and gaming platform.
+(Oct 7, 2023) A very rough fix for `n3, FDD, 20MHz, 15kHz SCS` and `n3, FDD, 10MHz, 15kHz SCS` settings, in `lib/src/phy/dft/ofdm.c` function `srsran_ofdm_set_phase_compensation_nrscope(..)`, I added some fixed phase compensation for such settings. Now the code can decode SIB 1 for such settings, but we cannot verify them because the real phone cannot attach. Will move on to work with small cell (`n48, TDD, 20MHz, 30kHz SCS`) and gaming platform.
 
-(Oct-30) Code works for small cell with known UEs (listened in RACH), as in srsgNB. Now try to make it work for unknow UEs, such as UEs that are already existing in the base station.
+(Oct 30, 2023) Code works for small cell with known UEs (listened in RACH), as in srsgNB. Now try to make it work for unknow UEs, such as UEs that are already existing in the base station.
 
-(Feb-8) Use a new repo for code release and next phase development.
+(Feb 8, 2024) Use a new repo for code release and next phase development.
 
-(Feb-14) Decoding other SIBs (2, 3 transmitted by the small cell, and potentially other SIBs in other cells) is finished. Now we use three concurrent threads to decode SIB, RACH and DCI for the same TTI, not in a producer-consumer style but in a non-blocking function way. Because we want the processing happens in the same time, which would be helpful for future carrier aggregation that requires synchronization between cells. However, after a while of decoding, NG-Scope can't decode any new DCIs for SIB, RACH and exisiting UEs, the behavior looks like the synchronization failure when the GPS clock is not used. The next step is to figure it out what makes the function unable to decode any new DCIs. One guess is that the processing time for SIB and RACH RRC decoding takes too long (up to 1000 us) in some TTIs, which drags the buffer and destroys the synchronization, however according to some observation, the last few DCIs' processing time before the "stop" is not so long (around 10s us).
+(Feb 14, 2024) Decoding other SIBs (2, 3 transmitted by the small cell, and potentially other SIBs in other cells) is finished. Now we use three concurrent threads to decode SIB, RACH and DCI for the same TTI, not in a producer-consumer style but in a non-blocking function way. Because we want the processing happens in the same time, which would be helpful for future carrier aggregation that requires synchronization between cells. However, after a while of decoding, NG-Scope can't decode any new DCIs for SIB, RACH and exisiting UEs, the behavior looks like the synchronization failure when the GPS clock is not used. The next step is to figure it out what makes the function unable to decode any new DCIs. One guess is that the processing time for SIB and RACH RRC decoding takes too long (up to 1000 us) in some TTIs, which drags the buffer and destroys the synchronization, however according to some observation, the last few DCIs' processing time before the "stop" is not so long (around 10s us).
+
+(Feb 15, 2024) The "stop" problem on Feb 14 is solved with some optimization in SIB and RACH thread. After the decoder has all the SIBs in the cell, it skips the SIB search thread to save time. Now it can detect all incoming UEs (4 in the small cell) on the run and decode DCI continuously. Now wait for the Amarisoft hardware for testing.
 
 ## TODOs
 
 There are some on-going plans for the near future:
 
-* Try to figure out what causes the "unable to decode DCI" problem.
 * Get a better logging functions, and add APIs (in logging class maybe) to send data to a Python server.
 * Try to decode RRC reconfiguration message.
-* Test the tool with different bandwidth, SCS, and different duplexing modes (TDD and FDD), with the help of Amarisoft.
+* Test the tool with different bandwidth, SCS, and different duplexing modes (TDD and FDD), with the help of Amarisoft. If decoding the DCIs for more UEs takes longer time than one TTI, we need to add multi-thread DCI decoding functionality.

@@ -19,9 +19,9 @@ RachDecoder::~RachDecoder(){
 
 }
 
-int RachDecoder::rach_decoder_init(asn1::rrc_nr::sib1_s sib1_input, srsran_carrier_nr_t carrier_input){
-  sib1 = sib1_input;
-  base_carrier = carrier_input;
+int RachDecoder::rach_decoder_init(TaskSchedulerNRScope* task_scheduler_nrscope){
+  sib1 = task_scheduler_nrscope->sib1;
+  base_carrier = task_scheduler_nrscope->args_t.base_carrier;
   srsran::srsran_band_helper bands;
   uint16_t band = bands.get_band_from_dl_freq_Hz(base_carrier.dl_center_frequency_hz);
 
@@ -42,7 +42,7 @@ int RachDecoder::rach_decoder_init(asn1::rrc_nr::sib1_s sib1_input, srsran_carri
   ra_rnti = (uint16_t*) malloc(prach_cfg_nr.nof_subframe_number * sizeof(uint16_t));
   // ra_rnti.reserve(prach_cfg_nr.nof_subframe_number);
   nof_ra_rnti = prach_cfg_nr.nof_subframe_number;
-  printf("rach_uplink.prach_cfg_nr.nof_subframe_number %u\n", prach_cfg_nr.nof_subframe_number);
+  // printf("rach_uplink.prach_cfg_nr.nof_subframe_number %u\n", prach_cfg_nr.nof_subframe_number);
 
   // Set the config for prach_cfg
   prach_cfg.is_nr = true;
@@ -57,17 +57,17 @@ int RachDecoder::rach_decoder_init(asn1::rrc_nr::sib1_s sib1_input, srsran_carri
     }
   }else if(sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.rach_cfg_common.setup().prach_root_seq_idx.type() == 1) {
     // 0 as l839 and 1 as l139, check /lib/include/srsran/asn1/rrc_nr.h
-    t_idx.reserve(prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs));
-    ra_rnti = (uint16_t*) malloc(prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) * sizeof(uint16_t));
+    t_idx.reserve(prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(base_carrier.scs));
+    ra_rnti = (uint16_t*) malloc(prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(base_carrier.scs) * sizeof(uint16_t));
     // ra_rnti.reserve(prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs));
-    nof_ra_rnti = prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs);
+    nof_ra_rnti = prach_cfg_nr.nof_subframe_number * SRSRAN_NSLOTS_PER_SF_NR(base_carrier.scs);
     prach_cfg.root_seq_idx = sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.
       rach_cfg_common.setup().prach_root_seq_idx.l139();
     for(uint32_t t_idx_id = 0; t_idx_id < prach_cfg_nr.nof_subframe_number; t_idx_id++){
-      for(uint32_t slot_idx = 0; slot_idx < SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs); slot_idx++){
-        t_idx[t_idx_id*SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) + slot_idx] = 
-          prach_cfg_nr.subframe_number[t_idx_id] * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) + slot_idx;
-        printf("prach_cfg_nr.subframe_number[t_idx_id] * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) + slot_idx: %u\n", prach_cfg_nr.subframe_number[t_idx_id] * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) + slot_idx);
+      for(uint32_t slot_idx = 0; slot_idx < SRSRAN_NSLOTS_PER_SF_NR(base_carrier.scs); slot_idx++){
+        t_idx[t_idx_id*SRSRAN_NSLOTS_PER_SF_NR(base_carrier.scs) + slot_idx] = 
+          prach_cfg_nr.subframe_number[t_idx_id] * SRSRAN_NSLOTS_PER_SF_NR(base_carrier.scs) + slot_idx;
+        // printf("prach_cfg_nr.subframe_number[t_idx_id] * SRSRAN_NSLOTS_PER_SF_NR(carrier_input.scs) + slot_idx: %u\n", prach_cfg_nr.subframe_number[t_idx_id] * SRSRAN_NSLOTS_PER_SF_NR(base_carrier.scs) + slot_idx);
       }
     }
   }else{
@@ -91,24 +91,22 @@ int RachDecoder::rach_decoder_init(asn1::rrc_nr::sib1_s sib1_input, srsran_carri
   // TS 38.211).
   // f_id = index of the PRACH occation in the freq domain (0 <= f_id < 8).
   // ul_carrier_id = 0 for NUL and 1 for SUL carrier.
-  printf("nof_ra_rnti: %u\n", nof_ra_rnti);
+  // printf("nof_ra_rnti: %u\n", nof_ra_rnti);
   for(uint32_t i = 0; i < nof_ra_rnti; i++){
-    printf("t_id[%u]: %d\n", i, t_idx[i]);
+    // printf("t_id[%u]: %d\n", i, t_idx[i]);
     ra_rnti[i] = 1 + prach_cfg_nr.starting_symbol + 
           14 * t_idx[i] + 
           14 * 80 * 0 + 14 * 80 * 8 * sul_idx;
-    printf("ra_rnti[%u]: %u\n", i, ra_rnti[i]);
+    // printf("ra_rnti[%u]: %u\n", i, ra_rnti[i]);
   }  
 
   return SRSRAN_SUCCESS;
 }
 
 int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                                     srsran_carrier_nr_t* base_carrier_,
-                                     cell_search_result_t cell_,
-                                     cf_t* input[SRSRAN_MAX_PORTS],
-                                     srsran_coreset_t* coreset0_t_){
-  memcpy(&coreset0_t, coreset0_t_, sizeof(srsran_coreset_t));
+                                     TaskSchedulerNRScope* task_scheduler_nrscope,
+                                     cf_t* input[SRSRAN_MAX_PORTS]){
+  memcpy(&coreset0_t, &task_scheduler_nrscope->coreset0_t, sizeof(srsran_coreset_t));
 
   dci_cfg.bwp_dl_initial_bw   = 275;
   dci_cfg.bwp_ul_initial_bw   = 275;
@@ -159,8 +157,8 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
                                        nrof_candidates.aggregation_level16;
 
   arg_scs = arg_scs_;                                   
-  memcpy(&base_carrier, base_carrier_, sizeof(srsran_carrier_nr_t));
-  cell = cell_;
+  memcpy(&base_carrier, &task_scheduler_nrscope->args_t.base_carrier, sizeof(srsran_carrier_nr_t));
+  cell = task_scheduler_nrscope->cell;
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
 
   ue_dl_args.nof_rx_antennas               = 1;
@@ -172,23 +170,23 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
   ue_dl_args.nof_max_prb                   = 275;  
 
   if (srsran_ue_dl_nr_init_nrscope(&ue_dl_rach, input, &ue_dl_args, arg_scs)) {
-    ERROR("Error UE DL");
+    ERROR("RACHDecoder -- Error UE DL");
     return SRSRAN_ERROR;
   }
 
   if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl_rach, &base_carrier, arg_scs)) {
-    ERROR("Error setting SCH NR carrier");
+    ERROR("RACHDecoder -- Error setting SCH NR carrier");
     return SRSRAN_ERROR;
   }
 
   if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl_rach, &pdcch_cfg, &dci_cfg)) {
-    ERROR("Error setting CORESET");
+    ERROR("RACHDecoder -- Error setting CORESET");
     return SRSRAN_ERROR;
   }
 
   if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
       SRSRAN_SUCCESS) {
-    ERROR("Error init soft-buffer");
+    ERROR("RACHDecoder -- Error init soft-buffer");
     return SRSRAN_ERROR;
   }
 
@@ -200,7 +198,7 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
                                                  TaskSchedulerNRScope* task_scheduler_nrscope){
   if(!task_scheduler_nrscope->sib1_found or !task_scheduler_nrscope->rach_inited){
     // If the SIB 1 is not detected or the RACH decoder is not initialized.
-    printf("SIB 1 not found or decoder not initialized, quitting...\n");
+    std::cout << "SIB 1 not found or decoder not initialized, quitting..." << std::endl;
     return SRSRAN_SUCCESS;
   }
   
@@ -214,7 +212,7 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   int nof_found_dci = srsran_ue_dl_nr_find_dl_dci_nrscope(&ue_dl_rach, slot, ra_rnti, nof_ra_rnti, srsran_rnti_type_tc, &dci_rach, 1);
 
   if (nof_found_dci < SRSRAN_SUCCESS) {
-    ERROR("Error in blind search");
+    ERROR("RACHDecoder -- Error in blind search");
     return SRSRAN_ERROR;
   }
   // for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl_rach.pdcch_info_count; pdcch_idx++) {
@@ -235,25 +233,25 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   // }
 
   if (nof_found_dci < 1) {
-    printf("No DCI found :'(\n");
+    printf("RACHDecoder -- No DCI found :'(\n");
     return SRSRAN_ERROR;
   }
 
   char str[1024] = {};
   srsran_dci_dl_nr_to_str(&(ue_dl_rach.dci), &dci_rach, str, (uint32_t)sizeof(str));
-  printf("Found DCI: %s\n", str);
+  printf("RACHDecoder -- Found DCI: %s\n", str);
   tc_rnti = dci_rach.ctx.rnti;
 
   pdsch_cfg = {};
 
   if (srsran_ra_dl_dci_to_grant_nr(&base_carrier, slot, &pdsch_hl_cfg, &dci_rach, &pdsch_cfg, &pdsch_cfg.grant) <
       SRSRAN_SUCCESS) {
-    ERROR("Error decoding PDSCH search");
+    ERROR("RACHDecoder -- Error decoding PDSCH search");
     return SRSRAN_ERROR;
   }
 
-  srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
-  printf("PDSCH_cfg:\n%s", str);
+  // srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
+  // printf("PDSCH_cfg:\n%s", str);
 
   if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
       SRSRAN_SUCCESS) {
@@ -277,8 +275,8 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_ERROR;
   }
 
-  printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
-  srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+  // printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
+  // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
   uint32_t bytes_offset = 0;
 
   for (uint32_t pdsch_res_idx = 0; pdsch_res_idx < (uint32_t)pdsch_cfg.grant.tb[0].tbs / 8 - 1; pdsch_res_idx ++){
@@ -289,7 +287,7 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   }
 
   if (!pdsch_res.tb[0].crc) {
-    printf("Error decoding PDSCH (CRC)\n");
+    printf("RACHDecoder -- Error decoding PDSCH (CRC)\n");
     return SRSRAN_ERROR;
   }
 
@@ -302,7 +300,7 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     }
   }
   if (all_zero) {
-    ERROR("PDSCH payload is all zeros");
+    ERROR("RACHDecoder -- PDSCH payload is all zeros");
     return SRSRAN_ERROR;
   }
 
@@ -333,9 +331,10 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     }
     break;
   }
-  asn1::json_writer js_msg4;
-  task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
-  printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
+
+  // asn1::json_writer js_msg4;
+  // task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
+  // printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
   asn1::cbit_ref bref_cg((task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.data(),
                     (task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.size());
   if (task_scheduler_nrscope->master_cell_group.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
@@ -343,9 +342,9 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_ERROR;
   }        
   
-  asn1::json_writer js;
-  task_scheduler_nrscope->master_cell_group.to_json(js);
-  printf("masterCellGroup: %s\n", js.to_string().c_str());
+  // asn1::json_writer js;
+  // task_scheduler_nrscope->master_cell_group.to_json(js);
+  // printf("masterCellGroup: %s\n", js.to_string().c_str());
 
   // Tells the task scheduler that the RACH is decoded and there are some entries in the know_rntis vector.
   task_scheduler_nrscope->rach_found = true;

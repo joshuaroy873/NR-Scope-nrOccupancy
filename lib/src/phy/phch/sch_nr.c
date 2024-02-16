@@ -647,15 +647,15 @@ static int sch_nr_decode(srsran_sch_nr_t*        q,
                 tb->rv,
                 cfg.Qm,
                 cfg.Nref);
-    printf("RM CB %d: E=%d; F=%d; BG=%d; Z=%d; RV=%d; Qm=%d; Nref=%d;\n",
-                r,
-                E,
-                cfg.F,
-                cfg.bg == BG1 ? 1 : 2,
-                cfg.Z,
-                tb->rv,
-                cfg.Qm,
-                cfg.Nref);
+    // printf("RM CB %d: E=%d; F=%d; BG=%d; Z=%d; RV=%d; Qm=%d; Nref=%d;\n",
+    //             r,
+    //             E,
+    //             cfg.F,
+    //             cfg.bg == BG1 ? 1 : 2,
+    //             cfg.Z,
+    //             tb->rv,
+    //             cfg.Qm,
+    //             cfg.Nref);
     int n_llr =
         srsran_ldpc_rm_rx_c(&q->rx_rm, input_ptr, rm_buffer, E, cfg.F, cfg.bg, cfg.Z, tb->rv, tb->mod, cfg.Nref);
     if (n_llr < SRSRAN_SUCCESS) {
@@ -685,7 +685,7 @@ static int sch_nr_decode(srsran_sch_nr_t*        q,
 
     tb->softbuffer.rx->cb_crc[r] = (ret != 0);
     SCH_INFO_RX("CB %d/%d iter=%d CRC=%s", r, cfg.C, n_iter_cb, tb->softbuffer.rx->cb_crc[r] ? "OK" : "KO");
-    printf("CB %d/%d iter=%d CRC=%s\n", r, cfg.C, n_iter_cb, tb->softbuffer.rx->cb_crc[r] ? "OK" : "KO"); // for debugging
+    // printf("CB %d/%d iter=%d CRC=%s\n", r, cfg.C, n_iter_cb, tb->softbuffer.rx->cb_crc[r] ? "OK" : "KO"); // for debugging
 
     // CB Debug trace
     if (SRSRAN_DEBUG_ENABLED && get_srsran_verbose_level() >= SRSRAN_VERBOSE_DEBUG && !is_handler_registered()) {
@@ -747,15 +747,15 @@ static int sch_nr_decode(srsran_sch_nr_t*        q,
 
   // Calculate TB CRC from packed data
   if (cfg.C == 1) {
-    printf("TB: TBS=%d; CRC=%s\n", tb->tbs, tb->softbuffer.rx->cb_crc[0] ? "OK" : "KO");
+    // printf("TB: TBS=%d; CRC=%s\n", tb->tbs, tb->softbuffer.rx->cb_crc[0] ? "OK" : "KO");
     SCH_INFO_RX("TB: TBS=%d; CRC=%s", tb->tbs, tb->softbuffer.rx->cb_crc[0] ? "OK" : "KO");
     res->crc = true;
   } else {
     // More than one
     uint32_t checksum1 = srsran_crc_checksum_byte(crc_tb, res->payload, tb->tbs);
     res->crc           = (checksum1 == checksum2);
-    printf("CRC failed but we save it anyway.\n");
-    printf("TB: TBS=%d; CRC={%06x, %06x}\n", tb->tbs, checksum1, checksum2);
+    // printf("CRC failed but we save it anyway.\n");
+    // printf("TB: TBS=%d; CRC={%06x, %06x}\n", tb->tbs, checksum1, checksum2);
     SCH_INFO_RX("TB: TBS=%d; CRC={%06x, %06x}", tb->tbs, checksum1, checksum2);
   }
 

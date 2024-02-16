@@ -615,7 +615,7 @@ int srsran_pdcch_nr_decode(srsran_pdcch_nr_t*      q,
     srsran_vec_fprint_c(stdout, ce->ce, q->M);
   }
   // printf("ce=");
-  srsran_vec_fprint_c(stdout, ce->ce, q->M);
+  // srsran_vec_fprint_c(stdout, ce->ce, q->M);
 
   // Equalise
   srsran_predecoding_single(q->symbols, ce->ce, q->symbols, NULL, q->M, 1.0f, ce->noise_var);
@@ -626,7 +626,7 @@ int srsran_pdcch_nr_decode(srsran_pdcch_nr_t*      q,
     srsran_vec_fprint_c(stdout, q->symbols, q->M);
   }
   // printf("symbols=");
-  srsran_vec_fprint_c(stdout, q->symbols, q->M);
+  // srsran_vec_fprint_c(stdout, q->symbols, q->M);
 
   // Demodulation
   int8_t* llr = (int8_t*)q->f;
@@ -660,7 +660,7 @@ int srsran_pdcch_nr_decode(srsran_pdcch_nr_t*      q,
     srsran_vec_fprint_bs(stdout, d, q->K);
   }
   // printf("d=");
-  srsran_vec_fprint_bs(stdout, d, q->K);
+  // srsran_vec_fprint_bs(stdout, d, q->K);
   
   // Decode
   if (srsran_polar_decoder_decode_c(&q->decoder, d, q->allocated, q->code.n, q->code.F_set, q->code.F_set_size) <
@@ -687,9 +687,9 @@ int srsran_pdcch_nr_decode(srsran_pdcch_nr_t*      q,
     srsran_vec_fprint_hex(stdout, c, q->K);
   }
   // printf("c_prime=");
-  srsran_vec_fprint_hex(stdout, c_prime, q->K);
+  // srsran_vec_fprint_hex(stdout, c_prime, q->K);
   // printf("c=");
-  srsran_vec_fprint_hex(stdout, c, q->K);
+  // srsran_vec_fprint_hex(stdout, c, q->K);
 
   // Unpack RNTI
   uint8_t  unpacked_rnti[16] = {};
@@ -699,7 +699,7 @@ int srsran_pdcch_nr_decode(srsran_pdcch_nr_t*      q,
   // printf("q->K: %u\n", q->K);
 
   // printf("c[q-K-16]=");
-  srsran_vec_fprint_hex(stdout, &c[q->K - 16], 16);
+  // srsran_vec_fprint_hex(stdout, &c[q->K - 16], 16);
 
   uint8_t oringinal_bits[24] = {};
   srsran_vec_u8_copy(oringinal_bits, &c[q->K - 24], 24);
@@ -709,9 +709,9 @@ int srsran_pdcch_nr_decode(srsran_pdcch_nr_t*      q,
   
 
   // printf("c[q-K-16]=");
-  srsran_vec_fprint_hex(stdout, &c[q->K - 16], 16);
+  // srsran_vec_fprint_hex(stdout, &c[q->K - 16], 16);
   // printf("q->c=");
-  srsran_vec_fprint_hex(stdout, q->c, q->K);
+  // srsran_vec_fprint_hex(stdout, q->c, q->K);
 
   // Check CRC
   ptr                = &c[q->K - 24];
@@ -720,7 +720,7 @@ int srsran_pdcch_nr_decode(srsran_pdcch_nr_t*      q,
   res->crc           = checksum1 == checksum2;
 
   // printf("CRC={%06x, %06x}; msg=", checksum1, checksum2);
-  srsran_vec_fprint_hex(stdout, c, dci_msg->nof_bits);
+  // srsran_vec_fprint_hex(stdout, c, dci_msg->nof_bits);
 
   // uint32_t checksum_diff = checksum1 > checksum2 ? checksum1 - checksum2 : checksum2 - checksum1;
   // printf("checksum1 %u\n", checksum1);
@@ -872,9 +872,9 @@ int srsran_pdcch_nr_decode_with_rnti_nrscope(srsran_pdcch_nr_t*      q,
     srsran_vec_fprint_hex(stdout, c, q->K);
   }
   // printf("c_prime=");
-  srsran_vec_fprint_hex(stdout, c_prime, q->K);
+  // srsran_vec_fprint_hex(stdout, c_prime, q->K);
   // printf("c=");
-  srsran_vec_fprint_hex(stdout, c, q->K);
+  // srsran_vec_fprint_hex(stdout, c, q->K);
 
   // Unpack RNTI
   uint8_t  unpacked_rnti[16] = {};
@@ -884,7 +884,7 @@ int srsran_pdcch_nr_decode_with_rnti_nrscope(srsran_pdcch_nr_t*      q,
   // printf("q->K: %u\n", q->K);
 
   // printf("c[q-K-16]=");
-  srsran_vec_fprint_hex(stdout, &c[q->K - 16], 16);
+  // srsran_vec_fprint_hex(stdout, &c[q->K - 16], 16);
 
   uint8_t oringinal_bits[24] = {};
   srsran_vec_u8_copy(oringinal_bits, &c[q->K - 24], 24);
@@ -894,9 +894,9 @@ int srsran_pdcch_nr_decode_with_rnti_nrscope(srsran_pdcch_nr_t*      q,
   
 
   // printf("c[q-K-16]=");
-  srsran_vec_fprint_hex(stdout, &c[q->K - 16], 16);
+  // srsran_vec_fprint_hex(stdout, &c[q->K - 16], 16);
   // printf("q->c=");
-  srsran_vec_fprint_hex(stdout, q->c, q->K);
+  // srsran_vec_fprint_hex(stdout, q->c, q->K);
 
   // Check CRC
   ptr                = &c[q->K - 24];
@@ -905,7 +905,7 @@ int srsran_pdcch_nr_decode_with_rnti_nrscope(srsran_pdcch_nr_t*      q,
   res->crc           = checksum1 == checksum2;
 
   // printf("CRC={%06x, %06x}; msg=", checksum1, checksum2);
-  srsran_vec_fprint_hex(stdout, c, dci_msg->nof_bits);
+  // srsran_vec_fprint_hex(stdout, c, dci_msg->nof_bits);
 
   uint32_t checksum_diff = checksum1 > checksum2 ? checksum1 - checksum2 : checksum2 - checksum1;
   // printf("checksum1 %u\n", checksum1);
@@ -1130,7 +1130,7 @@ int srsran_pdcch_nr_decode_with_rnti_nrscope_dciloop(srsran_pdcch_nr_t*      q,
   res->crc           = checksum1 == checksum2;
 
   // printf("CRC={%06x, %06x}; msg=", checksum1, checksum2);
-  srsran_vec_fprint_hex(stdout, c, dci_msg->nof_bits);
+  // srsran_vec_fprint_hex(stdout, c, dci_msg->nof_bits);
 
   // uint32_t checksum_diff = checksum1 > checksum2 ? checksum1 - checksum2 : checksum2 - checksum1;
   // printf("checksum diff: %u\n", checksum_diff);

@@ -45,14 +45,8 @@ class DCIDecoder{
     ~DCIDecoder();
 
     int dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                                       srsran_carrier_nr_t* base_carrier_,
-                                       cell_search_result_t cell_,
-                                       cf_t* input[SRSRAN_MAX_PORTS],
-                                       srsran_coreset_t* coreset0_t_,
-                                       asn1::rrc_nr::cell_group_cfg_s master_cell_group_,
-                                       asn1::rrc_nr::rrc_setup_s rrc_setup_,
-                                       srsue::nr::cell_search::cfg_t srsran_searcher_cfg_t_,
-                                       asn1::rrc_nr::sib1_s sib1_);
+                                       TaskSchedulerNRScope* task_scheduler_nrscope,
+                                       cf_t* input[SRSRAN_MAX_PORTS]);
 
     int decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
                                        TaskSchedulerNRScope* task_scheduler_nrscope);

@@ -106,9 +106,20 @@ class Radio{
     */
     int RadioCapture();
 
-    int SIB1Loop(); // Decode SIB 1
-    int MSG2and4Loop(); // Decode MSG 4
-    int DCILoop(); // Decode DCIs 
+    /**
+    * Previous single-thread processing for SIB 1, will be removed in the future.
+    */
+    int SIB1Loop();
+
+    /**
+    * Previous single-thread processing for MSG 4, will be removed in the future.
+    */
+    int MSG2and4Loop();
+
+    /**
+    * Previous single-thread processing for DCI, will be removed in the future.
+    */
+    int DCILoop();
 
     void WriteLogFile(std::string filename, const char* szString);
     // int RadioStop();

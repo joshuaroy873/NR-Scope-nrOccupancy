@@ -255,15 +255,6 @@ int Radio::SyncandDownlinkInit(){
   return SRSRAN_SUCCESS;
 }
 
-// int Radio::StartTasks(){
-//   // Start all the threads
-//   sibs_decoder.sibs_thread(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t());
-//   // rach_decoder.rach_thread();
-
-
-//   return SRSASN_SUCCESS;
-// }
-
 int Radio::RadioCapture(){
   
   if(!task_scheduler_nrscope.sib1_inited){
@@ -314,10 +305,7 @@ int Radio::RadioCapture(){
         }
 
         if(!task_scheduler_nrscope.dci_inited and task_scheduler_nrscope.rach_found){
-          if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), 
-          task_scheduler_nrscope.cell, rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t), 
-          task_scheduler_nrscope.master_cell_group, task_scheduler_nrscope.rrc_setup, 
-          task_scheduler_nrscope.srsran_searcher_cfg_t, task_scheduler_nrscope.sib1) < SRSASN_SUCCESS){
+          if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
             ERROR("DCIDecoder Init Error");
             return NR_FAILURE;
           }
@@ -430,9 +418,7 @@ int Radio::MSG2and4Loop(){
 int Radio::DCILoop(){
   std::cout << "DCI Loop starts...(please ignore the error messages)" << std::endl;
 
-  if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), task_scheduler_nrscope.cell, 
-     rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t), task_scheduler_nrscope.master_cell_group, task_scheduler_nrscope.rrc_setup , 
-     task_scheduler_nrscope.srsran_searcher_cfg_t, task_scheduler_nrscope.sib1) < SRSASN_SUCCESS){
+  if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
     ERROR("DCIDecoder Init Error");
     return NR_FAILURE;
   }

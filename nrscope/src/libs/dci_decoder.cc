@@ -28,18 +28,12 @@ DCIDecoder::~DCIDecoder(){
 
 
 int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                                               srsran_carrier_nr_t* base_carrier_,
-                                               cell_search_result_t cell_,
-                                               cf_t* input[SRSRAN_MAX_PORTS],
-                                               srsran_coreset_t* coreset0_t_,
-                                               asn1::rrc_nr::cell_group_cfg_s master_cell_group_,
-                                               asn1::rrc_nr::rrc_setup_s rrc_setup_,
-                                               srsue::nr::cell_search::cfg_t srsran_searcher_cfg_t_,
-                                               asn1::rrc_nr::sib1_s sib1_){ 
+                                               TaskSchedulerNRScope* task_scheduler_nrscope,
+                                               cf_t* input[SRSRAN_MAX_PORTS]){ 
   
-  memcpy(&base_carrier, base_carrier_, sizeof(srsran_carrier_nr_t));
+  memcpy(&base_carrier, &task_scheduler_nrscope->args_t.base_carrier, sizeof(srsran_carrier_nr_t));
   arg_scs = arg_scs_; 
-  cell = cell_;
+  cell = task_scheduler_nrscope->cell;
 
   ue_dl_args.nof_rx_antennas               = 1;
   ue_dl_args.pdsch.sch.disable_simd        = false;
@@ -49,10 +43,10 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   ue_dl_args.pdcch.measure_evm             = true;
   ue_dl_args.nof_max_prb                   = 275;
 
-  memcpy(&coreset0_t, coreset0_t_, sizeof(srsran_coreset_t));
-  sib1 = sib1_;
-  master_cell_group = master_cell_group_;
-  rrc_setup = rrc_setup_;
+  memcpy(&coreset0_t, &task_scheduler_nrscope->coreset0_t, sizeof(srsran_coreset_t));
+  sib1 = task_scheduler_nrscope->sib1;
+  master_cell_group = task_scheduler_nrscope->master_cell_group;
+  rrc_setup = task_scheduler_nrscope->rrc_setup;
 
   dci_cfg.bwp_dl_initial_bw   = 275;
   dci_cfg.bwp_ul_initial_bw   = 275;
@@ -205,7 +199,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   printf("Coreset %d parameter: %s", coreset1_t.id, coreset_info);
 
   // For FR1 offset_to_point_a uses prbs with 15kHz scs. 
-  srsran_searcher_cfg_t = srsran_searcher_cfg_t_;
+  srsran_searcher_cfg_t = task_scheduler_nrscope->srsran_searcher_cfg_t;
   double pointA = srsran_searcher_cfg_t.ssb_freq_hz - (SRSRAN_SSB_BW_SUBC / 2) *
     cell.abs_ssb_scs - cell.k_ssb * SRSRAN_SUBC_SPACING_NR(srsran_subcarrier_spacing_15kHz) 
     - sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.offset_to_point_a * 

@@ -88,7 +88,7 @@ sudo ./nrscope
 
 (Feb 14, 2024) Decoding other SIBs (2, 3 transmitted by the small cell, and potentially other SIBs in other cells) is finished. Now we use three concurrent threads to decode SIB, RACH and DCI for the same TTI, not in a producer-consumer style but in a non-blocking function way. Because we want the processing happens in the same time, which would be helpful for future carrier aggregation that requires synchronization between cells. However, after a while of decoding, NG-Scope can't decode any new DCIs for SIB, RACH and exisiting UEs, the behavior looks like the synchronization failure when the GPS clock is not used. The next step is to figure it out what makes the function unable to decode any new DCIs. One guess is that the processing time for SIB and RACH RRC decoding takes too long (up to 1000 us) in some TTIs, which drags the buffer and destroys the synchronization, however according to some observation, the last few DCIs' processing time before the "stop" is not so long (around 10s us).
 
-(Feb 15, 2024) The "stop" problem on Feb 14 is solved with some optimization in SIB and RACH thread. After the decoder has all the SIBs in the cell, it skips the SIB search thread to save time. Now it can detect all incoming UEs (4 in the small cell) on the run and decode DCI continuously. Now wait for the Amarisoft hardware for testing.
+(Feb 15, 2024) The "stop" problem on Feb 14 is solved with some optimization in SIB and RACH thread. After the decoder has all the SIBs in the cell, it skips the SIB search thread to save time. NG-Scope 5G can detect all incoming UEs (4 in the small cell) on the run and decode DCI continuously. Now wait for the Amarisoft hardware for testing.
 
 ## TODOs
 

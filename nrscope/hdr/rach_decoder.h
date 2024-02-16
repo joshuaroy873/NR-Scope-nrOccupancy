@@ -47,13 +47,11 @@ class RachDecoder{
     RachDecoder();
     ~RachDecoder();
 
-    int rach_decoder_init(asn1::rrc_nr::sib1_s sib1_input, srsran_carrier_nr_t carrier_input);
+    int rach_decoder_init(TaskSchedulerNRScope* task_scheduler_nrscope);
 
     int rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                            srsran_carrier_nr_t* base_carrier_,
-                            cell_search_result_t cell_,
-                            cf_t* input[SRSRAN_MAX_PORTS],
-                            srsran_coreset_t* coreset0_t_);
+                            TaskSchedulerNRScope* task_scheduler_nrscope,
+                            cf_t* input[SRSRAN_MAX_PORTS]);
 
     int decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
                                         TaskSchedulerNRScope* task_scheduler_nrscope);

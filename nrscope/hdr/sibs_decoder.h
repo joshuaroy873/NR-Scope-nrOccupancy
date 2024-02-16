@@ -49,10 +49,8 @@ class SIBsDecoder{
     * SRSRAN_ERROR (-1) if something is wrong in the function.
     */
     int sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                                       srsran_carrier_nr_t* base_carrier_,
-                                       cell_search_result_t cell_,
-                                       cf_t* input[SRSRAN_MAX_PORTS],
-                                       srsran_coreset_t* coreset0_t_);
+                                       TaskSchedulerNRScope* task_scheduler_nrscope,
+                                       cf_t* input[SRSRAN_MAX_PORTS]);
 
     /**
     * This function decodes the current slot for SIB 1, and the result will reflect in the sib1 parameter.

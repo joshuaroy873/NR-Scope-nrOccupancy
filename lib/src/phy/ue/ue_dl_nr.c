@@ -674,7 +674,7 @@ static int ue_dl_nr_find_dci_ss(srsran_ue_dl_nr_t*           q,
 
     // Calculate number of DCI bits
     uint32_t dci_nof_bits = srsran_dci_nr_size(&q->dci, search_space->type, dci_format);
-    printf("dci_size[%u]: %u\n", format_idx, dci_nof_bits);
+    // printf("dci_size[%u]: %u\n", format_idx, dci_nof_bits);
 
     if (dci_nof_bits == 0) {
       ERROR("Error DCI size");
@@ -1226,15 +1226,15 @@ int srsran_ue_dl_nr_find_dl_dci_nrscope(srsran_ue_dl_nr_t*       q,
       // Find DCIs in the selected search space
       // int ret = ue_dl_nr_find_dci_ss_nrscope(q, slot_cfg, &q->cfg.search_space[i], rnti_list[0], rnti_type);
       int ret = ue_dl_nr_find_dci_ss_nrscope(q, slot_cfg, &q->cfg.search_space[i], rnti_list, rnti_list_length, rnti_type);
-      printf("ret: %d\n", ret);
+      // printf("ret: %d\n", ret);
       if (ret < SRSRAN_SUCCESS) {
         ERROR("Error searching DCI");
         return SRSRAN_ERROR;
       }
     }
   }
-  printf("nof_dci_msg: %u\n", nof_dci_msg);
-  printf("q->dl_dci_msg_count: %u\n", q->dl_dci_msg_count);
+  // printf("nof_dci_msg: %u\n", nof_dci_msg);
+  // printf("q->dl_dci_msg_count: %u\n", q->dl_dci_msg_count);
   // Convert found DCI messages into DL grants
   uint32_t dci_msg_count = SRSRAN_MIN(nof_dci_msg, q->dl_dci_msg_count);
   for (uint32_t i = 0; i < dci_msg_count; i++) {

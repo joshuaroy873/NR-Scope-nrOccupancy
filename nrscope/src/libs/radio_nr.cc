@@ -265,6 +265,16 @@ int Radio::SyncandDownlinkInit(){
 // }
 
 int Radio::RadioCapture(){
+  
+  if(!task_scheduler_nrscope.sib1_inited){
+    // std::thread sib_init_thread {&SIBsDecoder::sib_decoder_and_reception_init, &sibs_decoder, arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()};
+    if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
+      ERROR("SIBsDecoder Init Error");
+      return NR_FAILURE;
+    }
+    std::cout << "SIB Decoder Initializing..." << std::endl;
+  }
+
   while(true){
     outcome.timestamp = last_rx_time.get(0);
     if (srsran_ue_sync_nr_zerocopy(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome) < SRSRAN_SUCCESS) {
@@ -291,21 +301,11 @@ int Radio::RadioCapture(){
         //              the buffer may already be flushed away to the next slot.
         // 2) Call the non-blocking functions for each processing here and join, which might be more reasonable.
 
-        if(!task_scheduler_nrscope.sib1_inited){
-          if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), 
-          task_scheduler_nrscope.cell, rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){
-            ERROR("SIBsDecoder Init Error");
-            return NR_FAILURE;
-          }
-          std::cout << "SIB Decoder Initialized.." << std::endl;
-          task_scheduler_nrscope.sib1_inited = true;
-        }
-
         if(!task_scheduler_nrscope.rach_inited and task_scheduler_nrscope.sib1_found){
-          rach_decoder.rach_decoder_init(task_scheduler_nrscope.sib1, args_t.base_carrier);
+          // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};
+          rach_decoder.rach_decoder_init(&task_scheduler_nrscope);
 
-          if(rach_decoder.rach_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), 
-          task_scheduler_nrscope.cell, rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){
+          if(rach_decoder.rach_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
             ERROR("RACHDecoder Init Error");
             return NR_FAILURE;
           }
@@ -326,11 +326,11 @@ int Radio::RadioCapture(){
         }
 
         // Then start each type of decoder, TODO
-        std::thread sib1_thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
+        std::thread sibs_thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
         std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
         std::thread dci_thread {&DCIDecoder::decode_and_parse_dci_from_slot, &dci_decoder, &slot, &task_scheduler_nrscope};
 
-        sib1_thread.join();
+        sibs_thread.join();
         rach_thread.join();
         dci_thread.join();
 
@@ -346,8 +346,7 @@ int Radio::RadioCapture(){
 int Radio::SIB1Loop(){
   std::cout << "SIB1 Loop Starts..." << std::endl;     
 
-  if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), task_scheduler_nrscope.cell, 
-     rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){
+  if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
     ERROR("SIBsDecoder Init Error");
     return NR_FAILURE;
   }
@@ -390,10 +389,9 @@ int Radio::SIB1Loop(){
 
 int Radio::MSG2and4Loop(){
   std::cout << "MSG2 and 4 Loop starts...(please ignore the errors messages)" << std::endl;
-  rach_decoder.rach_decoder_init(task_scheduler_nrscope.sib1, args_t.base_carrier);
+  rach_decoder.rach_decoder_init(&task_scheduler_nrscope);
 
-  if(rach_decoder.rach_reception_init(arg_scs, &(task_scheduler_nrscope.args_t.base_carrier), task_scheduler_nrscope.cell, 
-     rf_buffer_t.to_cf_t(), &(task_scheduler_nrscope.coreset0_t)) < SRSASN_SUCCESS){
+  if(rach_decoder.rach_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
     ERROR("RACHDecoder Init Error");
     return NR_FAILURE;
   }

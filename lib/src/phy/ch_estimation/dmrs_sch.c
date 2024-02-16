@@ -78,7 +78,7 @@ srsran_dmrs_get_pilots_type1(uint32_t start_prb, uint32_t nof_prb, uint32_t delt
   for (uint32_t n = n_begin; n < n_enb; n++) {
     for (uint32_t k_prime = 0; k_prime < 2; k_prime++, count++) {
       pilots[count] = symbols[4 * n + 2 * k_prime + delta];
-      printf("pilot[%u]: %f %fi, ", count, creal(pilots[count]), cimag(pilots[count]));
+      // printf("pilot[%u]: %f %fi, ", count, creal(pilots[count]), cimag(pilots[count]));
     }
   }
   printf("\n");
@@ -782,7 +782,7 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
 
   cf_t*    ce        = q->temp;
   uint32_t symbol_sz = q->carrier.nof_prb * SRSRAN_NRE; // Symbol size in resource elements
-  printf("symbol_sz in dmrs_sch: %u\n", symbol_sz);
+  // printf("symbol_sz in dmrs_sch: %u\n", symbol_sz);
 
   // Get symbols indexes
   uint32_t symbols[SRSRAN_DMRS_SCH_MAX_SYMBOLS] = {};
@@ -824,7 +824,7 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
   float sync_err    = 0.0f;
   for (uint32_t i = 0; i < nof_symbols; i++) {
     sync_err += srsran_vec_estimate_frequency(&q->pilot_estimates[nof_pilots_x_symbol * i], nof_pilots_x_symbol);
-    printf("srsran_vec_estimate_freq: %f\n", srsran_vec_estimate_frequency(&q->pilot_estimates[nof_pilots_x_symbol * i], nof_pilots_x_symbol));
+    // printf("srsran_vec_estimate_freq: %f\n", srsran_vec_estimate_frequency(&q->pilot_estimates[nof_pilots_x_symbol * i], nof_pilots_x_symbol));
   }
   sync_err /= (float)nof_symbols;
   float delay_us = sync_err / (dmrs_stride * SRSRAN_SUBC_SPACING_NR(q->carrier.scs));
@@ -848,7 +848,7 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
   for (uint32_t i = 0; i < nof_symbols; i++) {
     corr[i] =
         srsran_vec_acc_cc(&q->pilot_estimates[nof_pilots_x_symbol * i], nof_pilots_x_symbol) / nof_pilots_x_symbol;
-    printf("corr[i]: %f+%fi\n", creal(corr[i]), cimag(corr[i]));
+    // printf("corr[i]: %f+%fi\n", creal(corr[i]), cimag(corr[i]));
     rsrp += __real__ corr[i] * __real__ corr[i] + __imag__ corr[i] * __imag__ corr[i];
     epre += srsran_vec_avg_power_cf(&q->pilot_estimates[nof_pilots_x_symbol * i], nof_pilots_x_symbol);
   }
@@ -928,11 +928,11 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
        cfo_avg_hz,
        chest_res->sync_error * 1e6);
   
-  printf("PDSCH-DMRS: RSRP=%+.2fdB EPRE=%+.2fdB CFO=%+.0fHz Sync=%.3fus\n",
-       chest_res->rsrp_dbm,
-       srsran_convert_power_to_dB(epre),
-       cfo_avg_hz,
-       chest_res->sync_error * 1e6);
+  // printf("PDSCH-DMRS: RSRP=%+.2fdB EPRE=%+.2fdB CFO=%+.0fHz Sync=%.3fus\n",
+  //      chest_res->rsrp_dbm,
+  //      srsran_convert_power_to_dB(epre),
+  //      cfo_avg_hz,
+  //      chest_res->sync_error * 1e6);
 
   // Average over time, only if more than one DMRS symbol
   for (uint32_t i = 1; i < nof_symbols; i++) {

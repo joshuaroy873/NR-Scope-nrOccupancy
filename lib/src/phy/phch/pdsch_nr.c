@@ -523,7 +523,7 @@ int srsran_pdsch_nr_decode(srsran_pdsch_nr_t*           q,
   }
 
   uint32_t nof_re = grant->tb[0].nof_re;
-  printf("nof_re from grant: %u\n", nof_re);
+  // printf("nof_re from grant: %u\n", nof_re);
 
   if (channel->nof_re != nof_re) {
     ERROR("Inconsistent number of RE (%d!=%d)", channel->nof_re, nof_re);

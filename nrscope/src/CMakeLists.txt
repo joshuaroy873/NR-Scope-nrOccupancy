@@ -31,6 +31,10 @@ target_link_libraries(nrscope   srsue_phy
                                 ${YAML_CPP_LIBRARIES})
 
 if(PUSH_TO_GOOGLE)
+  target_link_libraries(nrscope ${PYTHON_LIBRARIES})
+endif()
+
+if(PUSH_TO_GOOGLE)
   target_link_libraries(nrscope ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
 endif(PUSH_TO_GOOGLE)
 

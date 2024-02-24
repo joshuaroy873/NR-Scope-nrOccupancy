@@ -10,6 +10,7 @@
 #include "nrscope/hdr/harq_tracking.h"
 #include "nrscope/hdr/task_scheduler.h"
 #include "nrscope/hdr/nrscope_logger.h"
+#include "nrscope/hdr/to_google.h"
 
 class Radio{
   public:
@@ -59,6 +60,8 @@ class Radio{
     std::string log_name;
     // std::string ul_log_name;
     bool local_log;
+
+    bool to_google;
 
     Radio();  //constructor
     ~Radio(); //deconstructor

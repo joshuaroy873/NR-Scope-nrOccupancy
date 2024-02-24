@@ -8,3 +8,31 @@ double get_now_timestamp_in_double(){
 
   return (double) seconds.count() + ((double) (ms.count() % 1000)/1000.0) + ((double) (us.count() % 1000000)/1000000.0);
 }
+
+const char* sch_mapping_to_str(srsran_sch_mapping_type_t mapping)
+{
+  switch (mapping) {
+    case srsran_sch_mapping_type_A:
+      return "A";
+    case srsran_sch_mapping_type_B:
+      return "B";
+    default:; // Do nothing
+  }
+  return "invalid";
+}
+
+const char* sch_xoverhead_to_str(srsran_xoverhead_t xoverhead)
+{
+  switch (xoverhead) {
+    case srsran_xoverhead_0:
+      return "0";
+    case srsran_xoverhead_6:
+      return "6";
+    case srsran_xoverhead_12:
+      return "12";
+    case srsran_xoverhead_18:
+      return "18";
+    default:; // Do nothing
+  }
+  return "invalid";
+}

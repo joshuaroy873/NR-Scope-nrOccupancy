@@ -94,7 +94,7 @@ sudo ./nrscope
 
 (Feb 15, 2024) The "stop" problem on Feb 14 is solved with some optimization in SIB and RACH thread. After the decoder has all the SIBs in the cell, it skips the SIB search thread to save time. NG-Scope 5G can detect all incoming UEs (4 in the small cell) on the run and decode DCI continuously. Now wait for the Amarisoft hardware for testing.
 
-(Feb 23, 2024) Added the local log recording function, the output log will be a .csv file and the meaning of each column is in the first row. If needed, set the `local_log` to `true` in the config.yaml and set the `log_name` with the file name.
+(Feb 23, 2024) Added the local log recording function, the output log will be a .csv file and the meaning of each column is in the first row. If needed, set the `local_log` to `true` in the config.yaml and set the `log_name` with the file name. There are still some bugs in the google storage code.
 
 ## TODOs
 

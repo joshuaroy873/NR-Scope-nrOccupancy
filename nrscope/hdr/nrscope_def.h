@@ -144,6 +144,14 @@ typedef struct _DCIFeedback{
 
 } DCIFeedback;
 
+typedef struct LogNode_ LogNode;
+  struct LogNode_{
+    double timestamp;
+    int system_frame_idx;
+    int slot_idx;
+    srsran_sch_cfg_nr_t grant;
+  };
+
 struct sib1_task_element{
   srsran_ue_sync_nr_outcome_t outcome;
   srsran_slot_cfg_t slot;
@@ -156,6 +164,22 @@ struct rach_task_element{
 struct dci_task_element{
 
 };
+
+/**
+ * @brief Function brought from phch_cfg_nr.c
+ * 
+ * @param mapping 
+ * @return const char* 
+ */
+const char* sch_mapping_to_str(srsran_sch_mapping_type_t mapping);
+
+/**
+ * @brief Function brought from phch_cfg_nr.c
+ * 
+ * @param xoverhead 
+ * @return const char* 
+ */
+const char* sch_xoverhead_to_str(srsran_xoverhead_t xoverhead);
 
 /**
   * Get the UNIX timestamp for now in microsecond.

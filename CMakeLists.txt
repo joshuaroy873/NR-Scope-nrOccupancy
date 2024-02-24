@@ -342,12 +342,6 @@ if (PUSH_TO_GOOGLE)
   find_package(PythonLibs REQUIRED)
   include_directories(${PYTHON_INCLUDE_DIRS})
   link_directories(${PYTHON_LIBRARY_DIR})
-
-  find_package(google_cloud_cpp_storage REQUIRED)
-  if(google_cloud_cpp_FOUND)
-    include_directories(${GOOGLE_CLOUD_CPP_INCLUDE_DIRS})
-    link_directories(${GOOGLE_CLOUD_CPP_LIBRARY_DIR})
-  endif(google_cloud_cpp_FOUND)
 endif(PUSH_TO_GOOGLE)
 
 # Backward-cpp
@@ -753,3 +747,6 @@ ${CMAKE_CURRENT_BINARY_DIR}/nrscope/src/config.yaml)
 
 configure_file(${PROJECT_SOURCE_DIR}/nrscope/src/tests/bigquery_table_create.py
 ${CMAKE_CURRENT_BINARY_DIR}/nrscope/src/tests/bigquery_table_create.py)
+
+configure_file(${PROJECT_SOURCE_DIR}/nrscope/src/libs/to_google.py
+${CMAKE_CURRENT_BINARY_DIR}/nrscope/src/to_google.py)

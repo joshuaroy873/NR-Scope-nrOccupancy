@@ -86,6 +86,14 @@ int Radio::RadioInitandStart(){
   srsran::srsran_band_helper::sync_raster_t ss = bands.get_sync_raster(band, cs_args.ssb_scs);
   srsran_assert(ss.valid(), "Invalid synchronization raster");
 
+  // Set log and uploading to google threads
+  if(local_log){
+    NRScopeLog::init_logger(log_name);
+  }
+  if(to_google){
+    ToGoogle::init_to_google();
+  }
+
   while (not ss.end()) {
     // Get SSB center frequency
     cs_args.ssb_freq_hz = ss.get_frequency();
@@ -254,9 +262,6 @@ int Radio::SyncandDownlinkInit(){
 }
 
 int Radio::RadioCapture(){
-  
-  NRScopeLog::init_logger(log_name);
-
   if(!task_scheduler_nrscope.sib1_inited){
     // std::thread sib_init_thread {&SIBsDecoder::sib_decoder_and_reception_init, &sibs_decoder, arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()};
     if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
@@ -322,33 +327,38 @@ int Radio::RadioCapture(){
         rach_thread.join();
         dci_thread.join();
 
-        if((task_scheduler_nrscope.result.dl_grants.size()>0 or task_scheduler_nrscope.result.ul_grants.size()>0) and local_log){
+        if((task_scheduler_nrscope.result.dl_grants.size()>0 or task_scheduler_nrscope.result.ul_grants.size()>0)){
           for (uint32_t i = 0; i < task_scheduler_nrscope.nof_known_rntis; i++){
-            std::cout << "task_scheduler_nrscope.result.dl_grants[i].grant.rnti: " << task_scheduler_nrscope.result.dl_grants[i].grant.rnti << std::endl;
-            std::cout << "task_scheduler_nrscope.known_rntis[i]: " << task_scheduler_nrscope.known_rntis[i] << std::endl;
             if(task_scheduler_nrscope.result.dl_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-              NRScopeLog::LogNode log_node;
+              LogNode log_node;
               log_node.slot_idx = slot.idx;
               log_node.system_frame_idx = outcome.sfn;
               log_node.timestamp = get_now_timestamp_in_double();
               log_node.grant = task_scheduler_nrscope.result.dl_grants[i];
-              NRScopeLog::push_node(log_node);
+              if(local_log){
+                NRScopeLog::push_node(log_node);
+              }
+              if(to_google){
+                ToGoogle::push_node(log_node);
+              }
             }
 
-            std::cout << "task_scheduler_nrscope.result.dl_grants[i].grant.rnti: " << task_scheduler_nrscope.result.ul_grants[i].grant.rnti <<
-              " task_scheduler_nrscope.known_rntis[i]: " << task_scheduler_nrscope.known_rntis[i] << std::endl;
             if(task_scheduler_nrscope.result.ul_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-              NRScopeLog::LogNode log_node;
+              LogNode log_node;
               log_node.slot_idx = slot.idx;
               log_node.system_frame_idx = outcome.sfn;
               log_node.timestamp = get_now_timestamp_in_double();
               log_node.grant = task_scheduler_nrscope.result.ul_grants[i];
-              NRScopeLog::push_node(log_node);
+              if(local_log){
+                NRScopeLog::push_node(log_node);
+              }
+              if(to_google){
+                ToGoogle::push_node(log_node);
+              }
             }
           } 
         }
-        
-
+      
         gettimeofday(&t1, NULL);  
         task_scheduler_nrscope.result.processing_time_us = t1.tv_usec - t0.tv_usec;   
         std::cout << "time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;

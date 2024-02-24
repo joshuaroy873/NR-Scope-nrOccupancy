@@ -56,7 +56,7 @@ def create_table_with_position_and_time():
       bigquery.SchemaField("nof_re", "INTEGER", mode="REQUIRED"),
       bigquery.SchemaField("nof_bits", "INTEGER", mode="REQUIRED"),
       bigquery.SchemaField("mcs_table", "STRING", mode="REQUIRED"),
-      bigquery.SchemaField("xoverhead", "INTEGER", mode="REQUIRED"),
+      bigquery.SchemaField("xoverhead", "STRING", mode="REQUIRED"),
   ]
 
   table = bigquery.Table(table_id, schema=schema)

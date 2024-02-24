@@ -5,7 +5,7 @@ int main(){
   std::string filename("./a.csv");
   NRScopeLog::init_logger(filename);
   printf("Finished log creating...\n");
-  NRScopeLog::LogNode a;
+  LogNode a;
   // a.timestamp = 0.0;
   while(true){
     NRScopeLog::push_node(a);

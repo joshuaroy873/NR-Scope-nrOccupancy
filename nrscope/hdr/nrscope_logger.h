@@ -5,14 +5,6 @@
 #include "nrscope/hdr/dci_decoder.h"
 
 namespace NRScopeLog{
-  typedef struct LogNode_ LogNode;
-  struct LogNode_{
-    double timestamp;
-    int system_frame_idx;
-    int slot_idx;
-    srsran_sch_cfg_nr_t grant;
-  };
-  
   /***
    * ...
    * 

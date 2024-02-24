@@ -43,7 +43,6 @@ target_link_libraries(google_client_cc srsue_phy
 
 if(PUSH_TO_GOOGLE)
   target_link_libraries(google_client ${PYTHON_LIBRARIES})
-  target_link_libraries(google_client ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
   # target_link_libraries(google_client_cc ${PYTHON_LIBRARIES})
   # target_link_libraries(google_client_cc ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
 endif()

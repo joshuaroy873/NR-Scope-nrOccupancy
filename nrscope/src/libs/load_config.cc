@@ -136,6 +136,10 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
         radios[i].log_name = config_yaml[setting_name]["log_name"].as<string>();
       }
 
+      if(config_yaml[setting_name]["push_to_google"]){
+        radios[i].to_google = config_yaml[setting_name]["push_to_google"].as<bool>();
+      }
+
       
       // std::cout << "    nof_thread: " << radios[i].nof_thread << std::endl;
     }else{

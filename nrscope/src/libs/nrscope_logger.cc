@@ -8,46 +8,6 @@ namespace NRScopeLog{
   char buff[2048];
   bool run_log;
 
-  /**
-   * @brief Function brought from phch_cfg_nr.c
-   * 
-   * @param mapping 
-   * @return const char* 
-   */
-  static const char* sch_mapping_to_str(srsran_sch_mapping_type_t mapping)
-  {
-    switch (mapping) {
-      case srsran_sch_mapping_type_A:
-        return "A";
-      case srsran_sch_mapping_type_B:
-        return "B";
-      default:; // Do nothing
-    }
-    return "invalid";
-  }
-
-  /**
-   * @brief Function brought from phch_cfg_nr.c
-   * 
-   * @param xoverhead 
-   * @return const char* 
-   */
-  static const char* sch_xoverhead_to_str(srsran_xoverhead_t xoverhead)
-  {
-    switch (xoverhead) {
-      case srsran_xoverhead_0:
-        return "0";
-      case srsran_xoverhead_6:
-        return "6";
-      case srsran_xoverhead_12:
-        return "12";
-      case srsran_xoverhead_18:
-        return "18";
-      default:; // Do nothing
-    }
-    return "invalid";
-  }
-
   void init_logger(std::string filename_input){
     filename = filename_input;
     FILE* pFile = fopen(filename.c_str(), "a");

@@ -30,6 +30,10 @@ target_link_libraries(nrscope   srsue_phy
                                 ${Boost_LIBRARIES}
                                 ${YAML_CPP_LIBRARIES})
 
+if(PUSH_TO_GOOGLE)
+  target_link_libraries(nrscope ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
+endif(PUSH_TO_GOOGLE)
+
 if (RPATH)
   set_target_properties(nrscope PROPERTIES INSTALL_RPATH ".")
 endif (RPATH)

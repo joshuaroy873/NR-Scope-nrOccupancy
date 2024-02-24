@@ -107,6 +107,7 @@ option(ENABLE_ALL_TEST       "Enable all unit/component test"           OFF)
 # it automatically so it is necessary to use the gcc wrappers of the compiler
 # (gcc-ar, gcc-nm, ...).
 option(BUILD_WITH_LTO        "Enable LTO (experimental)"                OFF)
+option(PUSH_TO_GOOGLE         "Enable pushing data to google cloud"      ON)
 
 if(NOT GCC_ARCH)
   if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
@@ -336,6 +337,18 @@ if(yaml-cpp_FOUND)
 else(yaml-cpp_FOUND)
 message(FATAL_ERROR "yaml-cpp required to build nrscope")
 endif(yaml-cpp_FOUND)
+
+if (PUSH_TO_GOOGLE)
+  find_package(PythonLibs REQUIRED)
+  include_directories(${PYTHON_INCLUDE_DIRS})
+  link_directories(${PYTHON_LIBRARY_DIR})
+
+  find_package(google_cloud_cpp_storage REQUIRED)
+  if(google_cloud_cpp_FOUND)
+    include_directories(${GOOGLE_CLOUD_CPP_INCLUDE_DIRS})
+    link_directories(${GOOGLE_CLOUD_CPP_LIBRARY_DIR})
+  endif(google_cloud_cpp_FOUND)
+endif(PUSH_TO_GOOGLE)
 
 # Backward-cpp
 find_package(Backward)
@@ -737,3 +750,6 @@ configure_file(
 
 configure_file(${PROJECT_SOURCE_DIR}/nrscope/config/config.yaml
 ${CMAKE_CURRENT_BINARY_DIR}/nrscope/src/config.yaml)
+
+configure_file(${PROJECT_SOURCE_DIR}/nrscope/src/tests/bigquery_table_create.py
+${CMAKE_CURRENT_BINARY_DIR}/nrscope/src/tests/bigquery_table_create.py)

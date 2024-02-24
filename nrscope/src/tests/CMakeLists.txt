@@ -12,6 +12,9 @@ target_link_libraries(test_libs ${SRSRAN_SOURCES}
 endif()
 
 add_executable(test_comm test_comm_path.cc)
+add_executable(google_client google_client_test.cc)
+add_executable(google_client_cc google_client_cc_test.cc)
+
 target_link_libraries(test_comm srsue_phy
                                 srsran_common
                                 srsran_phy
@@ -25,6 +28,25 @@ target_link_libraries(test_comm srsue_phy
                                 ${Boost_LIBRARIES}
                                 ${YAML_CPP_LIBRARIES})
 
+target_link_libraries(google_client_cc srsue_phy
+                                       srsran_common
+                                       srsran_phy
+                                       srsran_radio
+                                       rrc_nr_asn1
+                                       nrscope_libs
+                                       test_libs
+                                       ${SRSUE_SOURCES} 
+                                       ${SRSRAN_SOURCES}
+                                       ${CMAKE_THREAD_LIBS_INIT}
+                                       ${Boost_LIBRARIES}
+                                       ${YAML_CPP_LIBRARIES})                                
+
+if(PUSH_TO_GOOGLE)
+  target_link_libraries(google_client ${PYTHON_LIBRARIES})
+  target_link_libraries(google_client ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
+  # target_link_libraries(google_client_cc ${PYTHON_LIBRARIES})
+  # target_link_libraries(google_client_cc ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
+endif()
 
 if (LIBASN5G)
   target_link_libraries(test_libs ${LIBASN5G_LIBRARY})

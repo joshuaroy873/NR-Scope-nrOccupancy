@@ -9,6 +9,7 @@
 #include "nrscope/hdr/dci_decoder.h"
 #include "nrscope/hdr/harq_tracking.h"
 #include "nrscope/hdr/task_scheduler.h"
+#include "nrscope/hdr/nrscope_logger.h"
 
 class Radio{
   public:
@@ -55,15 +56,9 @@ class Radio{
     DCIDecoder dci_decoder;
     HarqTracker harq_tracker;
 
-    uint16_t known_rntis[200];
-    uint32_t nof_known_rntis;
-
-    std::string dl_log_name;
-    std::string ul_log_name;
-
-    int tbs_array[200]; // maintain a 1s window to calculate kbps
-    int spare_array[200]; // maintain a 1s window to calculate spare kbps
-    int mcs_array[200];
+    std::string log_name;
+    // std::string ul_log_name;
+    bool local_log;
 
     Radio();  //constructor
     ~Radio(); //deconstructor
@@ -105,24 +100,6 @@ class Radio{
     * NR_FAILURE (-1) if something goes wrong.
     */
     int RadioCapture();
-
-    /**
-    * Previous single-thread processing for SIB 1, will be removed in the future.
-    */
-    int SIB1Loop();
-
-    /**
-    * Previous single-thread processing for MSG 4, will be removed in the future.
-    */
-    int MSG2and4Loop();
-
-    /**
-    * Previous single-thread processing for DCI, will be removed in the future.
-    */
-    int DCILoop();
-
-    void WriteLogFile(std::string filename, const char* szString);
-    // int RadioStop();
 };
 
 

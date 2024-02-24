@@ -1,3 +1,6 @@
+#ifndef DCI_DECODER_H
+#define DCI_DECODER_H
+
 #include "nrscope/hdr/nrscope_def.h"
 #include "nrscope/hdr/task_scheduler.h"
 
@@ -53,3 +56,5 @@ class DCIDecoder{
 
     // int dci_thread(TaskSchedulerNRScope* task_scheduler_nrscope);
 };
+
+#endif

@@ -78,6 +78,8 @@
     "variant": "cpp",
     "*.ipp": "cpp",
     "ue_dl_nr.h": "c",
-    "cassert": "cpp"
+    "cassert": "cpp",
+    "regex": "cpp",
+    "span": "cpp"
   }
 }

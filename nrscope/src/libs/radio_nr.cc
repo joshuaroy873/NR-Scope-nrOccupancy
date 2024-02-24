@@ -26,8 +26,6 @@ Radio::Radio() :
   outcome = {};
   ue_sync_nr_args = {};
   sync_cfg = {};
-
-  nof_known_rntis = 0;
 }
 
 Radio::~Radio() {
@@ -257,6 +255,8 @@ int Radio::SyncandDownlinkInit(){
 
 int Radio::RadioCapture(){
   
+  NRScopeLog::init_logger(log_name);
+
   if(!task_scheduler_nrscope.sib1_inited){
     // std::thread sib_init_thread {&SIBsDecoder::sib_decoder_and_reception_init, &sibs_decoder, arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()};
     if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
@@ -322,6 +322,33 @@ int Radio::RadioCapture(){
         rach_thread.join();
         dci_thread.join();
 
+        if((task_scheduler_nrscope.result.dl_grants.size()>0 or task_scheduler_nrscope.result.ul_grants.size()>0) and local_log){
+          for (uint32_t i = 0; i < task_scheduler_nrscope.nof_known_rntis; i++){
+            std::cout << "task_scheduler_nrscope.result.dl_grants[i].grant.rnti: " << task_scheduler_nrscope.result.dl_grants[i].grant.rnti << std::endl;
+            std::cout << "task_scheduler_nrscope.known_rntis[i]: " << task_scheduler_nrscope.known_rntis[i] << std::endl;
+            if(task_scheduler_nrscope.result.dl_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
+              NRScopeLog::LogNode log_node;
+              log_node.slot_idx = slot.idx;
+              log_node.system_frame_idx = outcome.sfn;
+              log_node.timestamp = get_now_timestamp_in_double();
+              log_node.grant = task_scheduler_nrscope.result.dl_grants[i];
+              NRScopeLog::push_node(log_node);
+            }
+
+            std::cout << "task_scheduler_nrscope.result.dl_grants[i].grant.rnti: " << task_scheduler_nrscope.result.ul_grants[i].grant.rnti <<
+              " task_scheduler_nrscope.known_rntis[i]: " << task_scheduler_nrscope.known_rntis[i] << std::endl;
+            if(task_scheduler_nrscope.result.ul_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
+              NRScopeLog::LogNode log_node;
+              log_node.slot_idx = slot.idx;
+              log_node.system_frame_idx = outcome.sfn;
+              log_node.timestamp = get_now_timestamp_in_double();
+              log_node.grant = task_scheduler_nrscope.result.ul_grants[i];
+              NRScopeLog::push_node(log_node);
+            }
+          } 
+        }
+        
+
         gettimeofday(&t1, NULL);  
         task_scheduler_nrscope.result.processing_time_us = t1.tv_usec - t0.tv_usec;   
         std::cout << "time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
@@ -329,245 +356,4 @@ int Radio::RadioCapture(){
     } 
   }
   return SRSRAN_SUCCESS;
-}
-
-int Radio::SIB1Loop(){
-  std::cout << "SIB1 Loop Starts..." << std::endl;     
-
-  if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
-    ERROR("SIBsDecoder Init Error");
-    return NR_FAILURE;
-  }
-
-  // Do sync and buffer moving.
-  while(true){
-    outcome.timestamp = last_rx_time.get(0);
-    if (srsran_ue_sync_nr_zerocopy(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome) < SRSRAN_SUCCESS) {
-      std::cout << "SYNC: error in zerocopy" << std::endl;
-      logger.error("SYNC: error in zerocopy");
-      return false;
-    }
-    // If in sync, update slot index. The synced data is stored in rf_buffer_t.to_cf_t()[0]
-    if (outcome.in_sync){
-      std::cout << "System frame idx: " << outcome.sfn << std::endl;
-      std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
-      // Find right slot position for SIB 1.
-      for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
-        srsran_slot_cfg_t slot = {0};
-        slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
-        // Move rx_buffer
-        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);    
-        if((coreset0_args_t.sfn_c == 0 && outcome.sfn % 2 == 0) || 
-           (coreset0_args_t.sfn_c == 1 && outcome.sfn % 2 == 1)) {
-          if((outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2) || 
-             (outcome.sf_idx) == (uint32_t)(coreset0_args_t.n_0 / 2 + 1)){
-            
-            if(sibs_decoder.decode_and_parse_sib1_from_slot(&slot, &task_scheduler_nrscope) == SRSASN_SUCCESS){
-              return SRSASN_SUCCESS;
-            }else{
-              continue;
-            }
-          } 
-        }
-      } 
-    } 
-  }
-  return SRSRAN_SUCCESS;
-}
-
-int Radio::MSG2and4Loop(){
-  std::cout << "MSG2 and 4 Loop starts...(please ignore the errors messages)" << std::endl;
-  rach_decoder.rach_decoder_init(&task_scheduler_nrscope);
-
-  if(rach_decoder.rach_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
-    ERROR("RACHDecoder Init Error");
-    return NR_FAILURE;
-  }
-
-  while(true){
-    outcome.timestamp = last_rx_time.get(0);
-
-    if (srsran_ue_sync_nr_zerocopy(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome) < SRSRAN_SUCCESS) {
-      std::cout << "SYNC: error in zerocopy" << std::endl;
-      logger.error("SYNC: error in zerocopy");
-      return false;
-    }
-
-    if (outcome.in_sync){
-      std::cout << "System frame idx: " << outcome.sfn << std::endl;
-      std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
-
-      for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
-        srsran_slot_cfg_t slot = {0};
-        slot.idx = (outcome.sf_idx) * SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs) + slot_idx;
-        std::cout << "Slot idx: " << slot.idx << std::endl;
-        // Processing for each slot
-        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);
-
-        if(rach_decoder.decode_and_parse_msg4_from_slot(&slot, &task_scheduler_nrscope) == SRSASN_SUCCESS){
-          return SRSASN_SUCCESS;
-        }else{
-          continue;
-        }
-      }
-    }
-  }
-  return SRSRAN_SUCCESS;
-}
-
-int Radio::DCILoop(){
-  std::cout << "DCI Loop starts...(please ignore the error messages)" << std::endl;
-
-  if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
-    ERROR("DCIDecoder Init Error");
-    return NR_FAILURE;
-  }
-
-  nof_known_rntis = 4;
-  known_rntis[1] = 17026;
-  known_rntis[2] = 17034;
-  known_rntis[3] = 17043;
-
-  char buff_dl[1024];
-  char buff_ul[1024];
-  char dci_eval_dl[1024];
-  char dci_eval_ul[1024];
-  char buff_feedback[200];
-
-  int* rnti_dl_prbs = (int*)malloc(sizeof(int) * nof_known_rntis);
-  int* rnti_dl_tbs = (int*)malloc(sizeof(int) * nof_known_rntis);
-  int* rnti_dl_bits = (int*)malloc(sizeof(int) * nof_known_rntis);
-
-  int* rnti_ul_prbs = (int*)malloc(sizeof(int) * nof_known_rntis);
-  int* rnti_ul_tbs = (int*)malloc(sizeof(int) * nof_known_rntis);
-  int* rnti_ul_bits = (int*)malloc(sizeof(int) * nof_known_rntis);
-
-  bool* is_dl_new_data = (bool*)malloc(sizeof(bool) * nof_known_rntis);
-  bool* is_ul_new_data = (bool*)malloc(sizeof(bool) * nof_known_rntis);
-
-  float mean_mcs = 0;
-  int all_dl_prb = 0;
-  
-  int tbs_array_idx = 0;
-  while(true){
-    auto timestamp = get_now_timestamp_in_double(); 
-    outcome.timestamp = last_rx_time.get(0);
-    if (srsran_ue_sync_nr_zerocopy(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome) < SRSRAN_SUCCESS) {
-      std::cout << "SYNC: error in zerocopy" << std::endl;
-      logger.error("SYNC: error in zerocopy");
-      return NR_FAILURE;
-    }
-    // If in sync, update slot index. The synced data is stored in rf_buffer_t.to_cf_t()[0]
-    if (outcome.in_sync){      
-      for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
-        srsran_slot_cfg_t slot = {0};
-        timestamp = timestamp + 0.0005 * slot_idx;
-        slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
-        std::cout << std::endl;
-        std::cout << "<----- System frame idx: " << outcome.sfn << " ----->" << std::endl;
-        std::cout << "<----- Subframe idx: " << outcome.sf_idx << " ----->" << std::endl;
-        std::cout << "<----- Slot idx: " << slot.idx << " ----->" << std::endl;
-        std::cout << std::endl;
-        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);
-        auto result = dci_decoder.decode_and_parse_dci_from_slot(&slot, &task_scheduler_nrscope);
-
-        // move the following into logger class
-        for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          is_dl_new_data[idx] = false;
-          is_ul_new_data[idx] = false;
-        }
-
-        for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          if(task_scheduler_nrscope.result.dl_grants[idx].grant.rnti == known_rntis[idx]){
-            is_dl_new_data[idx] = harq_tracker.is_new_data(idx, task_scheduler_nrscope.result.dl_grants[idx].grant.tb[0].ndi, 
-                                  task_scheduler_nrscope.result.dl_dcis[idx].pid, true);
-          }
-        }
-
-        for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          if(task_scheduler_nrscope.result.ul_grants[idx].grant.rnti == known_rntis[idx]){
-            is_ul_new_data[idx] = harq_tracker.is_new_data(idx, task_scheduler_nrscope.result.ul_grants[idx].grant.tb[0].ndi, 
-                                  task_scheduler_nrscope.result.ul_dcis[idx].pid, false);
-          }
-        }
-
-        // prb, tbs, bits calculation
-        for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          if(task_scheduler_nrscope.result.dl_grants[idx].grant.rnti == known_rntis[idx] && is_dl_new_data[idx]){
-            rnti_dl_prbs[idx] = task_scheduler_nrscope.result.dl_grants[idx].grant.L * task_scheduler_nrscope.result.dl_grants[idx].grant.nof_prb;
-            rnti_dl_tbs[idx] = task_scheduler_nrscope.result.dl_grants[idx].grant.tb[0].tbs + task_scheduler_nrscope.result.dl_grants[idx].grant.tb[1].tbs;
-            rnti_dl_bits[idx] = task_scheduler_nrscope.result.dl_grants[idx].grant.tb[0].nof_bits + task_scheduler_nrscope.result.dl_grants[idx].grant.tb[1].nof_bits;
-          }else{
-            rnti_dl_prbs[idx] = 0;
-            rnti_dl_tbs[idx] = 0;
-            rnti_dl_bits[idx] = 0;
-          }
-        }  
-
-        for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          if(task_scheduler_nrscope.result.ul_grants[idx].grant.rnti == known_rntis[idx] && is_ul_new_data[idx]){
-            rnti_ul_prbs[idx] = task_scheduler_nrscope.result.ul_grants[idx].grant.L * task_scheduler_nrscope.result.ul_grants[idx].grant.nof_prb;
-            rnti_ul_tbs[idx] = task_scheduler_nrscope.result.ul_grants[idx].grant.tb[0].tbs + task_scheduler_nrscope.result.ul_grants[idx].grant.tb[1].tbs;
-            rnti_ul_bits[idx] = task_scheduler_nrscope.result.ul_grants[idx].grant.tb[0].nof_bits + task_scheduler_nrscope.result.ul_grants[idx].grant.tb[1].nof_bits;
-          }else{
-            rnti_ul_prbs[idx] = 0;
-            rnti_ul_tbs[idx] = 0;
-            rnti_ul_bits[idx] = 0;
-          }
-        }              
-
-        printf("writing log..\n");
-        // int buff_dl_pos = snprintf(buff_dl, sizeof(buff_dl), "%f ", timestamp);
-        // int buff_ul_pos = snprintf(buff_ul, sizeof(buff_ul), "%f ", timestamp);
-        // for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-        //   buff_dl_pos += snprintf(buff_dl + buff_dl_pos, sizeof(buff_dl) - buff_dl_pos, "%d %d %d %d %d %d ", rnti_dl_prbs[idx], 
-        //     rnti_dl_tbs[idx], rnti_dl_bits[idx], result.spare_dl_prbs[idx], result.spare_dl_tbs[idx], result.spare_dl_bits[idx]);
-        //   buff_ul_pos += snprintf(buff_ul + buff_ul_pos, sizeof(buff_ul) - buff_ul_pos, "%d %d %d %d %d %d ", rnti_ul_prbs[idx], 
-        //     rnti_ul_tbs[idx], rnti_ul_bits[idx], result.spare_ul_prbs[idx], result.spare_ul_tbs[idx], result.spare_ul_bits[idx]);
-        // }
-        // buff_dl_pos += snprintf(buff_dl + buff_dl_pos, sizeof(buff_dl) - buff_dl_pos, "%d ", result.processing_time_us);
-        // buff_ul_pos += snprintf(buff_ul + buff_ul_pos, sizeof(buff_ul) - buff_ul_pos, "%d ", result.processing_time_us);
-
-        int buff_dl_pos = snprintf(buff_dl, sizeof(buff_dl), "%f ", timestamp);
-        int buff_ul_pos = snprintf(buff_ul, sizeof(buff_ul), "%f ", timestamp);
-        for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-          buff_dl_pos += snprintf(buff_dl + buff_dl_pos, sizeof(buff_dl) - buff_dl_pos, "%d ", rnti_dl_prbs[idx]);
-          buff_ul_pos += snprintf(buff_ul + buff_ul_pos, sizeof(buff_ul) - buff_ul_pos, "%d ", rnti_ul_prbs[idx]);
-        }
-        // buff_dl_pos += snprintf(buff_dl + buff_dl_pos, sizeof(buff_dl) - buff_dl_pos, "%d ", result.processing_time_us);
-        // buff_ul_pos += snprintf(buff_ul + buff_ul_pos, sizeof(buff_ul) - buff_ul_pos, "%d ", result.processing_time_us);
-      
-        // WriteLogFile(dl_log_name, buff_dl);
-        // WriteLogFile(ul_log_name, buff_ul);
-
-        // DCI evaluation, DCI detection rate, PRB, TBS
-        // int dci_dl_pos = snprintf(dci_eval_dl, sizeof(dci_eval_dl), "%f %d.%d ", timestamp, outcome.sfn, outcome.sf_idx*SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs)+slot_idx);
-        // int dci_ul_pos = snprintf(dci_eval_ul, sizeof(dci_eval_dl), "%f %d.%d ", timestamp, outcome.sfn, outcome.sf_idx*SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs)+slot_idx);
-        // for(uint32_t idx = 0; idx < nof_known_rntis; idx++){
-        //   dci_dl_pos += snprintf(dci_eval_dl + dci_dl_pos, sizeof(dci_eval_dl) - dci_dl_pos, "%u %d %d ", known_rntis[idx], rnti_dl_prbs[idx], rnti_dl_tbs[idx]);
-        //   dci_ul_pos += snprintf(dci_eval_ul + dci_ul_pos, sizeof(dci_eval_ul) - dci_ul_pos, "%u %d %d ", known_rntis[idx], rnti_ul_prbs[idx], rnti_ul_tbs[idx]);
-        // }
-
-        // WriteLogFile(dl_log_name, dci_eval_dl);
-        // WriteLogFile(ul_log_name, dci_eval_ul);
-
-        // determine if it's a uplink slot, a lazy way: if all the dl prbs are 0, we treat it as an uplink frame 
-        // (we should us the ul/dl frame structure in SIB 1)
-        all_dl_prb = 0;
-        for(uint32_t i = 0; i < nof_known_rntis; i++){
-          all_dl_prb += rnti_dl_prbs[i];
-        }
-
-      } 
-    }
-  }
-  return SRSRAN_SUCCESS;
-}
-
-// Logger class's function
-void Radio::WriteLogFile(std::string filename, const char* szString)
-{
-  FILE* pFile = fopen(filename.c_str(), "a");
-  fprintf(pFile, "%s\n", szString);
-  fclose(pFile);
 }

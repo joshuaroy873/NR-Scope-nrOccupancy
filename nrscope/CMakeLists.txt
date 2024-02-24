@@ -12,6 +12,11 @@ include_directories(
     ${YAML_CPP_INCLUDE_DIR}
 )
 
+if(PUSH_TO_GOOGLE)
+    include_directories(${PYTHON_INCLUDE_DIR})
+    include_directories(${GOOGLE_CLOUD_CPP_INCLUDE_DIRS})
+endif()
+
 link_directories(
     ${Boost_LIBRARY_DIRS}
     ${SEC_LIBRARY_DIRS}

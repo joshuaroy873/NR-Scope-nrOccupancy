@@ -116,20 +116,27 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
         radios[i].rf_args.log_level = "info";
       }
 
-      if(config_yaml[setting_name]["dl_log_name"]){
-        std::string dl_log_name = config_yaml[setting_name]["dl_log_name"].as<string>();
-        radios[i].dl_log_name = dl_log_name;
+      // if(config_yaml[setting_name]["dl_log_name"]){
+      //   std::string dl_log_name = config_yaml[setting_name]["dl_log_name"].as<string>();
+      //   radios[i].dl_log_name = dl_log_name;
+      // }
+
+      // if(config_yaml[setting_name]["ul_log_name"]){
+      //   std::string ul_log_name = config_yaml[setting_name]["ul_log_name"].as<string>();
+      //   radios[i].ul_log_name = ul_log_name;
+      // }
+
+      if(config_yaml[setting_name]["local_log"]){
+        radios[i].local_log = config_yaml[setting_name]["local_log"].as<bool>();
+      }else{
+        radios[i].local_log = false;
       }
 
-      if(config_yaml[setting_name]["ul_log_name"]){
-        std::string ul_log_name = config_yaml[setting_name]["ul_log_name"].as<string>();
-        radios[i].ul_log_name = ul_log_name;
+      if(config_yaml[setting_name]["log_name"]){
+        radios[i].log_name = config_yaml[setting_name]["log_name"].as<string>();
       }
-      // if(config_yaml[setting_name]["nof_thread"]){
-      //   radios[i].nof_thread = config_yaml[setting_name]["nof_thread"].as<int>();
-      // }else{
-      //   radios[i].nof_thread = 4;
-      // }
+
+      
       // std::cout << "    nof_thread: " << radios[i].nof_thread << std::endl;
     }else{
       std::cout << "Please set the usrp_setting_" << i << " in config.yaml properly." << std::endl;

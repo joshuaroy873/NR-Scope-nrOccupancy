@@ -477,6 +477,9 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_SUCCESS;
   }
 
+  DCIFeedback new_result;
+  task_scheduler_nrscope->result = new_result;
+
   task_scheduler_nrscope->result.dl_grants.resize(task_scheduler_nrscope->nof_known_rntis);
   task_scheduler_nrscope->result.ul_grants.resize(task_scheduler_nrscope->nof_known_rntis);
   task_scheduler_nrscope->result.spare_dl_prbs.resize(task_scheduler_nrscope->nof_known_rntis);

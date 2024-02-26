@@ -1,12 +1,8 @@
 #include "nrscope/hdr/to_google.h"
 
 namespace ToGoogle{
-  PyObject *pName, *pModule, *pCreate, *pPush;
-  PyObject *pClient, *pDict, *pList;
-  PyObject *pInt, *pDouble, *pStr;
-
   std::thread google_thread;
-  std::mutex lock;
+  std::mutex to_google_lock;
   std::queue<LogNode> to_google_queue;
 
   bool run_google;
@@ -16,6 +12,28 @@ namespace ToGoogle{
 
 
   void init_to_google(){
+    run_google = true;
+    google_thread = std::thread(to_google_thread);
+  }
+
+  void push_google_node(LogNode input_log){
+    to_google_lock.lock();
+    to_google_queue.push(input_log);
+    to_google_lock.unlock();
+  }
+
+  void to_google_thread(){
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = my_sig_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+
+    sigaction(SIGINT, &sigIntHandler, NULL);
+
+    PyObject *pName, *pModule, *pCreate, *pPush;
+    PyObject *pClient, *pDict, *pList;
+    PyObject *pInt, *pDouble, *pStr;
     setenv("PYTHONPATH", ".", 0);
 
     Py_Initialize();
@@ -44,27 +62,17 @@ namespace ToGoogle{
           PyErr_Print();
       fprintf(stderr, "Cannot find function.\n");
     }
-    
     list_count = 0;
     list_length = 4000;
     pList = PyList_New(list_length);
-    run_google = true;
-    google_thread = std::thread(to_google_thread);
-  }
-
-  void push_node(LogNode input_log){
-    lock.lock();
-    to_google_queue.push(input_log);
-    lock.unlock();
-  }
-
-  void to_google_thread(){
+    
     while(run_google){
       if(to_google_queue.size()>0){
-        lock.lock();
-        LogNode new_entry = to_google_queue.front();
-        to_google_queue.pop();
-        lock.lock();
+        std::cout << "Pushing to queue..." << std::endl;
+        LogNode new_entry;
+        to_google_lock.lock();
+        new_entry = to_google_queue.front();
+        std::cout << "timestamp: " << new_entry.timestamp << std::endl;
 
         int first_prb = SRSRAN_MAX_PRB_NR;
         for (int i = 0; i < SRSRAN_MAX_PRB_NR && first_prb == SRSRAN_MAX_PRB_NR; i++) {
@@ -129,25 +137,33 @@ namespace ToGoogle{
 
         PyList_SetItem(pList, list_count, pDict);
         list_count += 1;
+        std::cout << "Current list count: " << list_count << std::endl;
+
+        to_google_queue.pop();
+        to_google_lock.unlock();
 
         if(list_count == list_length){
           list_count = 0;
           if(pList != NULL){
             PyTuple_SetItem(pClient, 3, pList);
-            printf("Pushing data...\n");
+            printf("Pushing to google...\n");
             PyObject_CallObject(pPush, pClient);
-            Py_DECREF(pClient);
+            pList = PyList_New(list_length);
+            // Py_DECREF(pClient);
           }else{
             fprintf(stderr,"Creating new dict failed\n");
           }
         }
       }else{
+        printf("No node in the queue...\n");
         usleep(1000);
       }
     }
   }     
 
   void exit_to_google(){
+    to_google_lock.lock();
     run_google = false;
+    to_google_lock.unlock();
   }
 };

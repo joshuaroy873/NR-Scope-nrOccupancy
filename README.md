@@ -44,7 +44,13 @@ sudo ./srsran_performance
 
 Google client cpp library (optional):
 
-Please follow the instruction [here](https://github.com/googleapis/google-cloud-cpp/blob/main/doc/packaging.md) to install the google client library into your system and set `option(BUILD_WITH_GOOGLE     "Enable google cloud client functions"ON)` in the outermost CMakeLists.txt file.
+Please follow the instruction [here](https://github.com/googleapis/google-cloud-cpp/blob/main/doc/packaging.md) to install the google client library into your system and set `option(BUILD_WITH_GOOGLE     "Enable google cloud client functions"ON)` in the outermost CMakeLists.txt file. And you need to use the `gcloud` command to initialize the login information:
+
+```
+sudo gcloud auth application-default login
+sudo gcloud init
+sudo gcloud auth application-default set-quota-project tutorial-explore
+```
 
 ## Files and functions
 
@@ -96,11 +102,12 @@ sudo ./nrscope
 
 (Feb 23, 2024) Added the local log recording function, the output log will be a .csv file and the meaning of each column is in the first row. If needed, set the `local_log` to `true` in the config.yaml and set the `log_name` with the file name. There are still some bugs in the google storage code.
 
+(Feb 26, 2024) Google storage bug is solved, now the code can push the captured DCI in a batch of 4000 entries to the google storage during the DCI decoding.
+
 ## TODOs
 
 There are some on-going plans for the near future:
 
-* Add APIs (in logging class maybe) to send data to Google Storage.
 * Try to decode RRC reconfiguration message.
 * Test the tool with different bandwidth, SCS, and different duplexing modes (TDD and FDD), with the help of Amarisoft. If decoding the DCIs for more UEs takes longer time than one TTI, we need to add multi-thread DCI decoding functionality.
 * Add carrier aggregation decoding function (multiple USRP to decode multiple cell towers that the UE is connected to).

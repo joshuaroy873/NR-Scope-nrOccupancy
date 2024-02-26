@@ -9,7 +9,7 @@ usrp_setting_0:
   scs_index: 1 #(0: 15kHz, 1: 30kHz, ..., the u in standard)
   rf_log_level: "debug"
 
-  local_log: true
+  local_log: false
   log_name: "/home/wanhr/Documents/data/nrscope/telemetry/a.csv"
   
   push_to_google: true

@@ -30,8 +30,10 @@ int main(int argc, char *argv[])
 					pDict = PyDict_New();
 					pDouble = PyFloat_FromDouble(100.1);
 					PyDict_SetItemString(pDict, "timestamp", pDouble);
-					pDouble = PyFloat_FromDouble(102.2);
-					PyDict_SetItemString(pDict, "slot_index", pDouble);
+					pInt = PyLong_FromLong(100);
+					PyDict_SetItemString(pDict, "system_frame_index", pInt);
+					pInt = PyLong_FromLong(12);
+					PyDict_SetItemString(pDict, "slot_index", pInt);
 					pInt = PyLong_FromLong(17042);
 					PyDict_SetItemString(pDict, "rnti", pInt);
 					pStr = PyUnicode_FromString("c-rnti");

@@ -187,4 +187,10 @@ const char* sch_xoverhead_to_str(srsran_xoverhead_t xoverhead);
   * @return double type UNIX timestamp in microsecond.
   */
 double get_now_timestamp_in_double();
+
+
+/**
+  * Handle the CTRL+C signal in each thread.
+  */
+void my_sig_handler(int s);
 #endif

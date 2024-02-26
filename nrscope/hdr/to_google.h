@@ -8,7 +8,7 @@ namespace ToGoogle{
 
   void init_to_google();
 
-  void push_node(LogNode input_log);
+  void push_google_node(LogNode input_log);
 
   void to_google_thread();
 

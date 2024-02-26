@@ -76,7 +76,14 @@ namespace NRScopeLog{
   }
 
   void logger_thread(){
-    // printf("Queue length: %ld\n", log_queue.size());
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = my_sig_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+
+    sigaction(SIGINT, &sigIntHandler, NULL);
+
     while(run_log){
       // printf("Queue length: %ld\n", log_queue.size());
       if(log_queue.size() > 0){

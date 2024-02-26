@@ -172,21 +172,6 @@ int Radio::RadioInitandStart(){
         ERROR("Error in RadioCapture");
         return NR_FAILURE;
       }
-
-      // if(SIB1Loop() < SRSRAN_SUCCESS){
-      //   ERROR("Error in SIB1Loop");
-      //   return NR_FAILURE;
-      // }
-
-      // if(MSG2and4Loop() < SRSRAN_SUCCESS){
-      //   ERROR("Error in MSG2and4Loop");
-      //   return NR_FAILURE;
-      // }
-
-      // if(DCILoop() < SRSRAN_SUCCESS){
-      //   ERROR("Error in DCILoop");
-      //   return NR_FAILURE;
-      // }
     }
   }
   return SRSRAN_SUCCESS;
@@ -339,7 +324,7 @@ int Radio::RadioCapture(){
                 NRScopeLog::push_node(log_node);
               }
               if(to_google){
-                ToGoogle::push_node(log_node);
+                ToGoogle::push_google_node(log_node);
               }
             }
 
@@ -353,7 +338,7 @@ int Radio::RadioCapture(){
                 NRScopeLog::push_node(log_node);
               }
               if(to_google){
-                ToGoogle::push_node(log_node);
+                ToGoogle::push_google_node(log_node);
               }
             }
           } 

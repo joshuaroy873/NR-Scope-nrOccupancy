@@ -69,6 +69,7 @@ def create_table_with_position_and_time():
   return client, table, schema, rows
 
 def push_data_to_table(client, table, schema, rows_input):
+  # print(rows_input)
   tic = time.perf_counter()
   batch_size = len(rows_input)
   client.insert_rows(table, rows_input, schema)

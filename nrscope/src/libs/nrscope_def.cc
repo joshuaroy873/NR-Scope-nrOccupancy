@@ -36,3 +36,8 @@ const char* sch_xoverhead_to_str(srsran_xoverhead_t xoverhead)
   }
   return "invalid";
 }
+
+void my_sig_handler(int s){
+  printf("Caught signal %d\n",s);
+  exit(0); 
+}

@@ -37,6 +37,7 @@ def create_table_with_position_and_time():
         bigquery.SchemaField("slot_index", "INTEGER", mode="REQUIRED"),
         bigquery.SchemaField("rnti", "INTEGER", mode="REQUIRED"),
         bigquery.SchemaField("rnti_type", "STRING", mode="REQUIRED"),
+        bigquery.SchemaField("dci_format", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("k", "INTEGER", mode="REQUIRED"),
         bigquery.SchemaField("mapping", "STRING", mode="REQUIRED"),
         bigquery.SchemaField("time_start", "INTEGER", mode="REQUIRED"),

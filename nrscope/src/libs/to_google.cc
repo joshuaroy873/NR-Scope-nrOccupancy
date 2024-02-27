@@ -92,6 +92,8 @@ namespace ToGoogle{
         PyDict_SetItemString(pDict, "rnti", pInt);
         pStr = PyUnicode_FromString(srsran_rnti_type_str(new_entry.grant.grant.rnti_type));
         PyDict_SetItemString(pDict, "rnti_type", pStr);
+        pStr = PyUnicode_FromString(new_entry.dci_format.c_str());
+        PyDict_SetItemString(pDict, "dci_format", pStr);
         pInt = PyLong_FromLong(new_entry.grant.grant.k);
         PyDict_SetItemString(pDict, "k", pInt);
         pStr = PyUnicode_FromString(sch_mapping_to_str(new_entry.grant.grant.mapping));

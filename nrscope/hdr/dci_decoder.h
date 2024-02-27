@@ -44,6 +44,9 @@ class DCIDecoder{
     srsran_dci_dl_nr_t* dci_dl;
     srsran_dci_ul_nr_t* dci_ul;
 
+    // uint8_t* data_pdcch;
+    // srsran_pdsch_res_nr_t pdsch_res;
+
     DCIDecoder(uint32_t nof_known_rntis);
     ~DCIDecoder();
 

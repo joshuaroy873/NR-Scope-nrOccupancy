@@ -20,6 +20,11 @@ DCIDecoder::DCIDecoder(uint32_t nof_known_rntis){
   dci_dl = (srsran_dci_dl_nr_t*) malloc(sizeof(srsran_dci_dl_nr_t) * (nof_known_rntis));
   dci_ul = (srsran_dci_ul_nr_t*) malloc(sizeof(srsran_dci_ul_nr_t) * (nof_known_rntis));
 
+  // data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
+  // if (data_pdcch == NULL) {
+  //   ERROR("Error malloc");
+  // }
+
 }
 
 DCIDecoder::~DCIDecoder(){
@@ -540,6 +545,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         if(dci_dl[dci_idx_dl].ctx.format == srsran_dci_format_nr_1_1) {
           srsran_sch_cfg_nr_t pdsch_cfg = {};
           pdsch_hl_cfg.mcs_table = srsran_mcs_table_256qam;
+
           if (srsran_ra_dl_dci_to_grant_nr(&carrier_dl, slot, &pdsch_hl_cfg, &dci_dl[dci_idx_dl], 
                                           &pdsch_cfg, &pdsch_cfg.grant) < SRSRAN_SUCCESS) {
             ERROR("Error decoding PDSCH search");
@@ -547,6 +553,56 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
           }
           srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
           printf("DCIDecoder -- PDSCH_cfg:\n%s", str);
+
+
+          /* Trying to decode the RRC Reconfiguration*/
+          // if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
+          //     SRSRAN_SUCCESS) {
+          //   ERROR("SIBDecoder -- Error init soft-buffer");
+          //   return SRSRAN_ERROR;
+          // }
+
+          // // Reset the data_pdcch to zeros
+          // srsran_vec_u8_zero(data_pdcch, SRSRAN_SLOT_MAX_NOF_BITS_NR);
+          
+          // pdsch_cfg.grant.tb[0].softbuffer.rx = &softbuffer; // Set softbuffer
+          // pdsch_res = {}; // Prepare PDSCH result
+          // pdsch_res.tb[0].payload = data_pdcch;
+
+          // // Decode PDSCH
+          // if (srsran_ue_dl_nr_decode_pdsch(ue_dl_tmp, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
+          //   printf("DCIDecoder -- Error decoding PDSCH search\n");
+          //   return SRSRAN_ERROR;
+          // }
+          // if (!pdsch_res.tb[0].crc) {
+          //   printf("DCIDecoder -- Error decoding PDSCH (CRC)\n");
+          //   return SRSRAN_ERROR;
+          // }
+          // printf("DCIDecoder Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
+          // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+
+          // // check payload is not all null
+          // bool all_zero = true;
+          // for (int i = 0; i < pdsch_cfg.grant.tb[0].tbs / 8; ++i) {
+          //   if (pdsch_res.tb[0].payload[i] != 0x0) {
+          //     all_zero = false;
+          //     break;
+          //   }
+          // }
+          // if (all_zero) {
+          //   ERROR("PDSCH payload is all zeros");
+          //   return SRSRAN_ERROR;
+          // }
+          // std::cout << "Try to decode RRC_RECFG..." << std::endl;
+          // asn1::rrc_nr::bcch_dl_sch_msg_s dlsch_msg;
+          // asn1::cbit_ref dlsch_bref(pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+          // asn1::SRSASN_CODE err = task_scheduler_nrscope->rrc_recfg.unpack(dlsch_bref);
+
+          // asn1::json_writer jw;
+          // task_scheduler_nrscope->rrc_recfg.to_json(jw);
+          // printf("Decoded RRC_RECFG: %s\n", jw.to_string().c_str());
+          /* Trying to decode the RRC Reconfiguration*/
+
 
           task_scheduler_nrscope->result.dl_grants[dci_idx_dl] = pdsch_cfg;
           task_scheduler_nrscope->result.nof_dl_used_prbs += pdsch_cfg.grant.nof_prb * pdsch_cfg.grant.L;

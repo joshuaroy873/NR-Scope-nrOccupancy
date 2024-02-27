@@ -80,6 +80,7 @@
     "ue_dl_nr.h": "c",
     "cassert": "cpp",
     "regex": "cpp",
-    "span": "cpp"
+    "span": "cpp",
+    "*.h++": "cpp"
   }
 }

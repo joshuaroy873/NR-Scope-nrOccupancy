@@ -108,6 +108,6 @@ sudo ./nrscope
 
 There are some on-going plans for the near future:
 
-* Try to decode RRC reconfiguration message.
+* Try to decode RRC reconfiguration message, it's hard to do so because current srsRAN 5G UE code doesn't support MIMO PDSCH decoding.
 * Test the tool with different bandwidth, SCS, and different duplexing modes (TDD and FDD), with the help of Amarisoft. If decoding the DCIs for more UEs takes longer time than one TTI, we need to add multi-thread DCI decoding functionality.
 * Add carrier aggregation decoding function (multiple USRP to decode multiple cell towers that the UE is connected to).

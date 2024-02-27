@@ -20,6 +20,8 @@ class TaskSchedulerNRScope{
 
     asn1::rrc_nr::rrc_setup_s rrc_setup;
     asn1::rrc_nr::cell_group_cfg_s master_cell_group;
+
+    asn1::rrc_nr::rrc_recfg_s rrc_recfg;
     // srsran::mac_rar_pdu_nr rar_pdu; // rar pdu
 
     bool sib1_found; // SIB 1 decoded, we can start the RACH thread

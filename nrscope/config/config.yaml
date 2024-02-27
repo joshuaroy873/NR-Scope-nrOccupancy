@@ -10,11 +10,7 @@ usrp_setting_0:
   rf_log_level: "debug"
 
   local_log: true
-<<<<<<< HEAD
   log_name: "/home/wanhr/Documents/data/nrscope/telemetry/a.csv"
-=======
-  log_name: "/home/wanhr/Documents/data/nrscope/telemetry/b.csv"
->>>>>>> dev_haoran
   
   push_to_google: true
 

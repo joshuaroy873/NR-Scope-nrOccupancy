@@ -42,15 +42,9 @@ cd script
 sudo ./srsran_performance
 ```
 
-Google client cpp library (optional):
+Push DCI logs to google storage BigQuery table (optional):
 
-Please follow the instruction [here](https://github.com/googleapis/google-cloud-cpp/blob/main/doc/packaging.md) to install the google client library into your system and set `option(BUILD_WITH_GOOGLE     "Enable google cloud client functions"ON)` in the outermost CMakeLists.txt file. And you need to use the `gcloud` command to initialize the login information:
-
-```
-sudo gcloud auth application-default login
-sudo gcloud init
-sudo gcloud auth application-default set-quota-project tutorial-explore
-```
+Using google client c++ library requires c++ 14.0, where in ubuntu 22.04, the default c++ version is 11.0. We thought that nobody wants to mess with the system compiling environments, so we implement the function of pushing data to google cloud storage with python. To do so, first set ` push_to_google: true` in the config.yaml. Then install the google cloud python library and use the `gcloud` command to initialize the login information:sudo gcloud auth application-default login
 
 ## Files and functions
 

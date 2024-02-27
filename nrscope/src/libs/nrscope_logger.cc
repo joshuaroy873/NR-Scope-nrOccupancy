@@ -12,7 +12,7 @@ namespace NRScopeLog{
     filename = filename_input;
     FILE* pFile = fopen(filename.c_str(), "a");
     // Transform the input_node into one log entry row.
-    fprintf(pFile, "%s\n", "timestamp,system_frame_index,slot_index,rnti,rnti_type,k,mapping,time_start,time_length,"
+    fprintf(pFile, "%s\n", "timestamp,system_frame_index,slot_index,rnti,rnti_type,dci_format,k,mapping,time_start,time_length,"
       "frequency_start,frequency_length,nof_dmrs_cdm_groups,beta_dmrs,nof_layers,n_scid,tb_scaling_field,"
       "modulation,mcs_index,transport_block_size,code_rate,redundancy_version,new_data_indicator,"
       "nof_re,nof_bits,mcs_table,xoverhead");
@@ -40,12 +40,13 @@ namespace NRScopeLog{
       }
     }
 
-    snprintf(buff, sizeof(buff), "%f,%d,%d,%d,%s,%d,%s,%d,%d,%d,%d,%d,%f,%d,%d,%d,%s,%d,%d,%f,%d,%d,%d,%d,%s,%s", 
+    snprintf(buff, sizeof(buff), "%f,%d,%d,%d,%s,%s,%d,%s,%d,%d,%d,%d,%d,%f,%d,%d,%d,%s,%d,%d,%f,%d,%d,%d,%d,%s,%s", 
             input_node.timestamp,
             input_node.system_frame_idx,
             input_node.slot_idx,
             input_node.grant.grant.rnti,
             srsran_rnti_type_str(input_node.grant.grant.rnti_type),
+            input_node.dci_format.c_str(),
             input_node.grant.grant.k,
             sch_mapping_to_str(input_node.grant.grant.mapping),
             input_node.grant.grant.S,

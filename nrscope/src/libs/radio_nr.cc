@@ -320,6 +320,7 @@ int Radio::RadioCapture(){
               log_node.system_frame_idx = outcome.sfn;
               log_node.timestamp = get_now_timestamp_in_double();
               log_node.grant = task_scheduler_nrscope.result.dl_grants[i];
+              log_node.dci_format = srsran_dci_format_nr_string(task_scheduler_nrscope.result.dl_dcis[i].ctx.format);
               if(local_log){
                 NRScopeLog::push_node(log_node);
               }
@@ -334,6 +335,7 @@ int Radio::RadioCapture(){
               log_node.system_frame_idx = outcome.sfn;
               log_node.timestamp = get_now_timestamp_in_double();
               log_node.grant = task_scheduler_nrscope.result.ul_grants[i];
+              log_node.dci_format = srsran_dci_format_nr_string(task_scheduler_nrscope.result.dl_dcis[i].ctx.format);
               if(local_log){
                 NRScopeLog::push_node(log_node);
               }

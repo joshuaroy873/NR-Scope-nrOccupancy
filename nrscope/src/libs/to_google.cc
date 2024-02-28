@@ -10,9 +10,16 @@ namespace ToGoogle{
   int list_length;
   int list_count;
 
+  std::string google_credential;
+  std::string google_project_id;
+  std::string google_dataset_id;
 
-  void init_to_google(){
+
+  void init_to_google(std::string google_credential_input, std::string google_project_id_input, std::string google_dataset_id_input){
     run_google = true;
+    google_credential = google_credential_input;
+    google_project_id = google_project_id_input;
+    google_dataset_id = google_dataset_id_input;
     google_thread = std::thread(to_google_thread);
   }
 
@@ -33,7 +40,7 @@ namespace ToGoogle{
 
     PyObject *pName, *pModule, *pCreate, *pPush;
     PyObject *pClient, *pDict, *pList;
-    PyObject *pInt, *pDouble, *pStr;
+    PyObject *pInt, *pDouble, *pStr, *pCredential, *pProjectID, *pDatasetID, *pInput;
     setenv("PYTHONPATH", ".", 0);
 
     Py_Initialize();
@@ -49,7 +56,11 @@ namespace ToGoogle{
 
       if (pCreate && PyCallable_Check(pCreate)) {
         printf("Creating table...\n");
-        pClient = PyObject_CallObject(pCreate, NULL);
+        pCredential = PyUnicode_FromString(google_credential.c_str());
+        pProjectID = PyUnicode_FromString(google_project_id.c_str());
+        pDatasetID = PyUnicode_FromString(google_dataset_id.c_str());
+			  pInput = PyTuple_Pack(3, pCredential, pProjectID, pDatasetID);
+        pClient = PyObject_CallObject(pCreate, pInput);
       }else {
         Py_DECREF(pCreate);
         Py_DECREF(pModule);
@@ -72,6 +83,9 @@ namespace ToGoogle{
         LogNode new_entry;
         to_google_lock.lock();
         new_entry = to_google_queue.front();
+        to_google_queue.pop();
+        to_google_lock.unlock();
+
         std::cout << "timestamp: " << new_entry.timestamp << std::endl;
 
         int first_prb = SRSRAN_MAX_PRB_NR;
@@ -140,9 +154,6 @@ namespace ToGoogle{
         PyList_SetItem(pList, list_count, pDict);
         list_count += 1;
         std::cout << "Current list count: " << list_count << std::endl;
-
-        to_google_queue.pop();
-        to_google_lock.unlock();
 
         if(list_count == list_length){
           list_count = 0;

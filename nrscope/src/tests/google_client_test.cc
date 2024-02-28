@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 {
 	PyObject *pName, *pModule, *pCreate, *pPush;
 	PyObject *pClient, *pDict, *pList;
-	PyObject *pInt, *pDouble, *pStr;
+	PyObject *pInt, *pDouble, *pStr, *pInput;
 
 	setenv("PYTHONPATH", ".", 0);
 
@@ -22,7 +22,9 @@ int main(int argc, char *argv[])
 
 		if (pCreate && PyCallable_Check(pCreate)) {
 			printf("Creating table...\n");
-			pClient = PyObject_CallObject(pCreate, NULL);
+			pStr = PyUnicode_FromString("/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json");
+			pInput = PyTuple_Pack(1, pStr);
+			pClient = PyObject_CallObject(pCreate, pInput);
 
 			if (pClient != NULL) {
 				if (pPush && PyCallable_Check(pPush)){

@@ -6,7 +6,7 @@
 
 namespace ToGoogle{
 
-  void init_to_google();
+  void init_to_google(std::string google_credential_input, std::string google_project_id_input, std::string google_dataset_id_input);
 
   void push_google_node(LogNode input_log);
 

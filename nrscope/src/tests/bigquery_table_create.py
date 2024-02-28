@@ -1,15 +1,17 @@
 from google.cloud import bigquery
+from google.cloud.exceptions import NotFound
 from datetime import datetime
 import time
 import geocoder
+import os
 
-def create_table_with_position_and_time():
+def create_table_with_position_and_time(credentials):
   # Get geolocation of the user
   geo_loc = geocoder.ip('me').latlng
   print(geo_loc)
   geo_str = ""
   if(float(geo_loc[0]) >= 0):
-    geo_str += "P_" + str(int(geo_loc[0])) + "_" + "{:.4f}".format(int(geo_loc[0] - int(geo_loc[0])) * 1000)[2:]
+    geo_str += "P_" + str(int(geo_loc[0])) + "_" + "{:.4f}".format(geo_loc[0] - int(geo_loc[0]))[2:]
   else:
     geo_str += "N_" + str(int(abs(geo_loc[0]))) + "_" + "{:.4f}".format(abs(geo_loc[0] - int(geo_loc[0])))[2:]
 
@@ -25,10 +27,21 @@ def create_table_with_position_and_time():
   print("The current time is", current_iime) 
 
   # Construct a BigQuery client object.
+  os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials
   client = bigquery.Client()
+  dataset_id = "{}.ngscope5g_dci_log_2".format(client.project)
+
+  try:
+    client.get_dataset(dataset_id)  # Make an API request.
+    print("Dataset {} already exists".format(dataset_id))
+  except NotFound:
+    dataset = bigquery.Dataset(dataset_id)
+    dataset.location = "US"
+    dataset = client.create_dataset(dataset, timeout=30)  # Make an API request.
+    print("Dataset {} is not found, creating".format(dataset_id))
 
   # TODO(developer): Set table_id to the ID of the table to create.
-  table_id = "tutorial-explore.ngscope_dci_log."+geo_str+"_"+current_iime
+  table_id = "nsf-2223556-222187.ngscope5g_dci_log_2."+geo_str+"_"+current_iime
 
   schema = [
       bigquery.SchemaField("timestamp", "FLOAT", mode="REQUIRED"),

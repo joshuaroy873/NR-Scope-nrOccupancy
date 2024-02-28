@@ -43,8 +43,18 @@ sudo ./srsran_performance
 ```
 
 Push DCI logs to google storage BigQuery table (optional):
+Using google client c++ library requires c++ 14.0, where in ubuntu 22.04, the default c++ version is 11.0. We thought that nobody wants to mess with the system compiling environments, so we implement the function of pushing data to google cloud storage with python. Here is a step-by-step instruction of how to push the DCI log to our google cloud storage:
 
-Using google client c++ library requires c++ 14.0, where in ubuntu 22.04, the default c++ version is 11.0. We thought that nobody wants to mess with the system compiling environments, so we implement the function of pushing data to google cloud storage with python. To do so, first set ` push_to_google: true` in the config.yaml. Then install the google cloud python library and use the `gcloud` command to initialize the login information:sudo gcloud auth application-default login
+```
+1. sudo pip install google-cloud-storage geocoder
+2. sudo gcloud auth application-default login --impersonate-service-account bigquery-writer@tutorial-explore.iam.gserviceaccount.com
+3. # There will be a link from goole, open that link and login with any of your google account.
+4. sudo gcloud init
+5. # In the config file (./nrscope/config.yaml), set push_to_google: true.
+6. # In the config file (./nrscope/config.yaml), set google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-b5d2ea50f5d1.json" with the google service account credential file (provided by us)'s location on your file system.
+7. # In the config file (./nrscope/config.yaml), set google_project_id: "tutorial-explore" with the google cloud project id.
+8. # In the config file (./nrscope/config.yaml), set google_dataset_id: "ngscope5g_dci_log" with the google cloud Bigquery dataset name, everyone has his/her own dataset. The code will create one if the dataset with this dataset id is not existed.
+```
 
 ## Files and functions
 

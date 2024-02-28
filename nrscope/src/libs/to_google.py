@@ -1,16 +1,18 @@
 from google.cloud import bigquery
+from google.cloud.exceptions import NotFound
 from datetime import datetime
 import time
 import geocoder
+import os
 
-def create_table_with_position_and_time():
+def create_table_with_position_and_time(credential, project_id, dataset_id):
   try:
     # Get geolocation of the user
     geo_loc = geocoder.ip('me').latlng
     print(geo_loc)
     geo_str = ""
     if(float(geo_loc[0]) >= 0):
-      geo_str += "P_" + str(int(geo_loc[0])) + "_" + "{:.4f}".format(int(geo_loc[0] - int(geo_loc[0])) * 1000)[2:]
+      geo_str += "P_" + str(int(geo_loc[0])) + "_" + "{:.4f}".format(geo_loc[0] - int(geo_loc[0]))[2:]
     else:
       geo_str += "N_" + str(int(abs(geo_loc[0]))) + "_" + "{:.4f}".format(abs(geo_loc[0] - int(geo_loc[0])))[2:]
 
@@ -22,14 +24,24 @@ def create_table_with_position_and_time():
 
     # Get current datetime
     current_date_and_time = datetime.now()
-    current_iime = current_date_and_time.strftime('%Y_%m_%d_%H_%M_%S_%f')
-    print("The current time is", current_iime) 
+    current_time = current_date_and_time.strftime('%Y_%m_%d_%H_%M_%S_%f')
+    print("The current time is", current_time) 
 
-    # Construct a BigQuery client object.
+    # Construct a BigQuery client object, check the existence of a bigquery dataset.
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential
     client = bigquery.Client()
+    dataset_id = "{}.{}".format(client.project, dataset_id)
+    try:
+      client.get_dataset(dataset_id)  # Make an API request.
+      print("Dataset {} already exists".format(dataset_id))
+    except NotFound:
+      dataset = bigquery.Dataset(dataset_id)
+      dataset.location = "US"
+      dataset = client.create_dataset(dataset, timeout=30)  # Make an API request.
+      print("Dataset {} is not found, creating".format(dataset_id))
 
     # TODO(developer): Set table_id to the ID of the table to create.
-    table_id = "tutorial-explore.ngscope_dci_log."+geo_str+"_"+current_iime
+    table_id = project_id+"."+dataset_id+"."+geo_str+"_"+current_time
 
     schema = [
         bigquery.SchemaField("timestamp", "FLOAT", mode="REQUIRED"),

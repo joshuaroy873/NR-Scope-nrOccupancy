@@ -58,10 +58,12 @@ class Radio{
     HarqTracker harq_tracker;
 
     std::string log_name;
-    // std::string ul_log_name;
     bool local_log;
 
     bool to_google;
+    std::string google_credential;
+    std::string google_project_id;
+    std::string google_dataset_id;
 
     Radio();  //constructor
     ~Radio(); //deconstructor

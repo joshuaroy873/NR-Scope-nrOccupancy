@@ -23,8 +23,8 @@ def create_table_with_position_and_time(credentials):
 
   # Get current datetime
   current_date_and_time = datetime.now()
-  current_iime = current_date_and_time.strftime('%Y_%m_%d_%H_%M_%S_%f')
-  print("The current time is", current_iime) 
+  current_time = current_date_and_time.strftime('%Y_%m_%d_%H_%M_%S_%f')
+  print("The current time is", current_time) 
 
   # Construct a BigQuery client object.
   os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials
@@ -41,7 +41,7 @@ def create_table_with_position_and_time(credentials):
     print("Dataset {} is not found, creating".format(dataset_id))
 
   # TODO(developer): Set table_id to the ID of the table to create.
-  table_id = "nsf-2223556-222187.ngscope5g_dci_log_2."+geo_str+"_"+current_iime
+  table_id = "{}.{}".format(dataset_id, geo_str+"_"+current_time)
 
   schema = [
       bigquery.SchemaField("timestamp", "FLOAT", mode="REQUIRED"),

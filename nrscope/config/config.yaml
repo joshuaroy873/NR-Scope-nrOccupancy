@@ -13,8 +13,8 @@ usrp_setting_0:
   log_name: "/home/wanhr/Documents/data/nrscope/telemetry/a.csv"
   
   push_to_google: true
-  google_service_account_credential: "/home/wanhr/Downloads/tutorial-explore-1ca8a5f1c3df.json"
-  google_project_id: "tutorial-explore"
-  google_dataset_id: "ngscope5g_dci_log"
+  google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json"
+  google_project_id: "nsf-2223556-222187"
+  google_dataset_id: "ngscope5g_dci_log_wanhr"
   
 

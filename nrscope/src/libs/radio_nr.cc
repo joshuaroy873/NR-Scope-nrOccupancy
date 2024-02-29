@@ -91,7 +91,7 @@ int Radio::RadioInitandStart(){
     NRScopeLog::init_logger(log_name);
   }
   if(to_google){
-    ToGoogle::init_to_google(google_credential, google_project_id, google_dataset_id);
+    ToGoogle::init_to_google(google_credential, google_dataset_id);
   }
 
   while (not ss.end()) {

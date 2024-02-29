@@ -5,7 +5,7 @@ import time
 import geocoder
 import os
 
-def create_table_with_position_and_time(credential, project_id, dataset_id):
+def create_table_with_position_and_time(credential, dataset_id_input):
   try:
     # Get geolocation of the user
     geo_loc = geocoder.ip('me').latlng
@@ -30,7 +30,7 @@ def create_table_with_position_and_time(credential, project_id, dataset_id):
     # Construct a BigQuery client object, check the existence of a bigquery dataset.
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credential
     client = bigquery.Client()
-    dataset_id = "{}.{}".format(client.project, dataset_id)
+    dataset_id = "{}.{}".format(client.project, dataset_id_input)
     try:
       client.get_dataset(dataset_id)  # Make an API request.
       print("Dataset {} already exists".format(dataset_id))
@@ -41,7 +41,7 @@ def create_table_with_position_and_time(credential, project_id, dataset_id):
       print("Dataset {} is not found, creating".format(dataset_id))
 
     # TODO(developer): Set table_id to the ID of the table to create.
-    table_id = project_id+"."+dataset_id+"."+geo_str+"_"+current_time
+    table_id = "{}.{}".format(dataset_id, geo_str+"_"+current_time)
 
     schema = [
         bigquery.SchemaField("timestamp", "FLOAT", mode="REQUIRED"),

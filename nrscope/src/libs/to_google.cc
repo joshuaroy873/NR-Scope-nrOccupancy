@@ -15,10 +15,10 @@ namespace ToGoogle{
   std::string google_dataset_id;
 
 
-  void init_to_google(std::string google_credential_input, std::string google_project_id_input, std::string google_dataset_id_input){
+  void init_to_google(std::string google_credential_input, std::string google_dataset_id_input){
     run_google = true;
     google_credential = google_credential_input;
-    google_project_id = google_project_id_input;
+    // google_project_id = google_project_id_input;
     google_dataset_id = google_dataset_id_input;
     google_thread = std::thread(to_google_thread);
   }
@@ -55,11 +55,10 @@ namespace ToGoogle{
       /* pFunc is a new reference */
 
       if (pCreate && PyCallable_Check(pCreate)) {
-        printf("Creating table...\n");
         pCredential = PyUnicode_FromString(google_credential.c_str());
-        pProjectID = PyUnicode_FromString(google_project_id.c_str());
+        // pProjectID = PyUnicode_FromString(google_project_id.c_str());
         pDatasetID = PyUnicode_FromString(google_dataset_id.c_str());
-			  pInput = PyTuple_Pack(3, pCredential, pProjectID, pDatasetID);
+			  pInput = PyTuple_Pack(2, pCredential, pDatasetID);
         pClient = PyObject_CallObject(pCreate, pInput);
       }else {
         Py_DECREF(pCreate);

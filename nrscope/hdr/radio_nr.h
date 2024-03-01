@@ -62,7 +62,7 @@ class Radio{
 
     bool to_google;
     std::string google_credential;
-    std::string google_project_id;
+    // std::string google_project_id;
     std::string google_dataset_id;
 
     Radio();  //constructor

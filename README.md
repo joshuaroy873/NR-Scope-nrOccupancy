@@ -52,8 +52,7 @@ Using google client c++ library requires c++ 14.0, where in ubuntu 22.04, the de
 4. sudo gcloud init
 5. # In the config file (./nrscope/config.yaml), set push_to_google: true.
 6. # In the config file (./nrscope/config.yaml), set google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-b5d2ea50f5d1.json" with the google service account credential file (provided by us)'s location on your file system.
-7. # In the config file (./nrscope/config.yaml), set google_project_id: "tutorial-explore" with the google cloud project id.
-8. # In the config file (./nrscope/config.yaml), set google_dataset_id: "ngscope5g_dci_log" with the google cloud Bigquery dataset name, everyone has his/her own dataset. The code will create one if the dataset with this dataset id is not existed.
+7. # In the config file (./nrscope/config.yaml), set google_dataset_id: "ngscope5g_dci_log" with the google cloud Bigquery dataset name, everyone has his/her own dataset. The code will create one if the dataset with this dataset id is not existed.
 ```
 
 ```

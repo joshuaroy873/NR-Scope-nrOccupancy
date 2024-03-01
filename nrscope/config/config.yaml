@@ -14,7 +14,6 @@ usrp_setting_0:
   
   push_to_google: true
   google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json"
-  google_project_id: "nsf-2223556-222187"
   google_dataset_id: "ngscope5g_dci_log_wanhr"
   
 

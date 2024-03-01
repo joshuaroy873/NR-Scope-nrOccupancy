@@ -142,9 +142,9 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
           radios[i].google_credential = config_yaml[setting_name]["google_service_account_credential"].as<string>();
         }
 
-        if(config_yaml[setting_name]["google_project_id"]){
-          radios[i].google_project_id = config_yaml[setting_name]["google_project_id"].as<string>();
-        }
+        // if(config_yaml[setting_name]["google_project_id"]){
+        //   radios[i].google_project_id = config_yaml[setting_name]["google_project_id"].as<string>();
+        // }
 
         if(config_yaml[setting_name]["google_dataset_id"]){
           radios[i].google_dataset_id = config_yaml[setting_name]["google_dataset_id"].as<string>();

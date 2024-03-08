@@ -190,6 +190,38 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
     return SRSRAN_ERROR;
   }
 
+  pdsch_carrier = base_carrier;
+  arg_scs_pdsch = arg_scs;
+
+  double pointA = task_scheduler_nrscope->srsran_searcher_cfg_t.ssb_freq_hz - (SRSRAN_SSB_BW_SUBC / 2) *
+    cell.abs_ssb_scs - cell.k_ssb * SRSRAN_SUBC_SPACING_NR(srsran_subcarrier_spacing_15kHz) 
+    - sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.offset_to_point_a * 
+    SRSRAN_SUBC_SPACING_NR(srsran_subcarrier_spacing_15kHz) * NRSCOPE_NSC_PER_RB_NR;
+
+  pdsch_carrier.nof_prb = sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.scs_specific_carrier_list[0].carrier_bw;
+  double dl_center_frequency = pointA + pdsch_carrier.nof_prb * NRSCOPE_NSC_PER_RB_NR * SRSRAN_SUBC_SPACING_NR(task_scheduler_nrscope->srsran_searcher_cfg_t.ssb_scs) / 2;
+  std::cout << "dl_center_frequency: " << dl_center_frequency << std::endl;
+
+  arg_scs_pdsch.coreset_offset_scs = (task_scheduler_nrscope->srsran_searcher_cfg_t.ssb_freq_hz - dl_center_frequency) / cell.abs_pdcch_scs;
+  
+  // The lower boundary of PDSCH can be not aligned with the lower boundary of PDCCH
+  if (srsran_ue_dl_nr_init_nrscope(&ue_dl_pdsch, input, &ue_dl_args, arg_scs_pdsch)) {
+    ERROR("Error UE DL");
+    return SRSRAN_ERROR;
+  }
+
+  if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl_pdsch, &pdsch_carrier, arg_scs_pdsch)) {
+    ERROR("Error setting SCH NR carrier");
+    return SRSRAN_ERROR;
+  }
+
+  start_rb = (task_scheduler_nrscope->coreset0_args_t.coreset0_lower_freq_hz - pointA) / SRSRAN_SUBC_SPACING_NR(arg_scs_pdsch.scs) / 12;
+
+  if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl_pdsch, &pdcch_cfg, &dci_cfg)) {
+    ERROR("Error setting CORESET");
+    return SRSRAN_ERROR;
+  }
+
   return SRSRAN_SUCCESS;
 }
 
@@ -208,6 +240,7 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   memset(&dci_rach, 0, sizeof(srsran_dci_dl_nr_t));
   
   srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_rach, slot, arg_scs);
+  srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_pdsch, slot, arg_scs_pdsch);
 
   int nof_found_dci = srsran_ue_dl_nr_find_dl_dci_nrscope(&ue_dl_rach, slot, ra_rnti, nof_ra_rnti, srsran_rnti_type_tc, &dci_rach, 1);
 
@@ -242,9 +275,10 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   printf("RACHDecoder -- Found DCI: %s\n", str);
   tc_rnti = dci_rach.ctx.rnti;
 
-  pdsch_cfg = {};
+  srsran_sch_cfg_nr_t pdsch_cfg = {};
+  dci_rach.ctx.coreset_start_rb = start_rb;
 
-  if (srsran_ra_dl_dci_to_grant_nr(&base_carrier, slot, &pdsch_hl_cfg, &dci_rach, &pdsch_cfg, &pdsch_cfg.grant) <
+  if (srsran_ra_dl_dci_to_grant_nr(&pdsch_carrier, slot, &pdsch_hl_cfg, &dci_rach, &pdsch_cfg, &pdsch_cfg.grant) <
       SRSRAN_SUCCESS) {
     ERROR("RACHDecoder -- Error decoding PDSCH search");
     return SRSRAN_ERROR;
@@ -270,7 +304,7 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   pdsch_res.tb[0].payload = data_pdcch;
 
   // Decode PDSCH
-  if (srsran_ue_dl_nr_decode_pdsch(&ue_dl_rach, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
+  if (srsran_ue_dl_nr_decode_pdsch(&ue_dl_pdsch, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
     printf("Error decoding PDSCH search\n");
     return SRSRAN_ERROR;
   }
@@ -301,6 +335,11 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   }
   if (all_zero) {
     ERROR("RACHDecoder -- PDSCH payload is all zeros");
+    return SRSRAN_ERROR;
+  }
+
+  if(pdsch_cfg.grant.tb[0].tbs / 8 < 40){
+    ERROR("Too short for RRC Setup");
     return SRSRAN_ERROR;
   }
 

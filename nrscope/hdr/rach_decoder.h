@@ -16,6 +16,7 @@ class RachDecoder{
   public:
     asn1::rrc_nr::sib1_s sib1; 
     srsran_carrier_nr_t base_carrier;
+    srsran_carrier_nr_t pdsch_carrier;
     prach_nr_config_t prach_cfg_nr;
     srsran_prach_t prach;
     srsran_prach_cfg_t prach_cfg;
@@ -23,11 +24,12 @@ class RachDecoder{
     srsran_dci_dl_nr_t dci_rach;
     srsran_sch_cfg_nr_t pdsch_cfg;
 
-
     uint16_t *ra_rnti;
     uint32_t nof_ra_rnti;
+    int start_rb;
 
     srsran_ue_dl_nr_sratescs_info arg_scs;
+    srsran_ue_dl_nr_sratescs_info arg_scs_pdsch;
     srsran_sch_hl_cfg_nr_t pdsch_hl_cfg;
     srsran_softbuffer_rx_t softbuffer;
     srsran_dci_cfg_nr_t dci_cfg;
@@ -36,6 +38,7 @@ class RachDecoder{
     srsran_pdsch_res_nr_t pdsch_res;
     
     srsran_ue_dl_nr_t ue_dl_rach;
+    srsran_ue_dl_nr_t ue_dl_pdsch;
     
     cell_search_result_t cell;
     srsran_coreset_t coreset0_t;

@@ -203,12 +203,11 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
       }
 
       std::cout << "SIB " << (int)sib_id << "Decoded." << std::endl;
+      /* Uncomment to print the decode SIBs. */
+      asn1::json_writer js_sibs;
+      (task_scheduler_nrscope->sibs[(int)sib_id]).to_json(js_sibs);
+      printf("Decoded SIBs: %s\n", js_sibs.to_string().c_str());
     }    
-
-    /* Uncomment to print the decode SIBs. */
-    // asn1::json_writer js_sibs;
-    // (task_scheduler_nrscope->sibs).to_json(js_sibs);
-    // printf("Decoded SIBs: %s\n", js_sibs.to_string().c_str());
   }else if(srsran_unlikely(asn1::rrc_nr::bcch_dl_sch_msg_type_c::c1_c_::types_opts::sys_info != dlsch_msg.msg.c1().type())){
     task_scheduler_nrscope->sib1 = dlsch_msg.msg.c1().sib_type1();
     std::cout << "SIB 1 Decoded." << std::endl;
@@ -223,9 +222,9 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
     }
 
     /* Uncomment to print the decode SIB1. */
-    // asn1::json_writer js_sib1;
-    // (task_scheduler_nrscope->sib1).to_json(js_sib1);
-    // printf("Decoded SIB1: %s\n", js_sib1.to_string().c_str());
+    asn1::json_writer js_sib1;
+    (task_scheduler_nrscope->sib1).to_json(js_sib1);
+    printf("Decoded SIB1: %s\n", js_sib1.to_string().c_str());
   }
 
   srsran_softbuffer_rx_free(&softbuffer);

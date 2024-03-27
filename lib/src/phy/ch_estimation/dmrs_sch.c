@@ -28,6 +28,10 @@
 #define SRSRAN_DMRS_SCH_TYPEA_SINGLE_DURATION_MIN 3
 #define SRSRAN_DMRS_SCH_TYPEA_DOUBLE_DURATION_MIN 4
 
+#define SRSRAN_DMRS_SCH_TYPEB_SINGLE_DURATION_MAX 14
+#define SRSRAN_DMRS_SCH_TYPEB_DOUBLE_DURATION_MIN 5
+#define SRSRAN_DMRS_SCH_TYPEB_DOUBLE_DURATION_MAX 14
+
 /**
  * @brief Set to 1 for synchronization error pre-compensation before interpolator
  */
@@ -351,6 +355,90 @@ static int srsran_dmrs_sch_get_symbols_idx_mapping_type_A_single(const srsran_dm
   return count;
 }
 
+// Implements 3GPP 38.211 R.15 Table 6.4.1.1.3-3 PUSCH mapping type B Single
+static int srsran_dmrs_sch_get_symbols_idx_mapping_type_B_single(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
+                                                                 uint32_t                     ld,
+                                                                 uint32_t                     S,
+                                                                 uint32_t symbols[SRSRAN_DMRS_SCH_MAX_SYMBOLS])
+{
+  // the count of DMRS positions
+  int count = 0;
+
+  // printf("Decoding Type_B: PDSCH Symbol Duration ld: %d\n", ld);
+
+
+  // for PDSCH mapping type B: l is defined relative to the start of the scheduled PDSCH resources
+  int l0 = S;
+
+  symbols[count] = l0;
+  count++;
+
+  if (ld < 5 || dmrs_cfg->additional_pos == srsran_dmrs_sch_add_pos_0) {
+    return count;
+  } 
+  
+  if (ld < 8) {
+    symbols[count] = l0+4;
+    count++;
+  } else if (ld < 10) {
+    if (dmrs_cfg->additional_pos == srsran_dmrs_sch_add_pos_2 || dmrs_cfg->additional_pos == srsran_dmrs_sch_add_pos_3) {
+      symbols[count] = l0+3;
+      count++;
+    }
+
+    symbols[count] = l0+6;
+    count++;
+  }
+  else if (ld < 12) {
+    switch(dmrs_cfg->additional_pos) {
+      case srsran_dmrs_sch_add_pos_1:
+        symbols[count] = l0+8;
+        count++;
+        break;
+
+      case srsran_dmrs_sch_add_pos_2:
+        symbols[count] = l0+4;
+        count++;
+        symbols[count] = l0+8;
+        count++;
+        break;
+
+      default:
+        symbols[count] = l0+3;
+        count++;
+        symbols[count] = l0+6;
+        count++;
+        symbols[count] = l0+9;
+        count++;
+    }
+  } else {
+    switch(dmrs_cfg->additional_pos) {
+      case srsran_dmrs_sch_add_pos_1:
+        symbols[count] = l0+10;
+        count++;
+        break;
+      
+      case srsran_dmrs_sch_add_pos_2:
+        symbols[count] = l0+5;
+        count++;
+        symbols[count] = l0+10;
+        count++;
+        break;
+
+      default:
+        symbols[count] = l0+3;
+        count++;
+        symbols[count] = l0+6;
+        count++;
+        symbols[count] = l0+9;
+        count++;
+    }
+  } 
+
+  return count;
+}
+
+
 // Implements 3GPP 38.211 R.15 Table 7.4.1.1.2-4 PDSCH mapping type A Double
 static int srsran_dmrs_sch_get_symbols_idx_mapping_type_A_double(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
                                                                  uint32_t                     ld,
@@ -395,6 +483,58 @@ static int srsran_dmrs_sch_get_symbols_idx_mapping_type_A_double(const srsran_dm
   return count;
 }
 
+// Implements 3GPP 38.211 R.15 Table 6.4.1.1.3-4 PDSCH mapping type B Double
+static int srsran_dmrs_sch_get_symbols_idx_mapping_type_B_double(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
+                                                                 uint32_t                     ld,
+                                                                 uint32_t                     S,
+                                                                 uint32_t symbols[SRSRAN_DMRS_SCH_MAX_SYMBOLS])
+{
+  int count = 0;
+
+  if (ld < SRSRAN_DMRS_SCH_TYPEB_DOUBLE_DURATION_MIN) {
+    ERROR("Duration is below the minimum! ld: (%d)", ld);
+    return SRSRAN_ERROR;
+  }
+
+  // According to Table 7.4.1.1.2-4, the additional position 3 is invalid.
+  if (dmrs_cfg->additional_pos == srsran_dmrs_sch_add_pos_3) {
+    ERROR("Invalid additional DMRS (%d)", dmrs_cfg->additional_pos);
+    return SRSRAN_ERROR;
+  }
+
+  // for PDSCH mapping type B: l is defined relative to the start of the scheduled PDSCH resources
+  int l0 = S;
+
+  symbols[count] = l0;
+  count++;
+  symbols[count] = symbols[count - 1] + 1;
+  count++;
+
+  if (ld < 8 || dmrs_cfg->additional_pos == srsran_dmrs_sch_add_pos_0) {
+    return count;
+  }
+
+  if (ld < 10) {
+    symbols[count] = l0+5;
+    count++;
+    symbols[count] = symbols[count - 1] + 1;
+    count++;
+  } else if(ld < 12) {
+    symbols[count] = l0+7;
+    count++;
+    symbols[count] = symbols[count - 1] + 1;
+    count++;
+  } else {
+    symbols[count] = l0+9;
+    count++;
+    symbols[count] = symbols[count - 1] + 1;
+    count++;
+  }
+
+  return count;
+}
+
+
 int srsran_dmrs_sch_get_symbols_idx(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
                                     const srsran_sch_grant_nr_t* grant,
                                     uint32_t                     symbols[SRSRAN_DMRS_SCH_MAX_SYMBOLS])
@@ -406,6 +546,8 @@ int srsran_dmrs_sch_get_symbols_idx(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
   uint32_t ld = grant->L;
   if (grant->mapping == srsran_sch_mapping_type_A) {
     ld = grant->S + grant->L;
+  } else if(grant->mapping == srsran_sch_mapping_type_B) {
+    ld = grant->L;
   }
 
   switch (grant->mapping) {
@@ -431,8 +573,12 @@ int srsran_dmrs_sch_get_symbols_idx(const srsran_dmrs_sch_cfg_t* dmrs_cfg,
       }
       return srsran_dmrs_sch_get_symbols_idx_mapping_type_A_double(dmrs_cfg, ld, symbols);
     case srsran_sch_mapping_type_B:
-      ERROR("Error PDSCH mapping type B not supported");
-      return SRSRAN_ERROR;
+      //grant->dci_format = srsran_dci_format_nr_0_0;
+      if (dmrs_cfg->length == srsran_dmrs_sch_len_1) {
+        // printf("dmrs_cfg->length == srsran_dmrs_sch_len_1\n");
+        return srsran_dmrs_sch_get_symbols_idx_mapping_type_B_single(dmrs_cfg, ld, grant->S, symbols);
+      }
+      return srsran_dmrs_sch_get_symbols_idx_mapping_type_B_double(dmrs_cfg, ld, grant->S, symbols);
   }
 
   return SRSRAN_ERROR;

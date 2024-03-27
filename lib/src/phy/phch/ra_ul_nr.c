@@ -34,6 +34,8 @@ typedef struct {
   uint32_t                  L;
 } ue_ra_time_resource_t;
 
+// 38.214 Table 6.1.2.1.1-2: Default time domain resource allocation A for PUSCH
+
 static const ue_ra_time_resource_t ue_ul_default_A_lut[SRSRAN_MAX_NOF_TIME_RA] = {
     {srsran_sch_mapping_type_A, 0, 0, 14},
     {srsran_sch_mapping_type_A, 0, 0, 12},
@@ -91,7 +93,7 @@ static void ra_ul_nr_time_hl(const srsran_sch_time_ra_t* hl_ra_cfg, srsran_sch_g
 // Validate S and L combination for TypeA time domain resource allocation
 static bool check_time_ra_typeA(uint32_t* S, uint32_t* L)
 {
-  // Check values using Table 5.1.2.1-1
+  // Check values using 38.214-Table 6.1.2.1-1
   if (*S != 0) {
     ERROR("S (%d) is out-of-range {0}", *S);
     return false;
@@ -118,8 +120,29 @@ static bool check_time_ra_typeA(uint32_t* S, uint32_t* L)
 
 static bool check_time_ra_typeB(uint32_t* S, uint32_t* L)
 {
-  ERROR("Not implemented");
-  return false;
+  // Check values using 38.214-Table 6.1.2.1-1 Type B
+  if (*S > 13) {
+    ERROR("S (%d) is out-of-range {0,...,13}", *S);
+    return false;
+  }
+
+  if (*L < 1 || *L > 14) {
+    ERROR("L (%d) is out-of-range {1,...,14}", *L);
+    return false;
+  }
+
+  uint32_t sum = *S + *L;
+  if (sum < 1) {
+    ERROR("The sum of S (%d) and L (%d) is lower than 1", *S, *L);
+    return false;
+  }
+
+  if (sum > 14) {
+    ERROR("The sum of S (%d) and L (%d) is greater than 14", *S, *L);
+    return false;
+  }
+
+  return true;
 }
 
 bool srsran_ra_ul_nr_time_validate(srsran_sch_grant_nr_t* grant)

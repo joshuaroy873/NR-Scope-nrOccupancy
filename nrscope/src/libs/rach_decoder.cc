@@ -371,9 +371,9 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     break;
   }
 
-  // asn1::json_writer js_msg4;
-  // task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
-  // printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
+  asn1::json_writer js_msg4;
+  task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
+  printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
   asn1::cbit_ref bref_cg((task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.data(),
                     (task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.size());
   if (task_scheduler_nrscope->master_cell_group.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
@@ -381,9 +381,9 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_ERROR;
   }        
   
-  // asn1::json_writer js;
-  // task_scheduler_nrscope->master_cell_group.to_json(js);
-  // printf("masterCellGroup: %s\n", js.to_string().c_str());
+  asn1::json_writer js;
+  task_scheduler_nrscope->master_cell_group.to_json(js);
+  printf("masterCellGroup: %s\n", js.to_string().c_str());
 
   // Tells the task scheduler that the RACH is decoded and there are some entries in the know_rntis vector.
   task_scheduler_nrscope->rach_found = true;

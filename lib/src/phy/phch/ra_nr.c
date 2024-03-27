@@ -846,15 +846,20 @@ ra_ul_dmrs(const srsran_sch_hl_cfg_nr_t* pusch_hl_cfg, const srsran_dci_ul_nr_t*
   if (dci->ctx.format == srsran_dci_format_nr_0_0 || dci->ctx.format == srsran_dci_format_nr_rar ||
       !dedicated_dmrs_present) {
     if (cfg->grant.mapping == srsran_sch_mapping_type_A) {
-      // Absent default values are defined is TS 38.331 - DMRS-DownlinkConfig
+      // Absent default values are defined in TS 38.331 - DMRS-UplinkConfig
       cfg->dmrs.additional_pos         = srsran_dmrs_sch_add_pos_2;
       cfg->dmrs.type                   = srsran_dmrs_sch_type_1;
       cfg->dmrs.length                 = srsran_dmrs_sch_len_1;
       cfg->dmrs.scrambling_id0_present = false;
       cfg->dmrs.scrambling_id1_present = false;
     } else {
-      ERROR("Unsupported configuration");
-      return SRSRAN_ERROR;
+      // ERROR("Unsupported configuration");
+      // return SRSRAN_ERROR;
+      cfg->dmrs.additional_pos         = srsran_dmrs_sch_add_pos_2;
+      cfg->dmrs.type                   = srsran_dmrs_sch_type_1;
+      cfg->dmrs.length                 = srsran_dmrs_sch_len_1;
+      cfg->dmrs.scrambling_id0_present = false;
+      cfg->dmrs.scrambling_id1_present = false;      
     }
   } else {
     // DMRS duration

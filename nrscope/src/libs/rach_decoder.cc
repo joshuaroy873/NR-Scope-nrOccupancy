@@ -160,6 +160,25 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
   memcpy(&base_carrier, &task_scheduler_nrscope->args_t.base_carrier, sizeof(srsran_carrier_nr_t));
   cell = task_scheduler_nrscope->cell;
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
+  for (uint32_t pdsch_time_id = 0; pdsch_time_id < sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list.size(); pdsch_time_id++){
+    if(sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list[pdsch_time_id].k0_present){
+      pdsch_hl_cfg.common_time_ra[pdsch_time_id].k = sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list[pdsch_time_id].k0;
+    }
+    pdsch_hl_cfg.common_time_ra[pdsch_time_id].sliv = sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list[pdsch_time_id].start_symbol_and_len;
+    switch(sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list[pdsch_time_id].map_type){
+      case asn1::rrc_nr::pdsch_time_domain_res_alloc_s::map_type_e_::type_a:
+        pdsch_hl_cfg.common_time_ra[pdsch_time_id].mapping_type = srsran_sch_mapping_type_A;
+        break;
+      case asn1::rrc_nr::pdsch_time_domain_res_alloc_s::map_type_e_::type_b:
+        pdsch_hl_cfg.common_time_ra[pdsch_time_id].mapping_type = srsran_sch_mapping_type_B;
+        break;
+      case asn1::rrc_nr::pdsch_time_domain_res_alloc_s::map_type_e_::nulltype:
+        break;
+      default:
+        break;
+    }
+  }
+  pdsch_hl_cfg.nof_common_time_ra = sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list.size();
 
   ue_dl_args.nof_rx_antennas               = 1;
   ue_dl_args.pdsch.sch.disable_simd        = false;

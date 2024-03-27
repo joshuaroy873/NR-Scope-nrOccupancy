@@ -10,7 +10,7 @@ usrp_setting_0:
   rf_log_level: "debug"
 
   local_log: true
-  log_name: "/home/paws/fanyi/NG-Scope-5G-Workspace/data/dci_log/dci_log_3649440000.csv"
+  log_name: "./a.csv"
   
   push_to_google: false
   google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json"

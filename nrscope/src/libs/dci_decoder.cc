@@ -435,6 +435,46 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   pdsch_hl_cfg.alloc = dci_cfg.pdsch_alloc_type;
   pusch_hl_cfg.alloc = dci_cfg.pusch_alloc_type;
 
+  for (uint32_t pdsch_time_id = 0; pdsch_time_id < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup().size(); pdsch_time_id++){
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].k0_present){
+      pdsch_hl_cfg.common_time_ra[pdsch_time_id].k = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].k0;
+    }
+    pdsch_hl_cfg.common_time_ra[pdsch_time_id].sliv = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].start_symbol_and_len;
+    switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].map_type){
+      case asn1::rrc_nr::pdsch_time_domain_res_alloc_s::map_type_e_::type_a:
+        pdsch_hl_cfg.common_time_ra[pdsch_time_id].mapping_type = srsran_sch_mapping_type_A;
+        break;
+      case asn1::rrc_nr::pdsch_time_domain_res_alloc_s::map_type_e_::type_b:
+        pdsch_hl_cfg.common_time_ra[pdsch_time_id].mapping_type = srsran_sch_mapping_type_B;
+        break;
+      case asn1::rrc_nr::pdsch_time_domain_res_alloc_s::map_type_e_::nulltype:
+        break;
+      default:
+        break;
+    }
+  }
+  pdsch_hl_cfg.nof_common_time_ra = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup().size();
+
+  for (uint32_t pusch_time_id = 0; pusch_time_id < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup().size(); pusch_time_id++){
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].k2_present){
+      pusch_hl_cfg.common_time_ra[pusch_time_id].k = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].k2;
+    }
+    pusch_hl_cfg.common_time_ra[pusch_time_id].sliv = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].start_symbol_and_len;
+    switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].map_type){
+      case asn1::rrc_nr::pusch_time_domain_res_alloc_s::map_type_e_::type_a:
+        pusch_hl_cfg.common_time_ra[pusch_time_id].mapping_type = srsran_sch_mapping_type_A;
+        break;
+      case asn1::rrc_nr::pusch_time_domain_res_alloc_s::map_type_e_::type_b:
+        pusch_hl_cfg.common_time_ra[pusch_time_id].mapping_type = srsran_sch_mapping_type_B;
+        break;
+      case asn1::rrc_nr::pusch_time_domain_res_alloc_s::map_type_e_::nulltype:
+        break;
+      default:
+        break;
+    }
+  }
+  pusch_hl_cfg.nof_common_time_ra = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup().size();
+
   // config according to the SIB 1's UL and DL BWP size
   dci_cfg.bwp_dl_initial_bw = sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.scs_specific_carrier_list[0].carrier_bw;
   dci_cfg.bwp_dl_active_bw = sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.scs_specific_carrier_list[0].carrier_bw;

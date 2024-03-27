@@ -196,8 +196,8 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   }
   printf("coreset_dmrs_scrambling id: %u\n", coreset1_t.dmrs_scrambling_id);
 
-  pdcch_cfg.coreset[1] = coreset1_t;
-  pdcch_cfg.coreset_present[1] = true;
+  pdcch_cfg.coreset[coreset1_t.id] = coreset1_t;
+  pdcch_cfg.coreset_present[coreset1_t.id] = true;
 
   char coreset_info[512] = {};
   srsran_coreset_to_str(&coreset1_t, coreset_info, sizeof(coreset_info));

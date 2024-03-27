@@ -114,6 +114,8 @@ sudo ./nrscope
 
 (Feb 26, 2024) Google storage bug is solved, now the code can push the captured DCI in a batch of 4000 entries to the google storage during the DCI decoding.
 
+(Mar 27, 2024) Fan added support for PDSCH and PUSCH mapping type B for DCI decoding, thank Fan. Found a bug that we didn't use SLIV in SIB 1 or RRC Setup for time domain resource mapping, which previously happens to have the same calculation results (the first row of default mapping type A and SLIV 53 for downlink). Now it's solved.
+
 ## TODOs
 
 There are some on-going plans for the near future:

@@ -1,12 +1,12 @@
 #include "nrscope/hdr/nrscope_def.h"
 
 double get_now_timestamp_in_double(){
-  auto time = std::chrono::system_clock::now().time_since_epoch();
-  std::chrono::seconds seconds = std::chrono::duration_cast< std::chrono::seconds >(time);
-  std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(time);
-  std::chrono::microseconds us = std::chrono::duration_cast< std::chrono::microseconds >(time);
+  // auto time = std::chrono::system_clock::now().time_since_epoch();
+  // std::chrono::seconds seconds = std::chrono::duration_cast< std::chrono::seconds >(time);
+  // std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(std::chrono::system_clock::now().time_since_epoch());
+  std::chrono::microseconds us = std::chrono::duration_cast< std::chrono::microseconds >(std::chrono::system_clock::now().time_since_epoch());
 
-  return (double) seconds.count() + ((double) (ms.count() % 1000)/1000.0) + ((double) (us.count() % 1000000)/1000000.0);
+  return ((double) us.count()) / 1000000.0; // + ((double) (us.count() % 1000000)/1000000.0);
 }
 
 const char* sch_mapping_to_str(srsran_sch_mapping_type_t mapping)

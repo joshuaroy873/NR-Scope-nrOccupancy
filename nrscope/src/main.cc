@@ -15,7 +15,7 @@
 // }
 
 int main(int argc, char** argv){
-  srsran_debug_handle_crash(argc, argv);
+  // srsran_debug_handle_crash(argc, argv);
 
   // struct sigaction sigIntHandler;
 

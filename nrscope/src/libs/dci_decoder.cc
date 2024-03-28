@@ -115,94 +115,103 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   }
   
   // all the Coreset information is from RRCSetup
-  coreset1_t.id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
+  for (uint32_t crst_id = 0; crst_id < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
+    ctrl_res_set_to_add_mod_list.size(); crst_id++){
+    srsran_coreset_t coreset_n;
+    coreset_n.id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
                   ctrl_res_set_to_add_mod_list[0].ctrl_res_set_id; 
-  coreset1_t.duration = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
-                        ctrl_res_set_to_add_mod_list[0].dur;
-  for(int i = 0; i < 45; i++){
-    coreset1_t.freq_resources[i] = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
-                                   setup().ctrl_res_set_to_add_mod_list[0].freq_domain_res.get(45-i-1);
-  }
-  coreset1_t.offset_rb = 0;
-  if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
-      setup().ctrl_res_set_to_add_mod_list[0].precoder_granularity == 
-      asn1::rrc_nr::ctrl_res_set_s::precoder_granularity_opts::same_as_reg_bundle){
-    coreset1_t.precoder_granularity = srsran_coreset_precoder_granularity_reg_bundle;
-  }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
-            setup().ctrl_res_set_to_add_mod_list[0].precoder_granularity == 
-            asn1::rrc_nr::ctrl_res_set_s::precoder_granularity_opts::all_contiguous_rbs){
-    coreset1_t.precoder_granularity = srsran_coreset_precoder_granularity_contiguous;
-  }
-  if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+    coreset_n.duration = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
+                          ctrl_res_set_to_add_mod_list[0].dur;
+    for(int i = 0; i < 45; i++){
+      coreset_n.freq_resources[i] = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+                                    setup().ctrl_res_set_to_add_mod_list[0].freq_domain_res.get(45-i-1);
+    }
+    coreset_n.offset_rb = 0;
+    if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+        setup().ctrl_res_set_to_add_mod_list[0].precoder_granularity == 
+        asn1::rrc_nr::ctrl_res_set_s::precoder_granularity_opts::same_as_reg_bundle){
+      coreset_n.precoder_granularity = srsran_coreset_precoder_granularity_reg_bundle;
+    }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+              setup().ctrl_res_set_to_add_mod_list[0].precoder_granularity == 
+              asn1::rrc_nr::ctrl_res_set_s::precoder_granularity_opts::all_contiguous_rbs){
+      coreset_n.precoder_granularity = srsran_coreset_precoder_granularity_contiguous;
+    }
+
+    if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
       setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.type() == 
       asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::types_opts::non_interleaved ||
       master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
       setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.type() == 
       asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::types_opts::nulltype){
-    coreset1_t.mapping_type = srsran_coreset_mapping_type_non_interleaved; 
-    coreset1_t.interleaver_size = srsran_coreset_bundle_size_n2; // doesn't matter, fill a random value
-    coreset1_t.shift_index = 0; // doesn't matter, fill a random value
-    coreset1_t.reg_bundle_size = srsran_coreset_bundle_size_n6; // doesen't matter, fill a random value
-  }else{
-    coreset1_t.mapping_type = srsran_coreset_mapping_type_interleaved; 
-    switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
-           setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.interleaved().interleaver_size){
-      case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::interleaver_size_e_::n2:
-        coreset1_t.interleaver_size = srsran_coreset_bundle_size_n2;
-        break;
-      case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::interleaver_size_e_::n3:
-        coreset1_t.interleaver_size = srsran_coreset_bundle_size_n3;
-        break;
-      case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::interleaver_size_e_::n6:
-        coreset1_t.interleaver_size = srsran_coreset_bundle_size_n6;
-        break;
-      case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::nulltype:
-        ERROR("Interleaved size not found, set as bundle_size_n6\n");
-        coreset1_t.reg_bundle_size = srsran_coreset_bundle_size_n6;
-        break;
-      default:
-        ERROR("Interleaved size not found, set as bundle_size_n6\n");
-        coreset1_t.reg_bundle_size = srsran_coreset_bundle_size_n6;
-        break;
+      coreset_n.mapping_type = srsran_coreset_mapping_type_non_interleaved; 
+      coreset_n.interleaver_size = srsran_coreset_bundle_size_n2; // doesn't matter, fill a random value
+      coreset_n.shift_index = 0; // doesn't matter, fill a random value
+      coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n6; // doesen't matter, fill a random value
+    }else{
+      coreset_n.mapping_type = srsran_coreset_mapping_type_interleaved; 
+      switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+            setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.interleaved().interleaver_size){
+        case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::interleaver_size_e_::n2:
+          coreset_n.interleaver_size = srsran_coreset_bundle_size_n2;
+          break;
+        case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::interleaver_size_e_::n3:
+          coreset_n.interleaver_size = srsran_coreset_bundle_size_n3;
+          break;
+        case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::interleaver_size_e_::n6:
+          coreset_n.interleaver_size = srsran_coreset_bundle_size_n6;
+          break;
+        case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::nulltype:
+          ERROR("Interleaved size not found, set as bundle_size_n6\n");
+          coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n6;
+          break;
+        default:
+          ERROR("Interleaved size not found, set as bundle_size_n6\n");
+          coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n6;
+          break;
+      }
+      coreset_n.shift_index = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+      setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.interleaved().shift_idx;
+      switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+            setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.interleaved().reg_bundle_size){
+        case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::n2:
+          coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n2;
+          break;
+        case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::n3:
+          coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n3;
+          break;
+        case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::n6:
+          coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n6;
+          break;
+        case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::nulltype:
+          ERROR("Reg bundle size not found, set as bundle_size_n6\n");
+          coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n6;
+          break;
+        default:
+          ERROR("Reg bundle size not found, set as bundle_size_n6\n");
+          coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n6;
+          break;
+      }
     }
-    coreset1_t.shift_index = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
-     setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.interleaved().shift_idx;
-    switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
-           setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.interleaved().reg_bundle_size){
-      case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::n2:
-        coreset1_t.reg_bundle_size = srsran_coreset_bundle_size_n2;
-        break;
-      case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::n3:
-        coreset1_t.reg_bundle_size = srsran_coreset_bundle_size_n3;
-        break;
-      case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::n6:
-        coreset1_t.reg_bundle_size = srsran_coreset_bundle_size_n6;
-        break;
-      case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::nulltype:
-        ERROR("Reg bundle size not found, set as bundle_size_n6\n");
-        coreset1_t.reg_bundle_size = srsran_coreset_bundle_size_n6;
-        break;
-      default:
-        ERROR("Reg bundle size not found, set as bundle_size_n6\n");
-        coreset1_t.reg_bundle_size = srsran_coreset_bundle_size_n6;
-        break;
+    coreset_n.dmrs_scrambling_id_present = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+                                            setup().ctrl_res_set_to_add_mod_list[0].pdcch_dmrs_scrambling_id_present;
+    if (coreset_n.dmrs_scrambling_id_present){
+      coreset_n.dmrs_scrambling_id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+                                      setup().ctrl_res_set_to_add_mod_list[0].pdcch_dmrs_scrambling_id;
+    }
+    printf("coreset_dmrs_scrambling id: %u\n", coreset_n.dmrs_scrambling_id);
+
+    pdcch_cfg.coreset[coreset_n.id] = coreset_n;
+    pdcch_cfg.coreset_present[coreset_n.id] = true;
+
+    char coreset_info[512] = {};
+    srsran_coreset_to_str(&coreset_n, coreset_info, sizeof(coreset_info));
+    printf("Coreset %d parameter: %s", coreset_n.id, coreset_info);
+
+    if(crst_id == 0){
+      coreset1_t = coreset_n;
     }
   }
-  coreset1_t.dmrs_scrambling_id_present = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
-                                          setup().ctrl_res_set_to_add_mod_list[0].pdcch_dmrs_scrambling_id_present;
-  if (coreset1_t.dmrs_scrambling_id_present){
-    coreset1_t.dmrs_scrambling_id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
-                                    setup().ctrl_res_set_to_add_mod_list[0].pdcch_dmrs_scrambling_id;
-  }
-  printf("coreset_dmrs_scrambling id: %u\n", coreset1_t.dmrs_scrambling_id);
-
-  pdcch_cfg.coreset[coreset1_t.id] = coreset1_t;
-  pdcch_cfg.coreset_present[coreset1_t.id] = true;
-
-  char coreset_info[512] = {};
-  srsran_coreset_to_str(&coreset1_t, coreset_info, sizeof(coreset_info));
-  printf("Coreset %d parameter: %s", coreset1_t.id, coreset_info);
-
+  
   // For FR1 offset_to_point_a uses prbs with 15kHz scs. 
   srsran_searcher_cfg_t = task_scheduler_nrscope->srsran_searcher_cfg_t;
   double pointA = srsran_searcher_cfg_t.ssb_freq_hz - (SRSRAN_SSB_BW_SUBC / 2) *

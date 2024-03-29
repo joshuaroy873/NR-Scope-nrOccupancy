@@ -435,9 +435,29 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   }
   std::cout << "pdsch resource alloc: " << dci_cfg.pdsch_alloc_type << std::endl;
 
-  // using default dmrs type = 1
-  dci_cfg.pdsch_dmrs_type        = srsran_dmrs_sch_type_1; // by default
-  dci_cfg.pdsch_dmrs_max_len     = srsran_dmrs_sch_len_1; // by default
+  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present){
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().dmrs_type_present){
+      dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_2;
+    } else{
+      dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_1;
+    }
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().max_len_present){
+      dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_2; 
+    }else{
+      dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_1; 
+    }
+  }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_b_present){
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_b.setup().dmrs_type_present){
+      dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_2;
+    } else{
+      dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_1;
+    }
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_b.setup().max_len_present){
+      dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_2; 
+    }else{
+      dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_1; 
+    }
+  }
 
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
   pusch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;

@@ -1,7 +1,7 @@
-nof_usrp_dev: 1
+nof_usrp_dev: 2
 usrp_setting_0:
-  dl_freq: 3488160000 #3685440000 #3561600000 #1842050000 #2528550000 #3565920000 #2524950000 #2523750000 # 3565920000 # 2527350000 #3408960000  # should be set to the ssb frequency of the cell
-  rf_args: "clock=external" #"type=x300" #"clock=external"
+  dl_freq: 3565920000 #3685440000 #3561600000 #1842050000 #2528550000 #3565920000 #2524950000 #2523750000 # 3565920000 # 2527350000 #3408960000  # should be set to the ssb frequency of the cell
+  rf_args: "serial=3275368,clock=external,type=b200" #"type=x300" #"clock=external"
   rx_gain: 30 # for x310, max rx gain is 31.5, for b210, it's around 80
   srate_hz: 23040000
   nof_carriers: 1
@@ -9,13 +9,26 @@ usrp_setting_0:
   scs_index: 1 #(0: 15kHz, 1: 30kHz, ..., the u in standard)
   rf_log_level: "debug"
 
-  local_log: true
+  local_log: false
   log_name: "./a.csv"
   
   push_to_google: false
   google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json"
   google_dataset_id: "ngscope5g_dci_log_wanhr"
 
-  # 0x427b
-  
+usrp_setting_1:
+  dl_freq: 3649440000 #3685440000 #3561600000 #1842050000 #2528550000 #3565920000 #2524950000 #2523750000 # 3565920000 # 2527350000 #3408960000  # should be set to the ssb frequency of the cell
+  rf_args: "serial=31993A8,clock=external,type=b200" #"type=x300" #"clock=external"
+  rx_gain: 30 # for x310, max rx gain is 31.5, for b210, it's around 80
+  srate_hz: 23040000
+  nof_carriers: 1
+  nof_antennas: 1
+  scs_index: 1 #(0: 15kHz, 1: 30kHz, ..., the u in standard)
+  rf_log_level: "debug"
 
+  local_log: false
+  log_name: "./b.csv"
+  
+  push_to_google: false
+  google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json"
+  google_dataset_id: "ngscope5g_dci_log_wanhr"

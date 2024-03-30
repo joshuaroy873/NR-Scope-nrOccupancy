@@ -116,6 +116,8 @@ sudo ./nrscope
 
 (Mar 27, 2024) Fan added support for PDSCH and PUSCH mapping type B for DCI decoding, thank Fan. Found a bug that we didn't use SLIV in SIB 1 or RRC Setup for time domain resource mapping, which previously happens to have the same calculation results (the first row of default mapping type A and SLIV 53 for downlink). Now it's solved. Also debugged the timestamp function.
 
+(Mar 30, 2024) Now the code's `log` and `to_google` functions work with multiple threads (USRPs), we are one step away from real-time carrier aggregation calculation. We can calculate the carrier aggregation information from the written logs now in an off-line manner.
+
 ## TODOs
 
 There are some on-going plans for the near future:

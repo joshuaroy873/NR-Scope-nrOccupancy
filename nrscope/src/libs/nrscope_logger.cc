@@ -9,9 +9,9 @@ namespace NRScopeLog{
   bool run_log;
 
   void init_logger(std::vector<std::string> filename_input){
-    filename.resize(filename.size());
-    log_queue.resize(filename.size());
-    for (uint32_t f_id = 0; f_id < filename.size(); f_id++){
+    filename.resize(filename_input.size());
+    log_queue.resize(filename_input.size());
+    for (uint32_t f_id = 0; f_id < filename_input.size(); f_id++){
       filename[f_id] = filename_input[f_id];
       // std::queue<LogNode> log_queue_empty;
       // log_queue.emplace_back(log_queue_empty);
@@ -22,10 +22,9 @@ namespace NRScopeLog{
         "modulation,mcs_index,transport_block_size,code_rate,redundancy_version,new_data_indicator,"
         "nof_re,nof_bits,mcs_table,xoverhead");
       fclose(pFile);
-      run_log = true;
-      log_thread = std::thread{logger_thread};
-      printf("Finished csv head writing...\n");
     }
+    run_log = true;
+    log_thread = std::thread{logger_thread};
   }
 
   // Called to add node into the queue

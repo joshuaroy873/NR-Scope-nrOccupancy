@@ -317,7 +317,7 @@ int Radio::RadioCapture(){
                 NRScopeLog::push_node(log_node, rf_index);
               }
               if(to_google){
-                ToGoogle::push_google_node(log_node);
+                ToGoogle::push_google_node(log_node, rf_index);
               }
             }
 
@@ -332,7 +332,7 @@ int Radio::RadioCapture(){
                 NRScopeLog::push_node(log_node, rf_index);
               }
               if(to_google){
-                ToGoogle::push_google_node(log_node);
+                ToGoogle::push_google_node(log_node, rf_index);
               }
             }
           } 

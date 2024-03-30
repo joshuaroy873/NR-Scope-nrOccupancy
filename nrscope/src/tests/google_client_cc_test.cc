@@ -1,5 +1,6 @@
 #include "nrscope/hdr/nrscope_logger.h"
 #include "nrscope/hdr/nrscope_def.h"
+#include "nrscope/hdr/to_google.h"
 
 int main(){
   std::vector<std::string> filename = {"./a.csv", "./b.csv"};

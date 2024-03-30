@@ -1,16 +1,19 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <vector>
 
 int main(int argc, char *argv[])
 {
 	PyObject *pName, *pModule, *pCreate, *pPush;
-	PyObject *pClient, *pDict, *pList;
+	PyObject *pClient, *pDict, *pList, *pDataId;
 	PyObject *pInt, *pDouble, *pStr, *pInput;
+	std::vector<PyObject *> pLists;
 
 	setenv("PYTHONPATH", ".", 0);
+	pLists.resize(3);
 
 	Py_Initialize();
-	pName = PyUnicode_FromString((char*)"bigquery_table_create");
+	pName = PyUnicode_FromString((char*)"to_google");
 
 	pModule = PyImport_Import(pName);
 	Py_DECREF(pName);
@@ -23,12 +26,15 @@ int main(int argc, char *argv[])
 		if (pCreate && PyCallable_Check(pCreate)) {
 			printf("Creating table...\n");
 			pStr = PyUnicode_FromString("/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json");
-			pInput = PyTuple_Pack(1, pStr);
+			pDataId = PyUnicode_FromString("ngscope5g_dci_log_wanhr");
+			pInt = PyLong_FromLong(3);
+			pInput = PyTuple_Pack(3, pStr, pDataId, pInt);
 			pClient = PyObject_CallObject(pCreate, pInput);
 
 			if (pClient != NULL) {
 				if (pPush && PyCallable_Check(pPush)){
 					// Initialize and set values of dictionary.
+
 					pDict = PyDict_New();
 					pDouble = PyFloat_FromDouble(100.1);
 					PyDict_SetItemString(pDict, "timestamp", pDouble);
@@ -40,6 +46,8 @@ int main(int argc, char *argv[])
 					PyDict_SetItemString(pDict, "rnti", pInt);
 					pStr = PyUnicode_FromString("c-rnti");
 					PyDict_SetItemString(pDict, "rnti_type", pStr);
+					pStr = PyUnicode_FromString("1_1");
+					PyDict_SetItemString(pDict, "dci_format", pStr);
 					pInt = PyLong_FromLong(0);
 					PyDict_SetItemString(pDict, "k", pInt);
 					pStr = PyUnicode_FromString("A");
@@ -84,11 +92,22 @@ int main(int argc, char *argv[])
 					PyDict_SetItemString(pDict, "xoverhead", pInt);
 
 					pList = PyList_New(8000);
+					pLists[0] = PyList_New(8000);
+					pLists[2] = PyList_New(8000);
 					for (int i = 0; i < 8000; i++){
-						PyList_SetItem(pList, i, pDict);
+						PyList_SetItem(pLists[0], i, pDict);
+						PyList_SetItem(pLists[2], i, pDict);
 					}
 					if(pDict != NULL && pList != NULL){
-						PyTuple_SetItem(pClient, 3, pList);
+						PyTuple_SetItem(pClient, 3, pLists[0]);
+						pInt = PyLong_FromLong(0);
+						PyTuple_SetItem(pClient, 4, pInt);
+						PyObject_CallObject(pPush, pClient);
+						pInt = PyLong_FromLong(2);
+						PyTuple_SetItem(pClient, 4, pInt);
+						PyObject_CallObject(pPush, pClient);
+						pInt = PyLong_FromLong(0);
+						PyTuple_SetItem(pClient, 4, pInt);
 						PyObject_CallObject(pPush, pClient);
 						printf("Pushing data...\n");
 						Py_DECREF(pClient);

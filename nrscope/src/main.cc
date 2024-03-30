@@ -51,9 +51,9 @@ int main(int argc, char** argv){
     NRScopeLog::init_logger(log_names);
   }
 
-  // if(radios[0].to_google){
-  //   ToGoogle::init_to_google(google_credential, google_dataset_id);
-  // }
+  if(radios[0].to_google){
+    ToGoogle::init_to_google(radios[0].google_credential, radios[0].google_dataset_id, nof_usrp);
+  }
 
   std::vector<std::thread> radio_threads;
 
@@ -62,7 +62,9 @@ int main(int argc, char** argv){
   }
 
   for (auto& t : radio_threads) {
-    t.join();
+    if(t.joinable()){
+      t.join();
+    }
   } 
 
   // terminate_asn_decoder();

@@ -42,6 +42,19 @@ int main(int argc, char** argv){
     return NR_FAILURE;
   }
 
+  // All the radios have the same setting for local log or push to google
+  if(radios[0].local_log){
+    std::vector<std::string> log_names(nof_usrp);
+    for(int i = 0; i < nof_usrp; i++){
+      log_names[i] = radios[i].log_name;
+    }
+    NRScopeLog::init_logger(log_names);
+  }
+
+  // if(radios[0].to_google){
+  //   ToGoogle::init_to_google(google_credential, google_dataset_id);
+  // }
+
   std::vector<std::thread> radio_threads;
 
   for (auto& my_radio : radios) {

@@ -10,21 +10,21 @@ namespace NRScopeLog{
    * 
    * @param...
   */
-  void init_logger(std::string filename_input);
+  void init_logger(std::vector<std::string> filename_input);
 
   /***
    * ...
    * 
    * @param...
   */
-  void push_node(LogNode input_node);
+  void push_node(LogNode input_node, int rf_index);
 
   /***
    * ...
    * 
    * @param...
   */
-  void write_entry(LogNode input_node);
+  void write_entry(LogNode input_node, int rf_index);
 
   /***
    * ...

@@ -126,31 +126,13 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
       //   radios[i].ul_log_name = ul_log_name;
       // }
 
-      if(config_yaml[setting_name]["local_log"]){
-        radios[i].local_log = config_yaml[setting_name]["local_log"].as<bool>();
-      }else{
-        radios[i].local_log = false;
-      }
-
       if(config_yaml[setting_name]["log_name"]){
         radios[i].log_name = config_yaml[setting_name]["log_name"].as<string>();
       }
 
-      if(config_yaml[setting_name]["push_to_google"]){
-        radios[i].to_google = config_yaml[setting_name]["push_to_google"].as<bool>();
-        if(config_yaml[setting_name]["google_service_account_credential"]){
-          radios[i].google_credential = config_yaml[setting_name]["google_service_account_credential"].as<string>();
-        }
-
-        // if(config_yaml[setting_name]["google_project_id"]){
-        //   radios[i].google_project_id = config_yaml[setting_name]["google_project_id"].as<string>();
-        // }
-
-        if(config_yaml[setting_name]["google_dataset_id"]){
-          radios[i].google_dataset_id = config_yaml[setting_name]["google_dataset_id"].as<string>();
-        }
+      if(config_yaml[setting_name]["google_dataset_id"]){
+        radios[i].google_dataset_id = config_yaml[setting_name]["google_dataset_id"].as<string>();
       }
-
       
       // std::cout << "    nof_thread: " << radios[i].nof_thread << std::endl;
     }else{
@@ -159,7 +141,28 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
     }
   }
 
+  std::string setting_name = "log_config";
+  if(config_yaml[setting_name]["local_log"]){
+    for (int i = 0; i < nof_usrp; i++){
+      radios[i].local_log = config_yaml[setting_name]["local_log"].as<bool>();
+    }
+  }else{
+    for (int i = 0; i < nof_usrp; i++){
+      radios[i].local_log = false;
+    }
+  }
   
+  if(config_yaml[setting_name]["push_to_google"]){
+    for (int i = 0; i < nof_usrp; i++){
+      radios[i].to_google = config_yaml[setting_name]["push_to_google"].as<bool>();
+      if(config_yaml[setting_name]["google_service_account_credential"]){
+        radios[i].google_credential = config_yaml[setting_name]["google_service_account_credential"].as<string>();
+      }
+    }
+    // if(config_yaml[setting_name]["google_project_id"]){
+    //   radios[i].google_project_id = config_yaml[setting_name]["google_project_id"].as<string>();
+    // }
+  }
 
   return NR_SUCCESS;
 }

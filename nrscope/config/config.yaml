@@ -9,11 +9,7 @@ usrp_setting_0:
   scs_index: 1 #(0: 15kHz, 1: 30kHz, ..., the u in standard)
   rf_log_level: "debug"
 
-  local_log: false
   log_name: "./a.csv"
-  
-  push_to_google: false
-  google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json"
   google_dataset_id: "ngscope5g_dci_log_wanhr"
 
 usrp_setting_1:
@@ -26,9 +22,11 @@ usrp_setting_1:
   scs_index: 1 #(0: 15kHz, 1: 30kHz, ..., the u in standard)
   rf_log_level: "debug"
 
-  local_log: false
-  log_name: "./b.csv"
-  
+  log_name: "./b.csv"  
+  google_dataset_id: "ngscope5g_dci_log_wanhr"
+
+log_config:
+  local_log: true
   push_to_google: false
   google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json"
-  google_dataset_id: "ngscope5g_dci_log_wanhr"
+

@@ -14,7 +14,7 @@
 
 class Radio{
   public:
-    int rf_index;
+    int                                           rf_index;
     srsran::rf_args_t                             rf_args;
     std::shared_ptr<srsran::radio>                raido_shared;
     std::shared_ptr<srsran::radio_interface_phy>  radio;

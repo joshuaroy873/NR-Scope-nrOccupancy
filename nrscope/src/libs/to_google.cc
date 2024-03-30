@@ -14,7 +14,6 @@ namespace ToGoogle{
   std::string google_project_id;
   std::string google_dataset_id;
 
-
   void init_to_google(std::string google_credential_input, std::string google_dataset_id_input){
     run_google = true;
     google_credential = google_credential_input;

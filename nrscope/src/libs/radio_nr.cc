@@ -86,14 +86,6 @@ int Radio::RadioInitandStart(){
   srsran::srsran_band_helper::sync_raster_t ss = bands.get_sync_raster(band, cs_args.ssb_scs);
   srsran_assert(ss.valid(), "Invalid synchronization raster");
 
-  // Set log and uploading to google threads
-  if(local_log){
-    NRScopeLog::init_logger(log_name);
-  }
-  if(to_google){
-    ToGoogle::init_to_google(google_credential, google_dataset_id);
-  }
-
   while (not ss.end()) {
     // Get SSB center frequency
     cs_args.ssb_freq_hz = ss.get_frequency();
@@ -322,7 +314,7 @@ int Radio::RadioCapture(){
               log_node.grant = task_scheduler_nrscope.result.dl_grants[i];
               log_node.dci_format = srsran_dci_format_nr_string(task_scheduler_nrscope.result.dl_dcis[i].ctx.format);
               if(local_log){
-                NRScopeLog::push_node(log_node);
+                NRScopeLog::push_node(log_node, rf_index);
               }
               if(to_google){
                 ToGoogle::push_google_node(log_node);
@@ -337,7 +329,7 @@ int Radio::RadioCapture(){
               log_node.grant = task_scheduler_nrscope.result.ul_grants[i];
               log_node.dci_format = srsran_dci_format_nr_string(task_scheduler_nrscope.result.ul_dcis[i].ctx.format);
               if(local_log){
-                NRScopeLog::push_node(log_node);
+                NRScopeLog::push_node(log_node, rf_index);
               }
               if(to_google){
                 ToGoogle::push_google_node(log_node);

@@ -1,35 +1,41 @@
 #include "nrscope/hdr/nrscope_logger.h"
 
 namespace NRScopeLog{
-  std::string filename;
-  std::queue<LogNode> log_queue;
+  std::vector<std::string> filename;
+  std::vector< std::queue<LogNode> > log_queue;
   std::thread log_thread;
   std::mutex lock;
   char buff[2048];
   bool run_log;
 
-  void init_logger(std::string filename_input){
-    filename = filename_input;
-    FILE* pFile = fopen(filename.c_str(), "a");
-    // Transform the input_node into one log entry row.
-    fprintf(pFile, "%s\n", "timestamp,system_frame_index,slot_index,rnti,rnti_type,dci_format,k,mapping,time_start,time_length,"
-      "frequency_start,frequency_length,nof_dmrs_cdm_groups,beta_dmrs,nof_layers,n_scid,tb_scaling_field,"
-      "modulation,mcs_index,transport_block_size,code_rate,redundancy_version,new_data_indicator,"
-      "nof_re,nof_bits,mcs_table,xoverhead");
-    fclose(pFile);
-    run_log = true;
-    log_thread = std::thread{logger_thread};
-    printf("Finished csv head writing...\n");
+  void init_logger(std::vector<std::string> filename_input){
+    filename.resize(filename.size());
+    log_queue.resize(filename.size());
+    for (uint32_t f_id = 0; f_id < filename.size(); f_id++){
+      filename[f_id] = filename_input[f_id];
+      // std::queue<LogNode> log_queue_empty;
+      // log_queue.emplace_back(log_queue_empty);
+      FILE* pFile = fopen(filename[f_id].c_str(), "a");
+      // Transform the input_node into one log entry row.
+      fprintf(pFile, "%s\n", "timestamp,system_frame_index,slot_index,rnti,rnti_type,dci_format,k,mapping,time_start,time_length,"
+        "frequency_start,frequency_length,nof_dmrs_cdm_groups,beta_dmrs,nof_layers,n_scid,tb_scaling_field,"
+        "modulation,mcs_index,transport_block_size,code_rate,redundancy_version,new_data_indicator,"
+        "nof_re,nof_bits,mcs_table,xoverhead");
+      fclose(pFile);
+      run_log = true;
+      log_thread = std::thread{logger_thread};
+      printf("Finished csv head writing...\n");
+    }
   }
 
   // Called to add node into the queue
-  void push_node(LogNode input_node){
+  void push_node(LogNode input_node, int rf_index){
     lock.lock();
-    log_queue.push(input_node);
+    log_queue[rf_index].push(input_node);
     lock.unlock();
   }
 
-  void write_entry(LogNode input_node){
+  void write_entry(LogNode input_node, int rf_index){
     // Write the data in a CSV format.
     memset(buff, 0, sizeof(buff));
 
@@ -69,7 +75,7 @@ namespace NRScopeLog{
             srsran_mcs_table_to_str(input_node.grant.sch_cfg.mcs_table),
             sch_xoverhead_to_str(input_node.grant.sch_cfg.xoverhead)
     );
-    FILE* pFile = fopen(filename.c_str(), "a");
+    FILE* pFile = fopen(filename[rf_index].c_str(), "a");
     
     // Transform the input_node into one log entry row.
     fprintf(pFile, "%s\n", buff);
@@ -87,23 +93,24 @@ namespace NRScopeLog{
 
     while(run_log){
       // printf("Queue length: %ld\n", log_queue.size());
-      if(log_queue.size() > 0){
-        lock.lock();
-        LogNode new_node = log_queue.front();
-        // Write to local disk
-        write_entry(new_node);
-        printf("new_node_timestamp: %f\n", new_node.timestamp);
-        log_queue.pop();
-        lock.unlock();
-      }else{
-        usleep(1000);
+      for (int rf_index = 0; rf_index < (int)filename.size(); rf_index++){
+        if(log_queue[rf_index].size() > 0){
+          lock.lock();
+          LogNode new_node = log_queue[rf_index].front();
+          // Write to local disk
+          write_entry(new_node, rf_index);
+          printf("new_node_timestamp: %f\n", new_node.timestamp);
+          log_queue[rf_index].pop();
+          lock.unlock();
+        }else{
+          usleep(1000);
+        }
       }
+      
     }
   }
 
   void exit_logger(){
-    lock.lock();
     run_log = false;
-    lock.unlock();
   }
 };

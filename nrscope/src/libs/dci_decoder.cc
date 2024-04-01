@@ -358,8 +358,33 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     ERROR("No PUSCH resource allocation found, use type 1\n");
     dci_cfg.pusch_alloc_type = srsran_resource_alloc_type1;
   }
-  dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_1;  ///< PUSCH DMRS type
-  dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_1; ///< PUSCH DMRS maximum length
+
+  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present){
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().dmrs_type_present){
+      dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_2;
+    } else{
+      dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_1;
+    }
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().max_len_present){
+      dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_2; 
+    }else{
+      dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_1; 
+    }
+  }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_b_present){
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_b.setup().dmrs_type_present){
+      dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_2;
+    } else{
+      dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_1;
+    }
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_b.setup().max_len_present){
+      dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_2; 
+    }else{
+      dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_1; 
+    }
+  }else{
+    dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_1;  ///< PUSCH DMRS type
+    dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_1; ///< PUSCH DMRS maximum length
+  }
 
   /// Format 1_1 specific configuration (for PDSCH only)
   switch (master_cell_group.phys_cell_group_cfg.pdsch_harq_ack_codebook){
@@ -457,6 +482,9 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     }else{
       dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_1; 
     }
+  }else{
+    dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_1;
+    dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_1; 
   }
 
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;

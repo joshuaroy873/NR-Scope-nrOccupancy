@@ -54,8 +54,10 @@ class Radio{
     TaskSchedulerNRScope task_scheduler_nrscope;
     RachDecoder rach_decoder; // processing for uplink in rach
     SIBsDecoder sibs_decoder;
-    DCIDecoder dci_decoder;
     HarqTracker harq_tracker;
+
+    uint32_t nof_threads;
+    std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
 
     std::string log_name;
     bool local_log;

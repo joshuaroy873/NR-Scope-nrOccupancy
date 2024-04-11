@@ -12,7 +12,6 @@
     "ctime": "cpp",
     "cwchar": "cpp",
     "cwctype": "cpp",
-    "any": "cpp",
     "array": "cpp",
     "atomic": "cpp",
     "strstream": "cpp",
@@ -47,7 +46,7 @@
     "optional": "cpp",
     "random": "cpp",
     "ratio": "cpp",
-    "source_location": "cpp",
+    "regex": "cpp",
     "string_view": "cpp",
     "system_error": "cpp",
     "tuple": "cpp",
@@ -66,6 +65,7 @@
     "numbers": "cpp",
     "ostream": "cpp",
     "semaphore": "cpp",
+    "span": "cpp",
     "sstream": "cpp",
     "stdexcept": "cpp",
     "stop_token": "cpp",
@@ -75,12 +75,6 @@
     "typeindex": "cpp",
     "typeinfo": "cpp",
     "valarray": "cpp",
-    "variant": "cpp",
-    "*.ipp": "cpp",
-    "ue_dl_nr.h": "c",
-    "cassert": "cpp",
-    "regex": "cpp",
-    "span": "cpp",
-    "*.h++": "cpp"
+    "variant": "cpp"
   }
 }

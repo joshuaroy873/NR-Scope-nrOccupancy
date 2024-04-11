@@ -107,12 +107,70 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
   return SRSRAN_SUCCESS;
 }
 
-// The Radio grabs a slot of data and in this function the scheduler 
-// informs the other threads by pusing the nodes into the queue.
-int TaskSchedulerNRScope::push_queue(srsran_ue_sync_nr_outcome_t outcome_, srsran_slot_cfg_t slot_){
-  
-  
+int TaskSchedulerNRScope::merge_results(){
 
+  DCIFeedback new_result;
+  result = new_result;
+  result.dl_grants.resize(nof_known_rntis);
+  result.ul_grants.resize(nof_known_rntis);
+  result.spare_dl_prbs.resize(nof_known_rntis);
+  result.spare_dl_tbs.resize(nof_known_rntis);
+  result.spare_dl_bits.resize(nof_known_rntis);
+  result.spare_ul_prbs.resize(nof_known_rntis);
+  result.spare_ul_tbs.resize(nof_known_rntis);
+  result.spare_ul_bits.resize(nof_known_rntis);
+  result.dl_dcis.resize(nof_known_rntis);
+  result.ul_dcis.resize(nof_known_rntis);
+
+  uint32_t rnti_s = 0;
+  uint32_t rnti_e = 0;
+  for(uint32_t i = 0; i < nof_threads; i++){
+    result.nof_dl_used_prbs += sharded_results[i].nof_dl_used_prbs;
+    result.nof_ul_used_prbs += sharded_results[i].nof_ul_used_prbs;
+
+    uint32_t n_rntis = nof_sharded_rntis[i];
+    std::cout << "n_rnti: " << n_rntis << std::endl; 
+    rnti_e = rnti_s + n_rntis;
+    std::cout << "rnti_s: " << rnti_s << std::endl;
+    std::cout << "rnti_e: " << rnti_e << std::endl;
+
+    if(rnti_s >= nof_known_rntis){
+      continue;
+    }
+
+    if(rnti_e > nof_known_rntis){
+      rnti_e = nof_known_rntis;
+    }
+
+    for(uint32_t j = 0; j < n_rntis; j++){
+      result.dl_dcis[j+rnti_s] = sharded_results[i].dl_dcis[j];
+      result.ul_dcis[j+rnti_s] = sharded_results[i].ul_dcis[j];
+      result.dl_grants[j+rnti_s] = sharded_results[i].dl_grants[j];
+      result.ul_grants[j+rnti_s] = sharded_results[i].ul_grants[j];
+    }
+    rnti_s = rnti_e;
+  }
+  std::cout << "End of nof_threads..." << std::endl;
+
+  result.nof_dl_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - result.nof_dl_used_prbs;
+  for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
+    result.spare_dl_prbs[idx] = result.nof_dl_spare_prbs / nof_known_rntis;
+    if(abs(result.spare_dl_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
+      result.spare_dl_prbs[idx] = 0;
+    }
+    result.spare_dl_tbs[idx] = (int) ((float)result.spare_dl_prbs[idx] * dl_prb_rate[idx]);
+    result.spare_dl_bits[idx] = (int) ((float)result.spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
+  }
+
+  result.nof_ul_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - result.nof_ul_used_prbs;
+  for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
+    result.spare_ul_prbs[idx] = result.nof_ul_spare_prbs / nof_known_rntis;
+    if(abs(result.spare_ul_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
+      result.spare_ul_prbs[idx] = 0;
+    }
+    result.spare_ul_tbs[idx] = (int) ((float)result.spare_ul_prbs[idx] * ul_prb_rate[idx]);
+    result.spare_ul_bits[idx] = (int) ((float)result.spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
+  }
 
   return SRSRAN_SUCCESS;
 }

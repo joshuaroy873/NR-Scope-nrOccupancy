@@ -1,36 +1,18 @@
 #include "nrscope/hdr/dci_decoder.h"
 
-DCIDecoder::DCIDecoder(uint32_t nof_known_rntis){
-  dl_prb_rate.resize(nof_known_rntis);
-  ul_prb_rate.resize(nof_known_rntis);
-
-  dl_prb_bits_rate.resize(nof_known_rntis);
-  ul_prb_bits_rate.resize(nof_known_rntis);
-
-  for(uint32_t i = 0; i < nof_known_rntis; i++){
-    dl_prb_rate[i] = 0.0;
-    ul_prb_rate[i] = 0.0;
-    dl_prb_bits_rate[i] = 0.0;
-    ul_prb_bits_rate[i] = 0.0;
-  }
+DCIDecoder::DCIDecoder(uint32_t max_nof_rntis){
 
   ue_dl_tmp = (srsran_ue_dl_nr_t*) malloc(sizeof(srsran_ue_dl_nr_t));
   slot_tmp = (srsran_slot_cfg_t*) malloc(sizeof(srsran_slot_cfg_t));
 
-  dci_dl = (srsran_dci_dl_nr_t*) malloc(sizeof(srsran_dci_dl_nr_t) * (nof_known_rntis));
-  dci_ul = (srsran_dci_ul_nr_t*) malloc(sizeof(srsran_dci_ul_nr_t) * (nof_known_rntis));
-
-  // data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
-  // if (data_pdcch == NULL) {
-  //   ERROR("Error malloc");
-  // }
+  dci_dl = (srsran_dci_dl_nr_t*) malloc(sizeof(srsran_dci_dl_nr_t) * (max_nof_rntis));
+  dci_ul = (srsran_dci_ul_nr_t*) malloc(sizeof(srsran_dci_ul_nr_t) * (max_nof_rntis));
 
 }
 
 DCIDecoder::~DCIDecoder(){
 
 }
-
 
 int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
                                                TaskSchedulerNRScope* task_scheduler_nrscope,
@@ -603,18 +585,19 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     ERROR("Error setting SCH NR carrier");
     return SRSRAN_ERROR;
   }
-
+  
+  std::cout << "befor pdcch conf.." << std::endl;
   if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl_dci, &pdcch_cfg, &dci_cfg)) {
     ERROR("Error setting CORESET");
     return SRSRAN_ERROR;
   }
-
+  std::cout << "befor softbuffer conf.." << std::endl;
   if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
       SRSRAN_SUCCESS) {
     ERROR("Error init soft-buffer");
     return SRSRAN_ERROR;
   }
-
+  std::cout << "ending.." << std::endl;
   return SRSRAN_SUCCESS;
 }
 
@@ -626,22 +609,49 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_SUCCESS;
   }
 
-  DCIFeedback new_result;
-  task_scheduler_nrscope->result = new_result;
+  uint32_t n_rntis = (uint32_t) ceil((float) task_scheduler_nrscope->nof_known_rntis / (float) task_scheduler_nrscope->nof_threads);
+  uint32_t rnti_s = dci_decoder_id * n_rntis;
+  uint32_t rnti_e = dci_decoder_id * n_rntis + n_rntis;
 
-  task_scheduler_nrscope->result.dl_grants.resize(task_scheduler_nrscope->nof_known_rntis);
-  task_scheduler_nrscope->result.ul_grants.resize(task_scheduler_nrscope->nof_known_rntis);
-  task_scheduler_nrscope->result.spare_dl_prbs.resize(task_scheduler_nrscope->nof_known_rntis);
-  task_scheduler_nrscope->result.spare_dl_tbs.resize(task_scheduler_nrscope->nof_known_rntis);
-  task_scheduler_nrscope->result.spare_dl_bits.resize(task_scheduler_nrscope->nof_known_rntis);
-  task_scheduler_nrscope->result.spare_ul_prbs.resize(task_scheduler_nrscope->nof_known_rntis);
-  task_scheduler_nrscope->result.spare_ul_tbs.resize(task_scheduler_nrscope->nof_known_rntis);
-  task_scheduler_nrscope->result.spare_ul_bits.resize(task_scheduler_nrscope->nof_known_rntis);
-  task_scheduler_nrscope->result.dl_dcis.resize(task_scheduler_nrscope->nof_known_rntis);
-  task_scheduler_nrscope->result.ul_dcis.resize(task_scheduler_nrscope->nof_known_rntis);
+  if(rnti_s >= task_scheduler_nrscope->nof_known_rntis){
+    std::cout << "DCI decoder " << dci_decoder_id << " exits because it's excessive.." << std::endl;
+    return SRSRAN_SUCCESS;
+  }
+
+  if(rnti_e > task_scheduler_nrscope->nof_known_rntis){
+    rnti_e = task_scheduler_nrscope->nof_known_rntis;
+    n_rntis = rnti_e - rnti_s;
+  }
+
+  std::cout << "DCI decoder " << dci_decoder_id << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
+
+  DCIFeedback new_result;
+  task_scheduler_nrscope->sharded_results[dci_decoder_id] = new_result;
+
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].dl_grants.resize(n_rntis);
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].ul_grants.resize(n_rntis);
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].spare_dl_prbs.resize(n_rntis);
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].spare_dl_tbs.resize(n_rntis);
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].spare_dl_bits.resize(n_rntis);
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].spare_ul_prbs.resize(n_rntis);
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].spare_ul_tbs.resize(n_rntis);
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].spare_ul_bits.resize(n_rntis);
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].dl_dcis.resize(n_rntis);
+  task_scheduler_nrscope->sharded_results[dci_decoder_id].ul_dcis.resize(n_rntis);
+
+  task_scheduler_nrscope->sharded_rntis[dci_decoder_id].resize(n_rntis);
+  task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id] = n_rntis;
+  std::cout << "task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id]: " << task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id] << std::endl;
+
+  std::cout << "sharded_rntis: ";
+  for(uint32_t i = 0; i < n_rntis; i++){
+    task_scheduler_nrscope->sharded_rntis[dci_decoder_id][i] = task_scheduler_nrscope->known_rntis[rnti_s + i];
+    std::cout << task_scheduler_nrscope->sharded_rntis[dci_decoder_id][i] << ", ";
+  }
+  std::cout << std::endl;
 
   // Set the buffer to 0s
-  for(uint32_t idx = 0; idx < task_scheduler_nrscope->nof_known_rntis; idx++){
+  for(uint32_t idx = 0; idx < n_rntis; idx++){
     memset(&dci_dl[idx], 0, sizeof(srsran_dci_dl_nr_t));
     memset(&dci_ul[idx], 0, sizeof(srsran_dci_dl_nr_t));
   }
@@ -651,19 +661,19 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
   int total_dl_dci = 0;
   int total_ul_dci = 0;  
 
-  for (uint32_t rnti_idx = 0; rnti_idx < task_scheduler_nrscope->nof_known_rntis; rnti_idx++){
+  for (uint32_t rnti_idx = 0; rnti_idx < n_rntis; rnti_idx++){
     
     memcpy(ue_dl_tmp, &ue_dl_dci, sizeof(srsran_ue_dl_nr_t));
     memcpy(slot_tmp, slot, sizeof(srsran_slot_cfg_t));
 
-    int nof_dl_dci = srsran_ue_dl_nr_find_dl_dci_nrscope_dciloop(ue_dl_tmp, slot_tmp, task_scheduler_nrscope->known_rntis[rnti_idx], 
+    int nof_dl_dci = srsran_ue_dl_nr_find_dl_dci_nrscope_dciloop(ue_dl_tmp, slot_tmp, task_scheduler_nrscope->sharded_rntis[dci_decoder_id][rnti_idx], 
                      srsran_rnti_type_c, dci_dl_tmp, 4);
 
     if (nof_dl_dci < SRSRAN_SUCCESS) {
       ERROR("Error in blind search");
     }
 
-    int nof_ul_dci = srsran_ue_dl_nr_find_ul_dci(ue_dl_tmp, slot_tmp, task_scheduler_nrscope->known_rntis[rnti_idx], srsran_rnti_type_c, dci_ul_tmp, 4);
+    int nof_ul_dci = srsran_ue_dl_nr_find_ul_dci(ue_dl_tmp, slot_tmp, task_scheduler_nrscope->sharded_rntis[dci_decoder_id][rnti_idx], srsran_rnti_type_c, dci_ul_tmp, 4);
 
     if(nof_dl_dci > 0){
       dci_dl[rnti_idx] = dci_dl_tmp[0];
@@ -677,10 +687,10 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
   }  
 
   if(total_dl_dci > 0){
-    for (uint32_t dci_idx_dl = 0; dci_idx_dl < task_scheduler_nrscope->nof_known_rntis; dci_idx_dl++){
+    for (uint32_t dci_idx_dl = 0; dci_idx_dl < n_rntis; dci_idx_dl++){
       // the rnti will not be copied if no dci found
-      if(dci_dl[dci_idx_dl].ctx.rnti == task_scheduler_nrscope->known_rntis[dci_idx_dl]){
-        task_scheduler_nrscope->result.dl_dcis[dci_idx_dl] = dci_dl[dci_idx_dl];
+      if(dci_dl[dci_idx_dl].ctx.rnti == task_scheduler_nrscope->sharded_rntis[dci_decoder_id][dci_idx_dl]){
+        task_scheduler_nrscope->sharded_results[dci_decoder_id].dl_dcis[dci_idx_dl] = dci_dl[dci_idx_dl];
         char str[1024] = {};
         srsran_dci_dl_nr_to_str(&(ue_dl_dci.dci), &dci_dl[dci_idx_dl], str, (uint32_t)sizeof(str));
         printf("DCIDecoder -- Found DCI: %s\n", str);
@@ -748,36 +758,36 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
           /* Trying to decode the RRC Reconfiguration*/
 
 
-          task_scheduler_nrscope->result.dl_grants[dci_idx_dl] = pdsch_cfg;
-          task_scheduler_nrscope->result.nof_dl_used_prbs += pdsch_cfg.grant.nof_prb * pdsch_cfg.grant.L;
+          task_scheduler_nrscope->sharded_results[dci_decoder_id].dl_grants[dci_idx_dl] = pdsch_cfg;
+          task_scheduler_nrscope->sharded_results[dci_decoder_id].nof_dl_used_prbs += pdsch_cfg.grant.nof_prb * pdsch_cfg.grant.L;
 
-          dl_prb_rate[dci_idx_dl] = (float)(pdsch_cfg.grant.tb[0].tbs + pdsch_cfg.grant.tb[1].tbs) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
-          dl_prb_bits_rate[dci_idx_dl] = (float)(pdsch_cfg.grant.tb[0].nof_bits + pdsch_cfg.grant.tb[1].nof_bits) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
+          task_scheduler_nrscope->dl_prb_rate[dci_idx_dl+rnti_s] = (float)(pdsch_cfg.grant.tb[0].tbs + pdsch_cfg.grant.tb[1].tbs) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
+          task_scheduler_nrscope->dl_prb_bits_rate[dci_idx_dl+rnti_s] = (float)(pdsch_cfg.grant.tb[0].nof_bits + pdsch_cfg.grant.tb[1].nof_bits) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
         }
       }
     }
-    task_scheduler_nrscope->result.nof_dl_spare_prbs = carrier_dl.nof_prb * (14 - 2) - task_scheduler_nrscope->result.nof_dl_used_prbs;
-    for(uint32_t idx = 0; idx < task_scheduler_nrscope->nof_known_rntis; idx ++){
-      task_scheduler_nrscope->result.spare_dl_prbs[idx] = task_scheduler_nrscope->result.nof_dl_spare_prbs / task_scheduler_nrscope->nof_known_rntis;
-      if(abs(task_scheduler_nrscope->result.spare_dl_prbs[idx]) > carrier_dl.nof_prb * (14 - 2)){
-        task_scheduler_nrscope->result.spare_dl_prbs[idx] = 0;
-      }
-      task_scheduler_nrscope->result.spare_dl_tbs[idx] = (int) ((float)task_scheduler_nrscope->result.spare_dl_prbs[idx] * dl_prb_rate[idx]);
-      task_scheduler_nrscope->result.spare_dl_bits[idx] = (int) ((float)task_scheduler_nrscope->result.spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
-    }
+    // task_scheduler_nrscope->result.nof_dl_spare_prbs = carrier_dl.nof_prb * (14 - 2) - task_scheduler_nrscope->result.nof_dl_used_prbs;
+    // for(uint32_t idx = 0; idx < task_scheduler_nrscope->nof_known_rntis; idx ++){
+    //   task_scheduler_nrscope->result.spare_dl_prbs[idx] = task_scheduler_nrscope->result.nof_dl_spare_prbs / task_scheduler_nrscope->nof_known_rntis;
+    //   if(abs(task_scheduler_nrscope->result.spare_dl_prbs[idx]) > carrier_dl.nof_prb * (14 - 2)){
+    //     task_scheduler_nrscope->result.spare_dl_prbs[idx] = 0;
+    //   }
+    //   task_scheduler_nrscope->result.spare_dl_tbs[idx] = (int) ((float)task_scheduler_nrscope->result.spare_dl_prbs[idx] * dl_prb_rate[idx]);
+    //   task_scheduler_nrscope->result.spare_dl_bits[idx] = (int) ((float)task_scheduler_nrscope->result.spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
+    // }
   }else{
-    task_scheduler_nrscope->result.nof_dl_spare_prbs = carrier_dl.nof_prb * (14 - 2);
-    for(uint32_t idx = 0; idx < task_scheduler_nrscope->nof_known_rntis; idx++){
-      task_scheduler_nrscope->result.spare_dl_prbs[idx] = (int)((float)task_scheduler_nrscope->result.nof_dl_spare_prbs / (float)task_scheduler_nrscope->nof_known_rntis);
-      task_scheduler_nrscope->result.spare_dl_tbs[idx] = (int) ((float)task_scheduler_nrscope->result.spare_dl_prbs[idx] * dl_prb_rate[idx]);
-      task_scheduler_nrscope->result.spare_dl_bits[idx] = (int) ((float)task_scheduler_nrscope->result.spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
-    }
+    // task_scheduler_nrscope->result.nof_dl_spare_prbs = carrier_dl.nof_prb * (14 - 2);
+    // for(uint32_t idx = 0; idx < task_scheduler_nrscope->nof_known_rntis; idx++){
+    //   task_scheduler_nrscope->result.spare_dl_prbs[idx] = (int)((float)task_scheduler_nrscope->result.nof_dl_spare_prbs / (float)task_scheduler_nrscope->nof_known_rntis);
+    //   task_scheduler_nrscope->result.spare_dl_tbs[idx] = (int) ((float)task_scheduler_nrscope->result.spare_dl_prbs[idx] * dl_prb_rate[idx]);
+    //   task_scheduler_nrscope->result.spare_dl_bits[idx] = (int) ((float)task_scheduler_nrscope->result.spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
+    // }
   }
   
   if(total_ul_dci > 0){
-    for (uint32_t dci_idx_ul = 0; dci_idx_ul < task_scheduler_nrscope->nof_known_rntis; dci_idx_ul++){
-      if(dci_ul[dci_idx_ul].ctx.rnti == task_scheduler_nrscope->known_rntis[dci_idx_ul]){
-        task_scheduler_nrscope->result.ul_dcis[dci_idx_ul] = dci_ul[dci_idx_ul];
+    for (uint32_t dci_idx_ul = 0; dci_idx_ul < n_rntis; dci_idx_ul++){
+      if(dci_ul[dci_idx_ul].ctx.rnti == task_scheduler_nrscope->sharded_rntis[dci_decoder_id][dci_idx_ul]){
+        task_scheduler_nrscope->sharded_results[dci_decoder_id].ul_dcis[dci_idx_ul] = dci_ul[dci_idx_ul];
         char str[1024] = {};
         srsran_dci_ul_nr_to_str(&(ue_dl_dci.dci), &dci_ul[dci_idx_ul], str, (uint32_t)sizeof(str));
         printf("DCIDecoder -- Found DCI: %s\n", str);
@@ -793,29 +803,29 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         srsran_sch_cfg_nr_info(&pusch_cfg, str, (uint32_t)sizeof(str));
         printf("DCIDecoder -- PUSCH_cfg:\n%s", str);
 
-        task_scheduler_nrscope->result.ul_grants[dci_idx_ul] = pusch_cfg;
-        task_scheduler_nrscope->result.nof_ul_used_prbs += pusch_cfg.grant.nof_prb * pusch_cfg.grant.L;
+        task_scheduler_nrscope->sharded_results[dci_decoder_id].ul_grants[dci_idx_ul] = pusch_cfg;
+        task_scheduler_nrscope->sharded_results[dci_decoder_id].nof_ul_used_prbs += pusch_cfg.grant.nof_prb * pusch_cfg.grant.L;
         
-        ul_prb_rate[dci_idx_ul] = (float)(pusch_cfg.grant.tb[0].tbs + pusch_cfg.grant.tb[1].tbs) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;
-        ul_prb_bits_rate[dci_idx_ul] = (float)(pusch_cfg.grant.tb[0].nof_bits + pusch_cfg.grant.tb[1].nof_bits) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;
+        task_scheduler_nrscope->ul_prb_rate[dci_idx_ul+rnti_s] = (float)(pusch_cfg.grant.tb[0].tbs + pusch_cfg.grant.tb[1].tbs) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;
+        task_scheduler_nrscope->ul_prb_bits_rate[dci_idx_ul+rnti_s] = (float)(pusch_cfg.grant.tb[0].nof_bits + pusch_cfg.grant.tb[1].nof_bits) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;
       }
     }
-    task_scheduler_nrscope->result.nof_ul_spare_prbs = carrier_dl.nof_prb * (14 - 2) - task_scheduler_nrscope->result.nof_ul_used_prbs;
-    for(uint32_t idx = 0; idx < task_scheduler_nrscope->nof_known_rntis; idx ++){
-      task_scheduler_nrscope->result.spare_ul_prbs[idx] = task_scheduler_nrscope->result.nof_ul_spare_prbs / task_scheduler_nrscope->nof_known_rntis;
-      task_scheduler_nrscope->result.spare_ul_tbs[idx] = (int) ((float)task_scheduler_nrscope->result.spare_ul_prbs[idx] * ul_prb_rate[idx]);
-      task_scheduler_nrscope->result.spare_ul_bits[idx] = (int) ((float)task_scheduler_nrscope->result.spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
-    }
+    // task_scheduler_nrscope->result.nof_ul_spare_prbs = carrier_dl.nof_prb * (14 - 2) - task_scheduler_nrscope->result.nof_ul_used_prbs;
+    // for(uint32_t idx = 0; idx < task_scheduler_nrscope->nof_known_rntis; idx ++){
+    //   task_scheduler_nrscope->result.spare_ul_prbs[idx] = task_scheduler_nrscope->result.nof_ul_spare_prbs / task_scheduler_nrscope->nof_known_rntis;
+    //   task_scheduler_nrscope->result.spare_ul_tbs[idx] = (int) ((float)task_scheduler_nrscope->result.spare_ul_prbs[idx] * ul_prb_rate[idx]);
+    //   task_scheduler_nrscope->result.spare_ul_bits[idx] = (int) ((float)task_scheduler_nrscope->result.spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
+    // }
   }else{
-    task_scheduler_nrscope->result.nof_ul_spare_prbs = carrier_dl.nof_prb * (14 - 2);
-    for(uint32_t idx = 0; idx < task_scheduler_nrscope->nof_known_rntis; idx ++){
-      task_scheduler_nrscope->result.spare_ul_prbs[idx] = (int)((float)task_scheduler_nrscope->result.nof_ul_spare_prbs / (float)task_scheduler_nrscope->nof_known_rntis);
-      if(abs(task_scheduler_nrscope->result.spare_ul_prbs[idx]) > carrier_dl.nof_prb * (14 - 2)){
-        task_scheduler_nrscope->result.spare_ul_prbs[idx] = 0;
-      }
-      task_scheduler_nrscope->result.spare_ul_tbs[idx] = (int) ((float)task_scheduler_nrscope->result.spare_ul_prbs[idx] * ul_prb_rate[idx]);
-      task_scheduler_nrscope->result.spare_ul_bits[idx] = (int) ((float)task_scheduler_nrscope->result.spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
-    }
+    // task_scheduler_nrscope->result.nof_ul_spare_prbs = carrier_dl.nof_prb * (14 - 2);
+    // for(uint32_t idx = 0; idx < task_scheduler_nrscope->nof_known_rntis; idx ++){
+    //   task_scheduler_nrscope->result.spare_ul_prbs[idx] = (int)((float)task_scheduler_nrscope->result.nof_ul_spare_prbs / (float)task_scheduler_nrscope->nof_known_rntis);
+    //   if(abs(task_scheduler_nrscope->result.spare_ul_prbs[idx]) > carrier_dl.nof_prb * (14 - 2)){
+    //     task_scheduler_nrscope->result.spare_ul_prbs[idx] = 0;
+    //   }
+    //   task_scheduler_nrscope->result.spare_ul_tbs[idx] = (int) ((float)task_scheduler_nrscope->result.spare_ul_prbs[idx] * ul_prb_rate[idx]);
+    //   task_scheduler_nrscope->result.spare_ul_bits[idx] = (int) ((float)task_scheduler_nrscope->result.spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
+    // }
   }
 
   return SRSRAN_SUCCESS;

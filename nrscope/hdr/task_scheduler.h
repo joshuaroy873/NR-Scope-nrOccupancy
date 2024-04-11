@@ -34,13 +34,20 @@ class TaskSchedulerNRScope{
     bool rach_inited; // RACHDecoder is initialized.
     bool dci_inited; // DCIDecoder is initialized.
 
-    // std::queue<sib1_task_element> sib1_queue;
-    // std::queue<rach_task_element> rach_queue;
-    // std::queue<dci_task_element> dci_queue;
-
     uint32_t nof_known_rntis;
     std::vector<uint16_t> known_rntis;
-    DCIFeedback result; // DCI decoding result for current TTI
+
+    std::vector<uint32_t> nof_sharded_rntis;
+    std::vector <std::vector <uint16_t> > sharded_rntis;
+    std::vector <DCIFeedback> sharded_results;
+    uint32_t nof_threads;
+
+    std::vector <float> dl_prb_rate;
+    std::vector <float> ul_prb_rate;
+    std::vector <float> dl_prb_bits_rate;
+    std::vector <float> ul_prb_bits_rate;
+
+    std::mutex lock;
 
     TaskSchedulerNRScope();
     ~TaskSchedulerNRScope();
@@ -49,7 +56,14 @@ class TaskSchedulerNRScope{
                    srsue::nr::cell_search::ret_t* cs_ret_,
                    srsue::nr::cell_search::cfg_t* srsran_searcher_cfg_t);
 
-    int push_queue(srsran_ue_sync_nr_outcome_t outcome_, srsran_slot_cfg_t slot_);
+    int merge_results();
+
+    DCIFeedback get_result(){
+      return result;
+    }
+
+  private:
+    DCIFeedback result; // DCI decoding result for current TTI
 };
 
 

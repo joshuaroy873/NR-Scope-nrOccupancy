@@ -28,12 +28,13 @@ class DCIDecoder{
     srsue::nr::cell_search::cfg_t srsran_searcher_cfg_t;
     srsran_coreset_t coreset1_t; 
 
+    uint32_t dci_decoder_id;
 
-    std::vector<float> dl_prb_rate;
-    std::vector<float> ul_prb_rate;
+    // std::vector<float> dl_prb_rate;
+    // std::vector<float> ul_prb_rate;
 
-    std::vector<float> dl_prb_bits_rate;
-    std::vector<float> ul_prb_bits_rate;
+    // std::vector<float> dl_prb_bits_rate;
+    // std::vector<float> ul_prb_bits_rate;
 
     srsran_dci_dl_nr_t dci_dl_tmp[4];
     srsran_dci_ul_nr_t dci_ul_tmp[4];
@@ -47,7 +48,7 @@ class DCIDecoder{
     // uint8_t* data_pdcch;
     // srsran_pdsch_res_nr_t pdsch_res;
 
-    DCIDecoder(uint32_t nof_known_rntis);
+    DCIDecoder(uint32_t max_nof_rntis);
     ~DCIDecoder();
 
     int dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,

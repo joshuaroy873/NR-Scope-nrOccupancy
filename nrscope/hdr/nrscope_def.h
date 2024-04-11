@@ -140,8 +140,6 @@ typedef struct _DCIFeedback{
   int nof_ul_used_prbs = 0;
   int nof_ul_spare_prbs = 0;
 
-  int processing_time_us = 0;
-
 } DCIFeedback;
 
 typedef struct LogNode_ LogNode;

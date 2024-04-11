@@ -10,7 +10,7 @@ Radio::Radio() :
   task_scheduler_nrscope(),
   rach_decoder(),
   sibs_decoder(),
-  dci_decoder(100),
+  // dci_decoder(100),
   harq_tracker(100)
 {
   raido_shared = std::make_shared<srsran::radio>();
@@ -287,59 +287,102 @@ int Radio::RadioCapture(){
         }
 
         if(!task_scheduler_nrscope.dci_inited and task_scheduler_nrscope.rach_found){
-          if(dci_decoder.dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
-            ERROR("DCIDecoder Init Error");
-            return NR_FAILURE;
+          std::cout << "Initializing DCI decoder..." << std::endl;
+          task_scheduler_nrscope.sharded_results.resize(nof_threads);
+          task_scheduler_nrscope.nof_sharded_rntis.resize(nof_threads);
+          task_scheduler_nrscope.sharded_rntis.resize(nof_threads);
+          task_scheduler_nrscope.nof_threads = nof_threads;
+
+          // cc_worker* w = new cc_worker(i, log, phy_state, cfg);
+          // cc_workers.push_back(std::unique_ptr<cc_worker>(w));
+
+          for(uint32_t i = 0; i < nof_threads; i++){
+            DCIDecoder *decoder = new DCIDecoder(50);
+            if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
+              ERROR("DCIDecoder Init Error");
+              return NR_FAILURE;
+            }
+            decoder->dci_decoder_id = i;
+            dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
           }
+          
           std::cout << "DCI Decoder Initialized.." << std::endl;
           task_scheduler_nrscope.dci_inited = true;
         }
 
         // Then start each type of decoder, TODO
+        task_scheduler_nrscope.dl_prb_rate.resize(task_scheduler_nrscope.nof_known_rntis);
+        task_scheduler_nrscope.ul_prb_rate.resize(task_scheduler_nrscope.nof_known_rntis);
+        task_scheduler_nrscope.dl_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
+        task_scheduler_nrscope.ul_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
+
         std::thread sibs_thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
         std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
-        std::thread dci_thread {&DCIDecoder::decode_and_parse_dci_from_slot, &dci_decoder, &slot, &task_scheduler_nrscope};
 
-        sibs_thread.join();
-        rach_thread.join();
-        dci_thread.join();
+        std::vector <std::thread> dci_threads;
+        if(task_scheduler_nrscope.dci_inited){
+          for (uint32_t i = 0; i < nof_threads; i++){
+            dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope);
+          }
+        }
 
-        if((task_scheduler_nrscope.result.dl_grants.size()>0 or task_scheduler_nrscope.result.ul_grants.size()>0)){
-          for (uint32_t i = 0; i < task_scheduler_nrscope.nof_known_rntis; i++){
-            if(task_scheduler_nrscope.result.dl_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-              LogNode log_node;
-              log_node.slot_idx = slot.idx;
-              log_node.system_frame_idx = outcome.sfn;
-              log_node.timestamp = get_now_timestamp_in_double();
-              log_node.grant = task_scheduler_nrscope.result.dl_grants[i];
-              log_node.dci_format = srsran_dci_format_nr_string(task_scheduler_nrscope.result.dl_dcis[i].ctx.format);
-              if(local_log){
-                NRScopeLog::push_node(log_node, rf_index);
-              }
-              if(to_google){
-                ToGoogle::push_google_node(log_node, rf_index);
-              }
+        if(sibs_thread.joinable()){
+          sibs_thread.join();
+        }
+
+        if(rach_thread.joinable()){
+          rach_thread.join();
+        }
+
+        if(task_scheduler_nrscope.dci_inited){
+          for (uint32_t i = 0; i < nof_threads; i++){
+            if(dci_threads[i].joinable()){
+              dci_threads[i].join();
             }
+          }
+        }
 
-            if(task_scheduler_nrscope.result.ul_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-              LogNode log_node;
-              log_node.slot_idx = slot.idx;
-              log_node.system_frame_idx = outcome.sfn;
-              log_node.timestamp = get_now_timestamp_in_double();
-              log_node.grant = task_scheduler_nrscope.result.ul_grants[i];
-              log_node.dci_format = srsran_dci_format_nr_string(task_scheduler_nrscope.result.ul_dcis[i].ctx.format);
-              if(local_log){
-                NRScopeLog::push_node(log_node, rf_index);
-              }
-              if(to_google){
-                ToGoogle::push_google_node(log_node, rf_index);
-              }
-            }
-          } 
+        if(task_scheduler_nrscope.dci_inited){
+          // task_scheduler_nrscope.merge_results();
+          // DCIFeedback result = task_scheduler_nrscope.get_result();
+
+          // if((result.dl_grants.size()>0 or result.ul_grants.size()>0)){
+          //   for (uint32_t i = 0; i < task_scheduler_nrscope.nof_known_rntis; i++){
+          //     if(result.dl_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
+          //       LogNode log_node;
+          //       log_node.slot_idx = slot.idx;
+          //       log_node.system_frame_idx = outcome.sfn;
+          //       log_node.timestamp = get_now_timestamp_in_double();
+          //       log_node.grant = result.dl_grants[i];
+          //       log_node.dci_format = srsran_dci_format_nr_string(result.dl_dcis[i].ctx.format);
+          //       if(local_log){
+          //         NRScopeLog::push_node(log_node, rf_index);
+          //       }
+          //       if(to_google){
+          //         ToGoogle::push_google_node(log_node, rf_index);
+          //       }
+          //     }
+
+          //     if(result.ul_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
+          //       LogNode log_node;
+          //       log_node.slot_idx = slot.idx;
+          //       log_node.system_frame_idx = outcome.sfn;
+          //       log_node.timestamp = get_now_timestamp_in_double();
+          //       log_node.grant = result.ul_grants[i];
+          //       log_node.dci_format = srsran_dci_format_nr_string(result.ul_dcis[i].ctx.format);
+          //       if(local_log){
+          //         NRScopeLog::push_node(log_node, rf_index);
+          //       }
+          //       if(to_google){
+          //         ToGoogle::push_google_node(log_node, rf_index);
+          //       }
+          //     }
+          //   } 
+          // }
         }
       
         gettimeofday(&t1, NULL);  
-        task_scheduler_nrscope.result.processing_time_us = t1.tv_usec - t0.tv_usec;   
+        // result.processing_time_us = t1.tv_usec - t0.tv_usec;   
         std::cout << "time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
       } 
     } 

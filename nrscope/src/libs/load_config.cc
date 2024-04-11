@@ -116,22 +116,18 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
         radios[i].rf_args.log_level = "info";
       }
 
-      // if(config_yaml[setting_name]["dl_log_name"]){
-      //   std::string dl_log_name = config_yaml[setting_name]["dl_log_name"].as<string>();
-      //   radios[i].dl_log_name = dl_log_name;
-      // }
-
-      // if(config_yaml[setting_name]["ul_log_name"]){
-      //   std::string ul_log_name = config_yaml[setting_name]["ul_log_name"].as<string>();
-      //   radios[i].ul_log_name = ul_log_name;
-      // }
-
       if(config_yaml[setting_name]["log_name"]){
         radios[i].log_name = config_yaml[setting_name]["log_name"].as<string>();
       }
 
       if(config_yaml[setting_name]["google_dataset_id"]){
         radios[i].google_dataset_id = config_yaml[setting_name]["google_dataset_id"].as<string>();
+      }
+
+      if(config_yaml[setting_name]["nof_threads"]){
+        radios[i].nof_threads = config_yaml[setting_name]["nof_threads"].as<int>();
+      }else{
+        radios[i].nof_threads = 1;
       }
       
       // std::cout << "    nof_thread: " << radios[i].nof_thread << std::endl;

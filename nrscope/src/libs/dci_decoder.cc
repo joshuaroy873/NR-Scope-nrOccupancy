@@ -794,7 +794,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         // The grant may not be decoded correctly, since srsRAN's code is not complete. 
         // We can calculate the UL bandwidth for this subframe by ourselves.
         srsran_sch_cfg_nr_t pusch_cfg = {};
-        pusch_hl_cfg.mcs_table = srsran_mcs_table_256qam;
+        pusch_hl_cfg.mcs_table = srsran_mcs_table_qam64LowSE;
         if (srsran_ra_ul_dci_to_grant_nr(&carrier_dl, slot, &pusch_hl_cfg, &dci_ul[dci_idx_ul], 
                                         &pusch_cfg, &pusch_cfg.grant) < SRSRAN_SUCCESS) {
           ERROR("Error decoding PUSCH search");

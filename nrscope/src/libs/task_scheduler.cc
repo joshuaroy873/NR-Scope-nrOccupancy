@@ -129,10 +129,10 @@ int TaskSchedulerNRScope::merge_results(){
     result.nof_ul_used_prbs += sharded_results[i].nof_ul_used_prbs;
 
     uint32_t n_rntis = nof_sharded_rntis[i];
-    std::cout << "n_rnti: " << n_rntis << std::endl; 
+    // std::cout << "n_rnti: " << n_rntis << std::endl; 
     rnti_e = rnti_s + n_rntis;
-    std::cout << "rnti_s: " << rnti_s << std::endl;
-    std::cout << "rnti_e: " << rnti_e << std::endl;
+    // std::cout << "rnti_s: " << rnti_s << std::endl;
+    // std::cout << "rnti_e: " << rnti_e << std::endl;
 
     if(rnti_s >= nof_known_rntis){
       continue;

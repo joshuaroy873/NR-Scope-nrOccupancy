@@ -390,7 +390,9 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   dci_cfg.nof_dl_time_res        = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
                                    pdsch_time_domain_alloc_list_present ? 
                                    master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
-                                   pdsch_time_domain_alloc_list.setup().size() : 0; 
+                                   pdsch_time_domain_alloc_list.setup().size() : ( sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common_present ? 
+                                   sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list.size() : 0
+                                   );
   dci_cfg.nof_aperiodic_zp       = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
                                    aperiodic_zp_csi_rs_res_sets_to_add_mod_list.size();
   dci_cfg.pdsch_nof_cbg          = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
@@ -586,12 +588,12 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     return SRSRAN_ERROR;
   }
   
-  std::cout << "befor pdcch conf.." << std::endl;
+  // std::cout << "befor pdcch conf.." << std::endl;
   if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl_dci, &pdcch_cfg, &dci_cfg)) {
     ERROR("Error setting CORESET");
     return SRSRAN_ERROR;
   }
-  std::cout << "befor softbuffer conf.." << std::endl;
+  // std::cout << "befor softbuffer conf.." << std::endl;
   if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
       SRSRAN_SUCCESS) {
     ERROR("Error init soft-buffer");

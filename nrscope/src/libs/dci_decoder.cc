@@ -572,9 +572,10 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   base_carrier.nof_prb = srsran_coreset_get_bw(&coreset1_t);
   carrier_dl = base_carrier;
   carrier_dl.nof_prb = dci_cfg.bwp_dl_active_bw; // Use a dummy carrier for resource calculation.
+  // Use a fixed value for Amarisoft evaluation
   carrier_dl.max_mimo_layers = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg_present ?
                                master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().max_mimo_layers_present ?
-                               master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().max_mimo_layers : 1 : 1;
+                               master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().max_mimo_layers : 2 : 2;
   
   // update the nof_prb for carrier settings.
 

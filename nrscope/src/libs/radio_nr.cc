@@ -293,11 +293,8 @@ int Radio::RadioCapture(){
           task_scheduler_nrscope.sharded_rntis.resize(nof_threads);
           task_scheduler_nrscope.nof_threads = nof_threads;
 
-          // cc_worker* w = new cc_worker(i, log, phy_state, cfg);
-          // cc_workers.push_back(std::unique_ptr<cc_worker>(w));
-
           for(uint32_t i = 0; i < nof_threads; i++){
-            DCIDecoder *decoder = new DCIDecoder(50);
+            DCIDecoder *decoder = new DCIDecoder(100);
             if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
               ERROR("DCIDecoder Init Error");
               return NR_FAILURE;
@@ -380,7 +377,7 @@ int Radio::RadioCapture(){
             } 
           }
         }
-      
+        task_scheduler_nrscope.update_known_rntis();
         gettimeofday(&t1, NULL);  
         // result.processing_time_us = t1.tv_usec - t0.tv_usec;   
         std::cout << "time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;

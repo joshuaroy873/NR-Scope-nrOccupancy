@@ -9,6 +9,8 @@ RachDecoder::RachDecoder(){
   prach = {};
   prach_cfg = {};
 
+  dci_rach = (srsran_dci_dl_nr_t*) malloc(sizeof(srsran_dci_dl_nr_t) * (SRSRAN_MAX_DCI_MSG_NR));
+
   data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
   if (data_pdcch == NULL) {
     ERROR("Error malloc");
@@ -256,12 +258,15 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   uint16_t tc_rnti;
   uint16_t c_rnti;
 
-  memset(&dci_rach, 0, sizeof(srsran_dci_dl_nr_t));
-  
+  for (int dci_id = 0; dci_id < SRSRAN_MAX_DCI_MSG_NR; dci_id++){
+    memset(&dci_rach[dci_id], 0, sizeof(srsran_dci_dl_nr_t));
+  }
+  // memset(&dci_rach, 0, sizeof(srsran_dci_dl_nr_t));
+
   srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_rach, slot, arg_scs);
   srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_pdsch, slot, arg_scs_pdsch);
 
-  int nof_found_dci = srsran_ue_dl_nr_find_dl_dci_nrscope(&ue_dl_rach, slot, ra_rnti, nof_ra_rnti, srsran_rnti_type_tc, &dci_rach, 1);
+  int nof_found_dci = srsran_ue_dl_nr_find_dl_dci_nrscope(&ue_dl_rach, slot, ra_rnti, nof_ra_rnti, srsran_rnti_type_tc, dci_rach, 4);
 
   if (nof_found_dci < SRSRAN_SUCCESS) {
     ERROR("RACHDecoder -- Error in blind search");
@@ -289,134 +294,140 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_ERROR;
   }
 
-  char str[1024] = {};
-  srsran_dci_dl_nr_to_str(&(ue_dl_rach.dci), &dci_rach, str, (uint32_t)sizeof(str));
-  printf("RACHDecoder -- Found DCI: %s\n", str);
-  tc_rnti = dci_rach.ctx.rnti;
+  for (int dci_id = 0; dci_id < nof_found_dci; dci_id++){
+    char str[1024] = {};
+    srsran_dci_dl_nr_to_str(&(ue_dl_rach.dci), &dci_rach[dci_id], str, (uint32_t)sizeof(str));
+    printf("RACHDecoder -- Found DCI: %s\n", str);
+    tc_rnti = dci_rach[dci_id].ctx.rnti;
 
-  srsran_sch_cfg_nr_t pdsch_cfg = {};
-  dci_rach.ctx.coreset_start_rb = start_rb;
+    srsran_sch_cfg_nr_t pdsch_cfg = {};
+    dci_rach[dci_id].ctx.coreset_start_rb = start_rb;
 
-  if (srsran_ra_dl_dci_to_grant_nr(&pdsch_carrier, slot, &pdsch_hl_cfg, &dci_rach, &pdsch_cfg, &pdsch_cfg.grant) <
-      SRSRAN_SUCCESS) {
-    ERROR("RACHDecoder -- Error decoding PDSCH search");
-    return SRSRAN_ERROR;
-  }
-
-  // srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
-  // printf("PDSCH_cfg:\n%s", str);
-
-  if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
-      SRSRAN_SUCCESS) {
-    ERROR("Error init soft-buffer");
-    return SRSRAN_ERROR;
-  }
-
-  // Reset the data_pdcch to zeros
-  srsran_vec_u8_zero(data_pdcch, SRSRAN_SLOT_MAX_NOF_BITS_NR);
-
-  // Set softbuffer
-  pdsch_cfg.grant.tb[0].softbuffer.rx = &softbuffer;
-
-  // Prepare PDSCH result
-  pdsch_res = {};
-  pdsch_res.tb[0].payload = data_pdcch;
-
-  // Decode PDSCH
-  if (srsran_ue_dl_nr_decode_pdsch(&ue_dl_pdsch, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
-    printf("Error decoding PDSCH search\n");
-    return SRSRAN_ERROR;
-  }
-
-  // printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
-  // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
-  uint32_t bytes_offset = 0;
-
-  for (uint32_t pdsch_res_idx = 0; pdsch_res_idx < (uint32_t)pdsch_cfg.grant.tb[0].tbs / 8 - 1; pdsch_res_idx ++){
-    if(pdsch_res.tb[0].payload[pdsch_res_idx] == 0x20 && pdsch_res.tb[0].payload[pdsch_res_idx+1] == 0x40){
-      bytes_offset = pdsch_res_idx;
-      break;
-    }
-  }
-
-  if (!pdsch_res.tb[0].crc) {
-    printf("RACHDecoder -- Error decoding PDSCH (CRC)\n");
-    return SRSRAN_ERROR;
-  }
-
-  // Check payload is not all null.
-  bool all_zero = true;
-  for (int i = 0; i < pdsch_cfg.grant.tb[0].tbs / 8; ++i) {
-    if (pdsch_res.tb[0].payload[i] != 0x0) {
-      all_zero = false;
-      break;
-    }
-  }
-  if (all_zero) {
-    ERROR("RACHDecoder -- PDSCH payload is all zeros");
-    return SRSRAN_ERROR;
-  }
-
-  if(pdsch_cfg.grant.tb[0].tbs / 8 < 40){
-    ERROR("Too short for RRC Setup");
-    return SRSRAN_ERROR;
-  }
-
-  std::cout << "Decoding Msg 4..." << std::endl;
-  asn1::rrc_nr::dl_ccch_msg_s dlcch_msg;
-  // What the first few bytes are? In srsgNB there are 10 extra bytes and for small cell there are 3 extra bytes
-  // before the RRCSetup message.
-  asn1::cbit_ref dlcch_bref(pdsch_res.tb[0].payload + bytes_offset, pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
-  asn1::SRSASN_CODE err = dlcch_msg.unpack(dlcch_bref);
-  if (err != asn1::SRSASN_SUCCESS) {
-    ERROR("Failed to unpack DL-CCCH message (%d B)", pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
-  }
-
-  task_scheduler_nrscope->rrc_setup = dlcch_msg.msg.c1().rrc_setup();
-  std::cout << "Msg 4 Decoded." << std::endl;
-  switch (dlcch_msg.msg.c1().type().value) {
-    case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_reject: {
-      std::cout << "Unfortunately, it's a rrc_reject ;(" << std::endl;
-      return SRSRAN_SUCCESS; // We need to search for RRCSetup.
-    }break;
-    case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_setup: {
-      std::cout << "It's a rrc_setup, hooray!" << std::endl;
-      printf("rrc-TransactionIdentifier: %u\n", (task_scheduler_nrscope->rrc_setup).rrc_transaction_id);
-    }break;
-    default: {
-      std::cout << "None detected, skip." << std::endl;
+    if (srsran_ra_dl_dci_to_grant_nr(&pdsch_carrier, slot, &pdsch_hl_cfg, &dci_rach[dci_id], &pdsch_cfg, &pdsch_cfg.grant) <
+        SRSRAN_SUCCESS) {
+      ERROR("RACHDecoder -- Error decoding PDSCH search");
       return SRSRAN_ERROR;
     }
-    break;
+
+    // srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
+    // printf("PDSCH_cfg:\n%s", str);
+
+    if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
+        SRSRAN_SUCCESS) {
+      ERROR("Error init soft-buffer");
+      return SRSRAN_ERROR;
+    }
+
+    // Reset the data_pdcch to zeros
+    srsran_vec_u8_zero(data_pdcch, SRSRAN_SLOT_MAX_NOF_BITS_NR);
+
+    // Set softbuffer
+    pdsch_cfg.grant.tb[0].softbuffer.rx = &softbuffer;
+
+    // Prepare PDSCH result
+    pdsch_res = {};
+    pdsch_res.tb[0].payload = data_pdcch;
+
+    // Decode PDSCH
+    if (srsran_ue_dl_nr_decode_pdsch(&ue_dl_pdsch, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
+      printf("Error decoding PDSCH search\n");
+      return SRSRAN_ERROR;
+    }
+
+    // printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
+    // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+    uint32_t bytes_offset = 0;
+
+    for (uint32_t pdsch_res_idx = 0; pdsch_res_idx < (uint32_t)pdsch_cfg.grant.tb[0].tbs / 8 - 1; pdsch_res_idx ++){
+      if(pdsch_res.tb[0].payload[pdsch_res_idx] == 0x20 && pdsch_res.tb[0].payload[pdsch_res_idx+1] == 0x40){
+        bytes_offset = pdsch_res_idx;
+        break;
+      }
+    }
+
+    if (!pdsch_res.tb[0].crc) {
+      printf("RACHDecoder -- Error decoding PDSCH (CRC)\n");
+      return SRSRAN_ERROR;
+    }
+
+    // Check payload is not all null.
+    bool all_zero = true;
+    for (int i = 0; i < pdsch_cfg.grant.tb[0].tbs / 8; ++i) {
+      if (pdsch_res.tb[0].payload[i] != 0x0) {
+        all_zero = false;
+        break;
+      }
+    }
+    if (all_zero) {
+      ERROR("RACHDecoder -- PDSCH payload is all zeros");
+      return SRSRAN_ERROR;
+    }
+
+    if(pdsch_cfg.grant.tb[0].tbs / 8 < 40){
+      ERROR("Too short for RRC Setup");
+      return SRSRAN_ERROR;
+    }
+
+    std::cout << "Decoding Msg 4..." << std::endl;
+    asn1::rrc_nr::dl_ccch_msg_s dlcch_msg;
+    // What the first few bytes are? In srsgNB there are 10 extra bytes and for small cell there are 3 extra bytes
+    // before the RRCSetup message.
+    asn1::cbit_ref dlcch_bref(pdsch_res.tb[0].payload + bytes_offset, pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
+    asn1::SRSASN_CODE err = dlcch_msg.unpack(dlcch_bref);
+    if (err != asn1::SRSASN_SUCCESS) {
+      ERROR("Failed to unpack DL-CCCH message (%d B)", pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
+    }
+
+    task_scheduler_nrscope->rrc_setup = dlcch_msg.msg.c1().rrc_setup();
+    std::cout << "Msg 4 Decoded." << std::endl;
+    switch (dlcch_msg.msg.c1().type().value) {
+      case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_reject: {
+        std::cout << "Unfortunately, it's a rrc_reject ;(" << std::endl;
+        return SRSRAN_SUCCESS; // We need to search for RRCSetup.
+      }break;
+      case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_setup: {
+        std::cout << "It's a rrc_setup, hooray!" << std::endl;
+        printf("rrc-TransactionIdentifier: %u\n", (task_scheduler_nrscope->rrc_setup).rrc_transaction_id);
+      }break;
+      default: {
+        std::cout << "None detected, skip." << std::endl;
+        return SRSRAN_ERROR;
+      }
+      break;
+    }
+
+    asn1::json_writer js_msg4;
+    task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
+    printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
+    asn1::cbit_ref bref_cg((task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.data(),
+                      (task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.size());
+    if (task_scheduler_nrscope->master_cell_group.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
+      ERROR("Could not unpack master cell group config.");
+      return SRSRAN_ERROR;
+    }        
+    
+    asn1::json_writer js;
+    task_scheduler_nrscope->master_cell_group.to_json(js);
+    printf("masterCellGroup: %s\n", js.to_string().c_str());
+
+    // Tells the task scheduler that the RACH is decoded and there are some entries in the know_rntis vector.
+    task_scheduler_nrscope->rach_found = true;
+
+    if (!task_scheduler_nrscope->master_cell_group.sp_cell_cfg.recfg_with_sync.new_ue_id){
+      c_rnti = tc_rnti;
+    }else{
+      c_rnti = task_scheduler_nrscope->master_cell_group.sp_cell_cfg.recfg_with_sync.new_ue_id;
+    }
+    std::cout << "c-rnti: " << c_rnti << std::endl;
+
+    // Add the new rntis into a different list and update the known_rnti vector in the end of the threads.
+    task_scheduler_nrscope->new_rnti_number += 1;
+    task_scheduler_nrscope->new_rntis_found.emplace_back(c_rnti);
+    // task_scheduler_nrscope->nof_known_rntis += 1;
+    // task_scheduler_nrscope->known_rntis.emplace_back(c_rnti);
+
+    srsran_softbuffer_rx_free(&softbuffer);
   }
-
-  asn1::json_writer js_msg4;
-  task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
-  printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
-  asn1::cbit_ref bref_cg((task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.data(),
-                    (task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.size());
-  if (task_scheduler_nrscope->master_cell_group.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
-    ERROR("Could not unpack master cell group config.");
-    return SRSRAN_ERROR;
-  }        
-  
-  asn1::json_writer js;
-  task_scheduler_nrscope->master_cell_group.to_json(js);
-  printf("masterCellGroup: %s\n", js.to_string().c_str());
-
-  // Tells the task scheduler that the RACH is decoded and there are some entries in the know_rntis vector.
-  task_scheduler_nrscope->rach_found = true;
-
-  if (!task_scheduler_nrscope->master_cell_group.sp_cell_cfg.recfg_with_sync.new_ue_id){
-    c_rnti = tc_rnti;
-  }else{
-    c_rnti = task_scheduler_nrscope->master_cell_group.sp_cell_cfg.recfg_with_sync.new_ue_id;
-  }
-  std::cout << "c-rnti: " << c_rnti << std::endl;
-  task_scheduler_nrscope->nof_known_rntis += 1;
-  task_scheduler_nrscope->known_rntis.emplace_back(c_rnti);
-
-  srsran_softbuffer_rx_free(&softbuffer);
 
   return SRSRAN_SUCCESS;
 }

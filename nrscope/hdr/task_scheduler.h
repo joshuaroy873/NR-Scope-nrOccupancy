@@ -47,6 +47,9 @@ class TaskSchedulerNRScope{
     std::vector <float> dl_prb_bits_rate;
     std::vector <float> ul_prb_bits_rate;
 
+    uint32_t new_rnti_number;
+    std::vector<uint16_t> new_rntis_found;
+
     std::mutex lock;
 
     TaskSchedulerNRScope();
@@ -57,6 +60,8 @@ class TaskSchedulerNRScope{
                    srsue::nr::cell_search::cfg_t* srsran_searcher_cfg_t);
 
     int merge_results();
+
+    int update_known_rntis();
 
     DCIFeedback get_result(){
       return result;

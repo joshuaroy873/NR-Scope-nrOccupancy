@@ -174,3 +174,18 @@ int TaskSchedulerNRScope::merge_results(){
 
   return SRSRAN_SUCCESS;
 }
+
+int TaskSchedulerNRScope::update_known_rntis(){
+  if(new_rnti_number <= 0){
+    return SRSRAN_SUCCESS;
+  }
+
+  nof_known_rntis += new_rnti_number;
+  for(uint32_t i = 0; i < new_rnti_number; i++){
+    known_rntis.emplace_back(new_rntis_found[i]);
+  }
+
+  new_rntis_found.clear();
+  new_rnti_number = 0;
+  return SRSRAN_SUCCESS;
+}

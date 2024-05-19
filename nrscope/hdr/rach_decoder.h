@@ -21,7 +21,7 @@ class RachDecoder{
     srsran_prach_t prach;
     srsran_prach_cfg_t prach_cfg;
 
-    srsran_dci_dl_nr_t dci_rach;
+    srsran_dci_dl_nr_t* dci_rach;
     srsran_sch_cfg_nr_t pdsch_cfg;
 
     uint16_t *ra_rnti;

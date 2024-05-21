@@ -473,6 +473,40 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
 
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
   pusch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
+  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present){
+    pdsch_hl_cfg.dmrs_typeA.present = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present;
+    switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().dmrs_add_position){
+      case asn1::rrc_nr::dmrs_dl_cfg_s::dmrs_add_position_opts::pos0:
+        pdsch_hl_cfg.dmrs_typeA.additional_pos = srsran_dmrs_sch_add_pos_0;
+        break;
+      case asn1::rrc_nr::dmrs_dl_cfg_s::dmrs_add_position_opts::pos1:
+        pdsch_hl_cfg.dmrs_typeA.additional_pos = srsran_dmrs_sch_add_pos_1;
+        break;
+      case asn1::rrc_nr::dmrs_dl_cfg_s::dmrs_add_position_opts::pos3:
+        pdsch_hl_cfg.dmrs_typeA.additional_pos = srsran_dmrs_sch_add_pos_3;
+        break;
+      default:
+        break;
+    }
+  }
+
+  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present){
+    pusch_hl_cfg.dmrs_typeA.present = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present;
+    switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().dmrs_add_position){
+      case asn1::rrc_nr::dmrs_ul_cfg_s::dmrs_add_position_opts::pos0:
+        pusch_hl_cfg.dmrs_typeA.additional_pos = srsran_dmrs_sch_add_pos_0;
+        break;
+      case asn1::rrc_nr::dmrs_ul_cfg_s::dmrs_add_position_opts::pos1:
+        pusch_hl_cfg.dmrs_typeA.additional_pos = srsran_dmrs_sch_add_pos_1;
+        break;
+      case asn1::rrc_nr::dmrs_ul_cfg_s::dmrs_add_position_opts::pos3:
+        pusch_hl_cfg.dmrs_typeA.additional_pos = srsran_dmrs_sch_add_pos_3;
+        break;
+      default:
+        break;
+    }
+  }
+
   pdsch_hl_cfg.alloc = dci_cfg.pdsch_alloc_type;
   pusch_hl_cfg.alloc = dci_cfg.pusch_alloc_type;
 
@@ -702,6 +736,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         if(dci_dl[dci_idx_dl].ctx.format == srsran_dci_format_nr_1_1) {
           srsran_sch_cfg_nr_t pdsch_cfg = {};
           pdsch_hl_cfg.mcs_table = srsran_mcs_table_256qam;
+          printf("pdsch_hl_cfg.dmrs_typeA.additional_pos: %d\n", pdsch_hl_cfg.dmrs_typeA.additional_pos);
 
           if (srsran_ra_dl_dci_to_grant_nr(&carrier_dl, slot, &pdsch_hl_cfg, &dci_dl[dci_idx_dl], 
                                           &pdsch_cfg, &pdsch_cfg.grant) < SRSRAN_SUCCESS) {

@@ -148,6 +148,8 @@ typedef struct LogNode_ LogNode;
     int system_frame_idx;
     int slot_idx;
     std::string dci_format;
+    srsran_dci_dl_nr_t dl_dci;
+    srsran_dci_ul_nr_t ul_dci;
     srsran_sch_cfg_nr_t grant;
   };
 

@@ -75,6 +75,11 @@ def create_table_with_position_and_time(credential, dataset_id_input, nof_usrp):
           bigquery.SchemaField("nof_bits", "INTEGER", mode="REQUIRED"),
           bigquery.SchemaField("mcs_table", "STRING", mode="REQUIRED"),
           bigquery.SchemaField("xoverhead", "STRING", mode="REQUIRED"),
+          bigquery.SchemaField("harq_id", "INTEGER", mode="REQUIRED"),
+          bigquery.SchemaField("downlink_assignment_index", "INTEGER", mode="REQUIRED"),
+          bigquery.SchemaField("tpc", "INTEGER", mode="REQUIRED"),
+          bigquery.SchemaField("pucch_resource", "INTEGER", mode="REQUIRED"),
+          bigquery.SchemaField("harq_feedback", "INTEGER", mode="REQUIRED"),
       ]
 
       table = bigquery.Table(table_id, schema=schema)

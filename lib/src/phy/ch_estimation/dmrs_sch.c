@@ -291,6 +291,8 @@ static int srsran_dmrs_sch_get_symbols_idx_mapping_type_A_single(const srsran_dm
     l1 = 12;
   }
   // printf("l1: %d\n", l1);
+  // printf("ld: %d\n", ld);
+  // printf("dmrs_cfg->additional_pos: %d\n", dmrs_cfg->additional_pos);
 
   symbols[count] = l0;
   count++;
@@ -352,6 +354,7 @@ static int srsran_dmrs_sch_get_symbols_idx_mapping_type_A_single(const srsran_dm
         count++;
     }
   }
+  // printf("dmrs rvd count: %d\n", count);
   return count;
 }
 

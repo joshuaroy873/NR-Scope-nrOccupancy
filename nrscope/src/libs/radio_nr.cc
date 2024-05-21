@@ -352,6 +352,7 @@ int Radio::RadioCapture(){
                 log_node.timestamp = get_now_timestamp_in_double();
                 log_node.grant = result.dl_grants[i];
                 log_node.dci_format = srsran_dci_format_nr_string(result.dl_dcis[i].ctx.format);
+                log_node.dl_dci = result.dl_dcis[i];
                 if(local_log){
                   NRScopeLog::push_node(log_node, rf_index);
                 }
@@ -367,6 +368,7 @@ int Radio::RadioCapture(){
                 log_node.timestamp = get_now_timestamp_in_double();
                 log_node.grant = result.ul_grants[i];
                 log_node.dci_format = srsran_dci_format_nr_string(result.ul_dcis[i].ctx.format);
+                log_node.ul_dci = result.ul_dcis[i];
                 if(local_log){
                   NRScopeLog::push_node(log_node, rf_index);
                 }

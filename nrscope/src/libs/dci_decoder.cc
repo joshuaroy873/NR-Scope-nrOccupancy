@@ -596,7 +596,6 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     pusch_hl_cfg.nof_common_time_ra = sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.pusch_cfg_common.setup().pusch_time_domain_alloc_list.size();
   }
   
-
   // config according to the SIB 1's UL and DL BWP size
   dci_cfg.bwp_dl_initial_bw = sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.scs_specific_carrier_list[0].carrier_bw;
   dci_cfg.bwp_dl_active_bw = sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.scs_specific_carrier_list[0].carrier_bw;
@@ -617,18 +616,14 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     ERROR("Error UE DL");
     return SRSRAN_ERROR;
   }
-
   if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl_dci, &base_carrier, arg_scs)) {
     ERROR("Error setting SCH NR carrier");
     return SRSRAN_ERROR;
   }
-  
-  // std::cout << "befor pdcch conf.." << std::endl;
   if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl_dci, &pdcch_cfg, &dci_cfg)) {
     ERROR("Error setting CORESET");
     return SRSRAN_ERROR;
   }
-  // std::cout << "befor softbuffer conf.." << std::endl;
   if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
       SRSRAN_SUCCESS) {
     ERROR("Error init soft-buffer");
@@ -660,7 +655,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
     n_rntis = rnti_e - rnti_s;
   }
 
-  std::cout << "DCI decoder " << dci_decoder_id << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
+  // std::cout << "DCI decoder " << dci_decoder_id << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
 
   DCIFeedback new_result;
   task_scheduler_nrscope->sharded_results[dci_decoder_id] = new_result;
@@ -678,14 +673,14 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
 
   task_scheduler_nrscope->sharded_rntis[dci_decoder_id].resize(n_rntis);
   task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id] = n_rntis;
-  std::cout << "task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id]: " << task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id] << std::endl;
+  // std::cout << "task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id]: " << task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id] << std::endl;
 
-  std::cout << "sharded_rntis: ";
+  // std::cout << "sharded_rntis: ";
   for(uint32_t i = 0; i < n_rntis; i++){
     task_scheduler_nrscope->sharded_rntis[dci_decoder_id][i] = task_scheduler_nrscope->known_rntis[rnti_s + i];
-    std::cout << task_scheduler_nrscope->sharded_rntis[dci_decoder_id][i] << ", ";
+    // std::cout << task_scheduler_nrscope->sharded_rntis[dci_decoder_id][i] << ", ";
   }
-  std::cout << std::endl;
+  // std::cout << std::endl;
 
   // Set the buffer to 0s
   for(uint32_t idx = 0; idx < n_rntis; idx++){
@@ -736,7 +731,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         if(dci_dl[dci_idx_dl].ctx.format == srsran_dci_format_nr_1_1) {
           srsran_sch_cfg_nr_t pdsch_cfg = {};
           pdsch_hl_cfg.mcs_table = srsran_mcs_table_256qam;
-          printf("pdsch_hl_cfg.dmrs_typeA.additional_pos: %d\n", pdsch_hl_cfg.dmrs_typeA.additional_pos);
+          // printf("pdsch_hl_cfg.dmrs_typeA.additional_pos: %d\n", pdsch_hl_cfg.dmrs_typeA.additional_pos);
 
           if (srsran_ra_dl_dci_to_grant_nr(&carrier_dl, slot, &pdsch_hl_cfg, &dci_dl[dci_idx_dl], 
                                           &pdsch_cfg, &pdsch_cfg.grant) < SRSRAN_SUCCESS) {
@@ -746,61 +741,13 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
           srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
           printf("DCIDecoder -- PDSCH_cfg:\n%s", str);
 
-
-          /* Trying to decode the RRC Reconfiguration*/
-          // if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
-          //     SRSRAN_SUCCESS) {
-          //   ERROR("SIBDecoder -- Error init soft-buffer");
-          //   return SRSRAN_ERROR;
-          // }
-
-          // // Reset the data_pdcch to zeros
-          // srsran_vec_u8_zero(data_pdcch, SRSRAN_SLOT_MAX_NOF_BITS_NR);
-          
-          // pdsch_cfg.grant.tb[0].softbuffer.rx = &softbuffer; // Set softbuffer
-          // pdsch_res = {}; // Prepare PDSCH result
-          // pdsch_res.tb[0].payload = data_pdcch;
-
-          // // Decode PDSCH
-          // if (srsran_ue_dl_nr_decode_pdsch(ue_dl_tmp, slot, &pdsch_cfg, &pdsch_res) < SRSRAN_SUCCESS) {
-          //   printf("DCIDecoder -- Error decoding PDSCH search\n");
-          //   return SRSRAN_ERROR;
-          // }
-          // if (!pdsch_res.tb[0].crc) {
-          //   printf("DCIDecoder -- Error decoding PDSCH (CRC)\n");
-          //   return SRSRAN_ERROR;
-          // }
-          // printf("DCIDecoder Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
-          // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
-
-          // // check payload is not all null
-          // bool all_zero = true;
-          // for (int i = 0; i < pdsch_cfg.grant.tb[0].tbs / 8; ++i) {
-          //   if (pdsch_res.tb[0].payload[i] != 0x0) {
-          //     all_zero = false;
-          //     break;
-          //   }
-          // }
-          // if (all_zero) {
-          //   ERROR("PDSCH payload is all zeros");
-          //   return SRSRAN_ERROR;
-          // }
-          // std::cout << "Try to decode RRC_RECFG..." << std::endl;
-          // asn1::rrc_nr::bcch_dl_sch_msg_s dlsch_msg;
-          // asn1::cbit_ref dlsch_bref(pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
-          // asn1::SRSASN_CODE err = task_scheduler_nrscope->rrc_recfg.unpack(dlsch_bref);
-
-          // asn1::json_writer jw;
-          // task_scheduler_nrscope->rrc_recfg.to_json(jw);
-          // printf("Decoded RRC_RECFG: %s\n", jw.to_string().c_str());
-          /* Trying to decode the RRC Reconfiguration*/
-
-
           task_scheduler_nrscope->sharded_results[dci_decoder_id].dl_grants[dci_idx_dl] = pdsch_cfg;
           task_scheduler_nrscope->sharded_results[dci_decoder_id].nof_dl_used_prbs += pdsch_cfg.grant.nof_prb * pdsch_cfg.grant.L;
 
-          task_scheduler_nrscope->dl_prb_rate[dci_idx_dl+rnti_s] = (float)(pdsch_cfg.grant.tb[0].tbs + pdsch_cfg.grant.tb[1].tbs) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
-          task_scheduler_nrscope->dl_prb_bits_rate[dci_idx_dl+rnti_s] = (float)(pdsch_cfg.grant.tb[0].nof_bits + pdsch_cfg.grant.tb[1].nof_bits) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
+          task_scheduler_nrscope->dl_prb_rate[dci_idx_dl+rnti_s] = (float)(pdsch_cfg.grant.tb[0].tbs + 
+            pdsch_cfg.grant.tb[1].tbs) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
+          task_scheduler_nrscope->dl_prb_bits_rate[dci_idx_dl+rnti_s] = (float)(pdsch_cfg.grant.tb[0].nof_bits + 
+            pdsch_cfg.grant.tb[1].nof_bits) / (float)pdsch_cfg.grant.nof_prb / (float)pdsch_cfg.grant.L;
         }
       }
     }
@@ -844,8 +791,10 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         task_scheduler_nrscope->sharded_results[dci_decoder_id].ul_grants[dci_idx_ul] = pusch_cfg;
         task_scheduler_nrscope->sharded_results[dci_decoder_id].nof_ul_used_prbs += pusch_cfg.grant.nof_prb * pusch_cfg.grant.L;
         
-        task_scheduler_nrscope->ul_prb_rate[dci_idx_ul+rnti_s] = (float)(pusch_cfg.grant.tb[0].tbs + pusch_cfg.grant.tb[1].tbs) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;
-        task_scheduler_nrscope->ul_prb_bits_rate[dci_idx_ul+rnti_s] = (float)(pusch_cfg.grant.tb[0].nof_bits + pusch_cfg.grant.tb[1].nof_bits) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;
+        task_scheduler_nrscope->ul_prb_rate[dci_idx_ul+rnti_s] = (float)(pusch_cfg.grant.tb[0].tbs + 
+          pusch_cfg.grant.tb[1].tbs) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;
+        task_scheduler_nrscope->ul_prb_bits_rate[dci_idx_ul+rnti_s] = (float)(pusch_cfg.grant.tb[0].nof_bits + 
+          pusch_cfg.grant.tb[1].nof_bits) / (float)pusch_cfg.grant.nof_prb / (float)pusch_cfg.grant.L;
       }
     }
     // task_scheduler_nrscope->result.nof_ul_spare_prbs = carrier_dl.nof_prb * (14 - 2) - task_scheduler_nrscope->result.nof_ul_used_prbs;

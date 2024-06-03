@@ -106,8 +106,8 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
       }
       std::cout << "    scs: " << radios[i].ssb_scs << std::endl;
 
-      if(config_yaml[setting_name]["dl_freq"]){
-        radios[i].args_t.base_carrier.dl_center_frequency_hz = config_yaml[setting_name]["dl_freq"].as<double>();
+      if(config_yaml[setting_name]["ssb_freq"]){
+        radios[i].args_t.base_carrier.dl_center_frequency_hz = config_yaml[setting_name]["ssb_freq"].as<double>();
       }
 
       if(config_yaml[setting_name]["rf_log_level"]){

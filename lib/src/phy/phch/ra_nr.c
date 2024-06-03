@@ -826,7 +826,7 @@ int srsran_ra_dl_dci_to_grant_nr(const srsran_carrier_nr_t*    carrier,
     ERROR("Error selecting DMRS configuration");
     return SRSRAN_ERROR;
   }
-  printf("pdsch_cfg.dmrs.additional_pos: %d\n", pdsch_cfg->dmrs.additional_pos);
+  // printf("pdsch_cfg.dmrs.additional_pos: %d\n", pdsch_cfg->dmrs.additional_pos);
 
   // 5.1.3 Modulation order, target code rate, redundancy version and transport block size determination
   if (srsran_ra_nr_fill_tb(pdsch_cfg, pdsch_grant, dci_dl->mcs, &pdsch_grant->tb[0]) < SRSRAN_SUCCESS) {

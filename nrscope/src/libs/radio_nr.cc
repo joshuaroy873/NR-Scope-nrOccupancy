@@ -116,7 +116,7 @@ int Radio::RadioInitandStart(){
     // Set the searching frequency to ssb_freq
     // Because the srsRAN implementation use the center_freq_hz for cell searching
     cs_args.center_freq_hz = cs_args.ssb_freq_hz;
-    std::cout << cs_args.ssb_freq_hz << std::endl;
+    // std::cout << cs_args.ssb_freq_hz << std::endl;
     args_t.base_carrier.ssb_center_freq_hz = cs_args.ssb_freq_hz;
 
     radio->release_freq(0);

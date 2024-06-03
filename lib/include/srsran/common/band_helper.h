@@ -64,6 +64,8 @@ public:
    */
   uint16_t get_band_from_dl_freq_Hz(double dl_freq_Hz) const;
 
+  uint16_t get_band_from_dl_freq_Hz_and_scs(double freq, srsran_subcarrier_spacing_t ssb_scs) const;
+
   /**
    * @brief Get the lowest band that includes a given Downlink ARFCN
    * @param arfcn Given ARFCN

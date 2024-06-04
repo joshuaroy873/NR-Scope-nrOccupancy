@@ -334,8 +334,8 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
       return SRSRAN_ERROR;
     }
 
-    // printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
-    // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+    printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
+    srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
     uint32_t bytes_offset = 0;
 
     for (uint32_t pdsch_res_idx = 0; pdsch_res_idx < (uint32_t)pdsch_cfg.grant.tb[0].tbs / 8 - 1; pdsch_res_idx ++){
@@ -347,6 +347,7 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
 
     if (!pdsch_res.tb[0].crc) {
       printf("RACHDecoder -- Error decoding PDSCH (CRC)\n");
+
       return SRSRAN_ERROR;
     }
 

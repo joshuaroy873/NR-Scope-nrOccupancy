@@ -69,6 +69,8 @@ int Radio::RadioInitandStart(){
   // Allocate receive buffer
   slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
   rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
+  std::cout << "slot_sz: " << slot_sz << std::endl;
+  std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
   srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
 
   cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
@@ -124,7 +126,7 @@ int Radio::RadioInitandStart(){
 
     srsran::rf_buffer_t rf_buffer = {};
     rf_buffer.set_nof_samples(slot_sz);
-    rf_buffer.set(0, rx_buffer + slot_sz);
+    rf_buffer.set(0, rx_buffer);// + slot_sz);
 
     for(uint32_t trial=0; trial < nof_trials; trial++){
       if (trial == 0) {
@@ -140,6 +142,7 @@ int Radio::RadioInitandStart(){
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
 
       cs_ret = srsran_searcher.run_slot(rx_buffer, slot_sz);
+      // std::cout << "Slot_sz: " << slot_sz << std::endl;
       if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND ){
         // printf("found cell in this slot\n");
         break;
@@ -190,7 +193,6 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
 int Radio::SyncandDownlinkInit(){
   //***** DL args Config Start *****//
   rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * slot_sz);
-
   // it appears the srsRAN is build on 15kHz scs, we need to use the srate and 
   // scs to calculate the correct subframe size 
   arg_scs.srate = task_scheduler_nrscope.args_t.srate_hz;
@@ -210,13 +212,11 @@ int Radio::SyncandDownlinkInit(){
   ue_sync_nr_args.cfo_alpha       = 0.1;
   ue_sync_nr_args.recv_obj        = radio.get();
   ue_sync_nr_args.recv_callback   = slot_sync_recv_callback;
-
   if (srsran_ue_sync_nr_init(&ue_sync_nr, &ue_sync_nr_args) < SRSRAN_SUCCESS) {
     std::cout << "Error initiating UE SYNC NR object" << std::endl;
     logger.error("Error initiating UE SYNC NR object");
     return SRSRAN_ERROR;
   }
-
   // Be careful of all the frequency setting (SSB/center downlink and etc.)!
   ssb_cfg.srate_hz       = task_scheduler_nrscope.args_t.srate_hz;
   ssb_cfg.center_freq_hz = cs_args.ssb_freq_hz;

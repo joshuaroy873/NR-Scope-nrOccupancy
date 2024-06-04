@@ -31,8 +31,8 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
     printf("%hhu ", cs_ret_->ssb_res.pbch_msg.payload[i]);
   }
   printf("\n");
-  std::cout << "cell.mib.ssb_offset: " << cell.mib.ssb_offset << std::endl;
-  std::cout << "((int)cs_ret.ssb_res.pbch_msg.k_ssb_msb): " << ((int)cs_ret_->ssb_res.pbch_msg.k_ssb_msb) << std::endl;
+  // std::cout << "cell.mib.ssb_offset: " << cell.mib.ssb_offset << std::endl;
+  // std::cout << "((int)cs_ret.ssb_res.pbch_msg.k_ssb_msb): " << ((int)cs_ret_->ssb_res.pbch_msg.k_ssb_msb) << std::endl;
 
   cell.k_ssb = cell.mib.ssb_offset; // already added the msb of k_ssb
 
@@ -41,7 +41,7 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
   coreset0_args_t.offset_rb = srsran_coreset0_ssb_offset(cell.mib.coreset0_idx, 
     args_t_->ssb_scs, cell.mib.scs_common);
   // std::cout << "Coreset offset in rbs related to SSB: " << coreset0_args_t.offset_rb << std::endl;
-
+  // std::cout << "set coreset0 config" << std::endl;
   coreset0_t = {};
   // srsran_coreset_zero returns the offset_rb relative to pointA
   if(srsran_coreset_zero(cs_ret_->ssb_res.N_id, 
@@ -55,6 +55,8 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
     srsran_coreset_to_str(&coreset0_t, coreset_info, sizeof(coreset_info));
     printf("Coreset parameter: %s", coreset_info);
   }
+  // std::cout << "After calling srsran_coreset_zero()" << std::endl;
+
   // To find the position of coreset0, we need to use the offset between SSB and CORESET0,
   // because we don't know the ssb_pointA_freq_offset_Hz yet required by the srsran_coreset_zero function.
   // coreset0_t low bound freq = ssb center freq - 120 * scs (half of sc in ssb) - 
@@ -91,6 +93,7 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
     ERROR("Error checking table 13-11");
     return SRSRAN_ERROR;
   }
+  // std::cout << "After calling coreset_zero_t_f_nrscope" << std::endl;
 
   cell.u = (int)args_t_->ssb_scs; 
   coreset0_args_t.n_0 = (coreset_zero_cfg.O * (int)pow(2, cell.u) + 
@@ -103,7 +106,7 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
   args_t = *args_t_;
   cs_ret = *cs_ret_;
   memcpy(&srsran_searcher_cfg_t, srsran_searcher_cfg_t_, sizeof(srsue::nr::cell_search::cfg_t));
-
+  // std::cout << "After memcpy" << std::endl;
   return SRSRAN_SUCCESS;
 }
 

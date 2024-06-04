@@ -2,6 +2,7 @@
 #define RADIO_H
 
 #include "cstdio"
+#include "memory"
 
 #include "nrscope/hdr/nrscope_def.h"
 #include "nrscope/hdr/rach_decoder.h"
@@ -23,7 +24,6 @@ class Radio{
 
     srsran::rf_buffer_t                           rf_buffer_t;
     cf_t*                                         rx_buffer;
-    cf_t*                                         rx_uplink_buffer;
     uint32_t                                      slot_sz;
     srsran::rf_timestamp_t                        last_rx_time;
 

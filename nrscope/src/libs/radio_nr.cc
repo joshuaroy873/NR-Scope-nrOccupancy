@@ -132,7 +132,7 @@ int Radio::RadioInitandStart(){
       if (trial == 0) {
         srsran_vec_cf_zero(rx_buffer, slot_sz);
       }
-      srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_sz, slot_sz);
+      // srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_sz, slot_sz);
 
       srsran::rf_timestamp_t& rf_timestamp = last_rx_time;
 

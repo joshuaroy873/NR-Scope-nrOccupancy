@@ -1,10 +1,17 @@
 FROM ubuntu:22.04
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update
+RUN apt-get install -y software-properties-common
 
 RUN add-apt-repository ppa:ettusresearch/uhd
 RUN apt-get update
 RUN apt-get install -y libuhd-dev uhd-host
 
 RUN apt-get install -y build-essential cmake libfftw3-dev libmbedtls-dev libboost-program-options-dev libconfig++-dev libsctp-dev
+RUN apt-get install -y git
+
+RUN uhd_images_downloader
 
 WORKDIR /
 RUN git clone https://github.com/jbeder/yaml-cpp.git

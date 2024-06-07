@@ -222,6 +222,7 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
   pdsch_carrier.nof_prb = sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.scs_specific_carrier_list[0].carrier_bw;
   double dl_center_frequency = pointA + pdsch_carrier.nof_prb * NRSCOPE_NSC_PER_RB_NR * SRSRAN_SUBC_SPACING_NR(task_scheduler_nrscope->srsran_searcher_cfg_t.ssb_scs) / 2;
   std::cout << "dl_center_frequency: " << dl_center_frequency << std::endl;
+  std::cout << "pointA: " << pointA << std::endl;
 
   arg_scs_pdsch.coreset_offset_scs = (task_scheduler_nrscope->srsran_searcher_cfg_t.ssb_freq_hz - dl_center_frequency) / cell.abs_pdcch_scs;
   
@@ -272,22 +273,22 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     ERROR("RACHDecoder -- Error in blind search");
     return SRSRAN_ERROR;
   }
-  // for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl_rach.pdcch_info_count; pdcch_idx++) {
-  //   const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl_rach.pdcch_info[pdcch_idx]);
-  //   printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
-  //     "nof_bits=%d; crc=%s;\n",
-  //     srsran_rnti_type_str_short(info->dci_ctx.rnti_type),
-  //     info->dci_ctx.rnti,
-  //     info->dci_ctx.coreset_id,
-  //     srsran_ss_type_str(info->dci_ctx.ss_type),
-  //     info->dci_ctx.location.ncce,
-  //     info->dci_ctx.location.L,
-  //     info->measure.epre_dBfs,
-  //     info->measure.rsrp_dBfs,
-  //     info->measure.norm_corr,
-  //     info->nof_bits,
-  //     info->result.crc ? "OK" : "KO");
-  // }
+  for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl_rach.pdcch_info_count; pdcch_idx++) {
+    const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl_rach.pdcch_info[pdcch_idx]);
+    printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
+      "nof_bits=%d; crc=%s;\n",
+      srsran_rnti_type_str_short(info->dci_ctx.rnti_type),
+      info->dci_ctx.rnti,
+      info->dci_ctx.coreset_id,
+      srsran_ss_type_str(info->dci_ctx.ss_type),
+      info->dci_ctx.location.ncce,
+      info->dci_ctx.location.L,
+      info->measure.epre_dBfs,
+      info->measure.rsrp_dBfs,
+      info->measure.norm_corr,
+      info->nof_bits,
+      info->result.crc ? "OK" : "KO");
+  }
 
   if (nof_found_dci < 1) {
     printf("RACHDecoder -- No DCI found :'(\n");
@@ -309,8 +310,8 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
       return SRSRAN_ERROR;
     }
 
-    // srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
-    // printf("PDSCH_cfg:\n%s", str);
+    srsran_sch_cfg_nr_info(&pdsch_cfg, str, (uint32_t)sizeof(str));
+    printf("PDSCH_cfg:\n%s", str);
 
     if (srsran_softbuffer_rx_init_guru(&softbuffer, SRSRAN_SCH_NR_MAX_NOF_CB_LDPC, SRSRAN_LDPC_MAX_LEN_ENCODED_CB) <
         SRSRAN_SUCCESS) {

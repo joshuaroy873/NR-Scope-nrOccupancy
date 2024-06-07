@@ -26,6 +26,10 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
     ERROR("Error decoding MIB");
     return SRSRAN_ERROR;
   }
+
+  char str[1024] = {};
+  srsran_pbch_msg_nr_mib_info(&cell.mib, str, 1024);
+  printf("MIB: %s\n", str);
   printf("MIB payload: ");
   for (int i =0; i<SRSRAN_PBCH_MSG_NR_MAX_SZ; i++){
     printf("%hhu ", cs_ret_->ssb_res.pbch_msg.payload[i]);

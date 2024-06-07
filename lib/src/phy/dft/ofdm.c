@@ -609,6 +609,10 @@ int srsran_ofdm_set_phase_compensation(srsran_ofdm_t* q, double center_freq_hz)
   uint32_t symbol_sz = q->cfg.symbol_sz;
   double   scs       = 15e3; //< Assume 15kHz subcarrier spacing
   double   srate_hz  = symbol_sz * scs;
+  printf("symbol_sz: %u\n", symbol_sz);
+  printf("srate_hz: %lf\n", srate_hz);
+  printf("scs: %lf\n", scs);
+  // printf("q->nof_symbols: %d\n", q->nof_symbols);
 
   // Assert parameters
   if (!isnormal(srate_hz)) {
@@ -620,7 +624,6 @@ int srsran_ofdm_set_phase_compensation(srsran_ofdm_t* q, double center_freq_hz)
   for (uint32_t l = 0; l < q->nof_symbols * SRSRAN_NOF_SLOTS_PER_SF; l++) {
     uint32_t cp_len =
         SRSRAN_CP_ISNORM(q->cfg.cp) ? SRSRAN_CP_LEN_NORM(l % q->nof_symbols, symbol_sz) : SRSRAN_CP_LEN_EXT(symbol_sz);
-
     // Advance CP
     count += cp_len;
 
@@ -629,9 +632,11 @@ int srsran_ofdm_set_phase_compensation(srsran_ofdm_t* q, double center_freq_hz)
 
     // Calculate phase
     double phase_rad = -2.0 * M_PI * center_freq_hz * t_start;
+    // printf("center_freq_hz: %f\n", center_freq_hz);
 
     // Calculate compensation phase in double precision and then convert to single
     q->phase_compensation[l] = (cf_t)cexp(I * phase_rad);
+    // printf("phase_compensation: %f+%fi\n", creal(q->phase_compensation[l]), cimag(q->phase_compensation[l]));
 
     // Advance symbol
     count += symbol_sz;
@@ -666,6 +671,7 @@ int srsran_ofdm_set_phase_compensation_nrscope(srsran_ofdm_t* q, double center_f
   double   srate_hz  = symbol_sz * scs;
   printf("symbol_sz: %u\n", symbol_sz);
   printf("srate_hz: %lf\n", srate_hz);
+  printf("scs: %lf\n", scs);
 
   // Assert parameters
   if (!isnormal(srate_hz)) {
@@ -677,7 +683,6 @@ int srsran_ofdm_set_phase_compensation_nrscope(srsran_ofdm_t* q, double center_f
   for (uint32_t l = 0; l < q->nof_symbols; l++) {
     uint32_t cp_len =
         SRSRAN_CP_ISNORM(q->cfg.cp) ? SRSRAN_CP_LEN_NORM_NR(symbol_sz) : SRSRAN_CP_LEN_EXT_NR(symbol_sz);
-
     // Advance CP
     count += cp_len;
 
@@ -686,10 +691,12 @@ int srsran_ofdm_set_phase_compensation_nrscope(srsran_ofdm_t* q, double center_f
 
     // Calculate phase
     double phase_rad = -2.0 * M_PI * center_freq_hz * t_start;
+    // printf("center_freq_hz: %f\n", center_freq_hz);
 
     // Calculate compensation phase in double precision and then convert to single
     q->phase_compensation[l] = (cf_t)cexp(I * phase_rad);
     // q->phase_compensation[l+q->nof_symbols/2] = (cf_t)cexp(I * phase_rad);
+    // printf("phase_compensation: %f+%fi\n", creal(q->phase_compensation[l]), cimag(q->phase_compensation[l]));
 
     // the code multiplied first half frame some wierd phases, a very weird fix for that
     // only for FDD currently.
@@ -840,14 +847,15 @@ static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_o
   uint32_t nof_symbols = q->nof_symbols;
   uint32_t nof_re = q->nof_re;
   cf_t* output = q->cfg.out_buffer + slot_in_sf * nof_re * nof_symbols;  // time-freq domain: subcarrier x symbol
-  // printf("nof_symbols: %d\n", nof_symbols);
-  // printf("nof_re: %d\n", nof_re);
-  // printf("slot_in_sf * nof_re * nof_symbols: %d\n", slot_in_sf * q->slot_sz);
+  printf("nof_symbols: %d\n", nof_symbols);
+  printf("nof_re: %d\n", nof_re);
+  printf("slot_in_sf * nof_re * nof_symbols: %d\n", slot_in_sf * q->slot_sz);
 
   uint32_t symbol_sz = q->cfg.symbol_sz;
   float norm = 1.0f / sqrtf(q->fft_plan.size);
   cf_t* tmp = q->tmp; // where the dft results store
   uint32_t dc = (q->fft_plan.dc) ? 1 : 0;
+  printf("symbol_sz: %d\n", symbol_sz);
 
   srsran_dft_run_guru_c(&q->fft_plan_sf[slot_in_sf]);
   // printf("q->nof_symbols: %d\n", q->nof_symbols);
@@ -857,7 +865,6 @@ static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_o
     // Apply frequency domain window offset
     if (q->window_offset_n) {
       srsran_vec_prod_ccc(tmp, q->window_offset_buffer, tmp, symbol_sz); // skipped for now
-      // printf("q->window_offset_buffer: ")
     }
 
     // Perform FFT shift

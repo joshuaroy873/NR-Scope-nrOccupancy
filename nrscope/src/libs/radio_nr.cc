@@ -69,8 +69,8 @@ int Radio::RadioInitandStart(){
   // Allocate receive buffer
   slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
   rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
-  std::cout << "slot_sz: " << slot_sz << std::endl;
-  std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
+  // std::cout << "slot_sz: " << slot_sz << std::endl;
+  // std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
   srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
 
   cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;

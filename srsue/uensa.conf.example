@@ -35,7 +35,8 @@ tx_gain = 10
 # For best performance when BW<5 MHz (25 PRB), use the following device_args settings:
 #     USRP B210: send_frame_size=512,recv_frame_size=512
 
-device_args = type=b210,clock=internal,sampling_rate=11.52e6,lo_freq_offset_hz=11.52e6
+device_args = clock=external
+#type=b210,clock=internal,sampling_rate=11.52e6,lo_freq_offset_hz=11.52e6
 srate = 11.52e6
 #time_adv_nsamples = auto
 #continuous_tx     = auto
@@ -66,7 +67,7 @@ dl_earfcn = 300
 # nof_carriers:    Number of NR carriers (must be at least 1 for NR support)
 #####################################################################
 [rat.nr]
-# bands = 78
+bands = 25
 nof_carriers = 1
 
 #####################################################################

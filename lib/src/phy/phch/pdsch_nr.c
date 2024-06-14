@@ -456,8 +456,8 @@ static inline int pdsch_nr_decode_codeword(srsran_pdsch_nr_t*         q,
   //   q->d[tb->cw_idx][i] = q->d[tb->cw_idx][i] * (0.8869 + 0.4617*I);
   // }
 
-  printf("d=");
-  srsran_vec_fprint_c(stdout, q->d[tb->cw_idx], tb->nof_re);
+  // printf("d=");
+  // srsran_vec_fprint_c(stdout, q->d[tb->cw_idx], tb->nof_re);
 
   // Demodulation
   int8_t* llr = (int8_t*)q->b[tb->cw_idx];
@@ -482,8 +482,8 @@ static inline int pdsch_nr_decode_codeword(srsran_pdsch_nr_t*         q,
     srsran_vec_fprint_b(stdout, q->b[tb->cw_idx], tb->nof_bits);
   }
 
-  printf("b="); // for debugging
-  srsran_vec_fprint_b(stdout, q->b[tb->cw_idx], tb->nof_bits);
+  // printf("b="); // for debugging
+  // srsran_vec_fprint_b(stdout, q->b[tb->cw_idx], tb->nof_bits);
 
   // Decode SCH
   if (srsran_dlsch_nr_decode(&q->sch, &cfg->sch_cfg, tb, llr, &res->tb[tb->cw_idx]) < SRSRAN_SUCCESS) {
@@ -546,23 +546,23 @@ int srsran_pdsch_nr_decode(srsran_pdsch_nr_t*           q,
     srsran_vec_fprint_c(stdout, q->x[0], nof_re);
   }
 
-  printf("ce=");
-  srsran_vec_fprint_c(stdout, channel->ce[0][0], nof_re);
+  // printf("ce=");
+  // srsran_vec_fprint_c(stdout, channel->ce[0][0], nof_re);
 
   // FILE *fp;
   // fp = fopen("channel_estimation_wrong_2.txt", "a");
   // fwrite(channel->ce[0][0], sizeof(cf_t), nof_re, fp);
   // fclose(fp);
 
-  printf("x=");
-  srsran_vec_fprint_c(stdout, q->x[0], nof_re);
+  // printf("x=");
+  // srsran_vec_fprint_c(stdout, q->x[0], nof_re);
 
   // Demapping to virtual resource blocks
   // ... Not implemented
 
   // Antenna port demapping
   // ... Not implemented
-  printf("channel->noise_estimate: %f\n", channel->noise_estimate);
+  // printf("channel->noise_estimate: %f\n", channel->noise_estimate);
   srsran_predecoding_single(q->x[0], channel->ce[0][0], q->d[0], NULL, nof_re, 1.0f, channel->noise_estimate);
   
   // Layer demapping
@@ -571,10 +571,10 @@ int srsran_pdsch_nr_decode(srsran_pdsch_nr_t*           q,
   }
 
   // debugging the PDSCH decoding
-  printf("ce=");
-  srsran_vec_fprint_c(stdout, channel->ce[0][0], nof_re);
-  printf("x=");
-  srsran_vec_fprint_c(stdout, q->x[0], nof_re);
+  // printf("ce=");
+  // srsran_vec_fprint_c(stdout, channel->ce[0][0], nof_re);
+  // printf("x=");
+  // srsran_vec_fprint_c(stdout, q->x[0], nof_re);
 
   // SCH decode
   for (uint32_t tb = 0; tb < SRSRAN_MAX_TB; tb++) {

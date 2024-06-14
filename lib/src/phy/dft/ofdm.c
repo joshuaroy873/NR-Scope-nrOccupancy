@@ -76,7 +76,7 @@ static int ofdm_init_mbsfn_(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran_dft
   q->nof_re            = cfg->nof_prb * SRSRAN_NRE;
   q->nof_guards        = (q->cfg.symbol_sz - q->nof_re) / 2U;
   q->slot_sz           = (uint32_t)SRSRAN_SLOT_LEN(q->cfg.symbol_sz);
-  printf("q->slot_sz: %u\n", q->slot_sz);
+  // printf("q->slot_sz: %u\n", q->slot_sz);
   q->sf_sz             = (uint32_t)SRSRAN_SF_LEN(q->cfg.symbol_sz);
 
   // Set the CFR parameters related to OFDM symbol and FFT size
@@ -287,10 +287,10 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
   q->slot_sz           = (uint32_t)SRSRAN_SLOT_LEN_NR(q->cfg.symbol_sz);
   q->sf_sz             = (uint32_t)SRSRAN_SF_LEN_NR(q->cfg.symbol_sz, scs_idx);
 
-  printf("q->slot_sz: %d\n", q->slot_sz);
-  printf("q->sf_sz: %d\n", q->sf_sz);
-  printf("symbol_sz: %d\n", symbol_sz);
-  printf("q->nof_symbols: %d\n", q->nof_symbols);
+  // printf("q->slot_sz: %d\n", q->slot_sz);
+  // printf("q->sf_sz: %d\n", q->sf_sz);
+  // printf("symbol_sz: %d\n", symbol_sz);
+  // printf("q->nof_symbols: %d\n", q->nof_symbols);
 
   // Set the CFR parameters related to OFDM symbol and FFT size
   q->cfg.cfr_tx_cfg.symbol_sz = symbol_sz;
@@ -306,6 +306,7 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
   }
   // Plan MBSFN
   if (q->fft_plan.size) {
+    printf("srsran_dft_replan\n");
     // Replan if it was initialised previously
     if (srsran_dft_replan(&q->fft_plan, q->cfg.symbol_sz)) {
       ERROR("Replanning DFT plan");
@@ -360,7 +361,7 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
   cf_t* out_buffer = q->cfg.out_buffer;
   // change the cp setting for 5G NR
   int cp1 = SRSRAN_CP_ISNORM(cp) ? SRSRAN_CP_LEN_NORM_NR(symbol_sz) : SRSRAN_CP_LEN_EXT_NR(symbol_sz);
-  printf("cp1: %d\n", cp1);
+  // printf("cp1: %d\n", cp1);
   // Slides DFT window a fraction of cyclic prefix, it does not apply for the inverse-DFT
   // we skip the window offset by setting cfg.rx_window_offset = 0;
   if (isnormal(cfg->rx_window_offset)) {
@@ -423,15 +424,16 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
   }
 #endif
 
+  // What does the mirror do?
   srsran_dft_plan_set_mirror(&q->fft_plan, true);
 
-  printf("Init %s symbol_sz=%d, nof_symbols=%d, cp=%s, nof_re=%d, nof_guards=%d\n",
-        dir == SRSRAN_DFT_FORWARD ? "FFT" : "iFFT",
-        q->cfg.symbol_sz,
-        q->nof_symbols,
-        q->cfg.cp == SRSRAN_CP_NORM ? "Normal" : "Extended",
-        q->nof_re,
-        q->nof_guards);
+  // printf("Init %s symbol_sz=%d, nof_symbols=%d, cp=%s, nof_re=%d, nof_guards=%d\n",
+  //       dir == SRSRAN_DFT_FORWARD ? "FFT" : "iFFT",
+  //       q->cfg.symbol_sz,
+  //       q->nof_symbols,
+  //       q->cfg.cp == SRSRAN_CP_NORM ? "Normal" : "Extended",
+  //       q->nof_re,
+  //       q->nof_guards);
 
   DEBUG("Init %s symbol_sz=%d, nof_symbols=%d, cp=%s, nof_re=%d, nof_guards=%d",
         dir == SRSRAN_DFT_FORWARD ? "FFT" : "iFFT",
@@ -609,9 +611,9 @@ int srsran_ofdm_set_phase_compensation(srsran_ofdm_t* q, double center_freq_hz)
   uint32_t symbol_sz = q->cfg.symbol_sz;
   double   scs       = 15e3; //< Assume 15kHz subcarrier spacing
   double   srate_hz  = symbol_sz * scs;
-  printf("symbol_sz: %u\n", symbol_sz);
-  printf("srate_hz: %lf\n", srate_hz);
-  printf("scs: %lf\n", scs);
+  // printf("symbol_sz: %u\n", symbol_sz);
+  // printf("srate_hz: %lf\n", srate_hz);
+  // printf("scs: %lf\n", scs);
   // printf("q->nof_symbols: %d\n", q->nof_symbols);
 
   // Assert parameters
@@ -669,9 +671,9 @@ int srsran_ofdm_set_phase_compensation_nrscope(srsran_ofdm_t* q, double center_f
   uint32_t symbol_sz = q->cfg.symbol_sz;
   double   scs       = (double)SRSRAN_SUBC_SPACING_NR(scs_idx); 
   double   srate_hz  = symbol_sz * scs;
-  printf("symbol_sz: %u\n", symbol_sz);
-  printf("srate_hz: %lf\n", srate_hz);
-  printf("scs: %lf\n", scs);
+  // printf("symbol_sz: %u\n", symbol_sz);
+  // printf("srate_hz: %lf\n", srate_hz);
+  // printf("scs: %lf\n", scs);
 
   // Assert parameters
   if (!isnormal(srate_hz)) {
@@ -737,7 +739,7 @@ int srsran_ofdm_set_freq_shift(srsran_ofdm_t* q, float freq_shift)
 
   // Check if fft shift is required
   if (!isnormal(q->cfg.freq_shift_f)) {
-    printf("skiped set freq shift.\n");
+    // printf("skiped set freq shift.\n");
     srsran_dft_plan_set_dc(&q->fft_plan, true);
     return SRSRAN_SUCCESS;
   }
@@ -847,15 +849,15 @@ static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_o
   uint32_t nof_symbols = q->nof_symbols;
   uint32_t nof_re = q->nof_re;
   cf_t* output = q->cfg.out_buffer + slot_in_sf * nof_re * nof_symbols;  // time-freq domain: subcarrier x symbol
-  printf("nof_symbols: %d\n", nof_symbols);
-  printf("nof_re: %d\n", nof_re);
-  printf("slot_in_sf * nof_re * nof_symbols: %d\n", slot_in_sf * q->slot_sz);
+  // printf("nof_symbols: %d\n", nof_symbols);
+  // printf("nof_re: %d\n", nof_re);
+  // printf("slot_in_sf * nof_re * nof_symbols: %d\n", slot_in_sf * q->slot_sz);
 
   uint32_t symbol_sz = q->cfg.symbol_sz;
   float norm = 1.0f / sqrtf(q->fft_plan.size);
   cf_t* tmp = q->tmp; // where the dft results store
   uint32_t dc = (q->fft_plan.dc) ? 1 : 0;
-  printf("symbol_sz: %d\n", symbol_sz);
+  // printf("symbol_sz: %d\n", symbol_sz);
 
   srsran_dft_run_guru_c(&q->fft_plan_sf[slot_in_sf]);
   // printf("q->nof_symbols: %d\n", q->nof_symbols);
@@ -957,6 +959,7 @@ void srsran_ofdm_rx_sf(srsran_ofdm_t* q)
 void srsran_ofdm_rx_sf_nrscope(srsran_ofdm_t* q, int scs_idx, int coreset_offset_scs)
 {
   if (isnormal(q->cfg.freq_shift_f)) {
+    // printf("shift buffer update\n");
     srsran_vec_prod_ccc(q->cfg.in_buffer, q->shift_buffer, q->cfg.in_buffer, q->sf_sz); // skipped for dl rx
   }
 

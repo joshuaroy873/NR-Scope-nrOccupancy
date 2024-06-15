@@ -10,7 +10,7 @@ usrp_setting_0:
   rf_log_level: "debug"
   nof_threads: 4
 
-  log_name: "/home/wanhr/Documents/data/nrscope/evaluation/packet_aggregation/dci_packed.csv" #"/home/wanhr/Documents/data/nrscope/evaluation/coverage_amarisoft/dci_tx_50.csv" # x (0-10), y(0-8) coordinates
+  log_name: "../../../../data/dci_log/dci_log_3649440000.csv"
   google_dataset_id: "ngscope5g_dci_log_wanhr"
 
 # usrp_setting_1:

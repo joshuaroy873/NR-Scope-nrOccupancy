@@ -73,11 +73,11 @@ namespace NRScopeLog{
             input_node.grant.grant.tb[0].nof_bits,
             srsran_mcs_table_to_str(input_node.grant.sch_cfg.mcs_table),
             sch_xoverhead_to_str(input_node.grant.sch_cfg.xoverhead),
-            input_node.dl_dci.ctx.rnti == input_node.grant.grant.rnti ? input_node.dl_dci.pid : input_node.ul_dci.pid,
-            input_node.dl_dci.ctx.rnti == input_node.grant.grant.rnti ? input_node.dl_dci.dai : input_node.ul_dci.dai1,
-            input_node.dl_dci.ctx.rnti == input_node.grant.grant.rnti ? input_node.dl_dci.tpc : input_node.ul_dci.tpc,
-            input_node.dl_dci.ctx.rnti == input_node.grant.grant.rnti ? input_node.dl_dci.pucch_resource : 0,
-            input_node.dl_dci.ctx.rnti == input_node.grant.grant.rnti ? input_node.dl_dci.harq_feedback : 0
+            input_node.dci_format == "1_1" ? input_node.dl_dci.pid : input_node.ul_dci.pid,
+            input_node.dci_format == "1_1" ? input_node.dl_dci.dai : input_node.ul_dci.dai1,
+            input_node.dci_format == "1_1" ? input_node.dl_dci.tpc : input_node.ul_dci.tpc,
+            input_node.dci_format == "1_1" ? input_node.dl_dci.pucch_resource : 0,
+            input_node.dci_format == "1_1" ? input_node.dl_dci.harq_feedback : 0
     );
     FILE* pFile = fopen(filename[rf_index].c_str(), "a");
     

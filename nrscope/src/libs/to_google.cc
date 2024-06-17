@@ -160,15 +160,15 @@ namespace ToGoogle{
           PyDict_SetItemString(pDict, "mcs_table", pStr);
           pStr = PyUnicode_FromString(srsran_mcs_table_to_str(new_entry.grant.sch_cfg.mcs_table));
           PyDict_SetItemString(pDict, "xoverhead", pStr);
-          pInt = PyLong_FromLong(new_entry.dl_dci.ctx.rnti == new_entry.grant.grant.rnti ? new_entry.dl_dci.pid : new_entry.ul_dci.pid),
+          pInt = PyLong_FromLong(new_entry.dci_format == "1_1" ? new_entry.dl_dci.pid : new_entry.ul_dci.pid),
           PyDict_SetItemString(pDict, "harq_id", pInt);
-          pInt = PyLong_FromLong(new_entry.dl_dci.ctx.rnti == new_entry.grant.grant.rnti ? new_entry.dl_dci.dai : new_entry.ul_dci.dai1),
+          pInt = PyLong_FromLong(new_entry.dci_format == "1_1" ? new_entry.dl_dci.dai : new_entry.ul_dci.dai1),
           PyDict_SetItemString(pDict, "downlink_assignment_index", pInt);
-          pInt = PyLong_FromLong(new_entry.dl_dci.ctx.rnti == new_entry.grant.grant.rnti ? new_entry.dl_dci.tpc : new_entry.ul_dci.tpc),
+          pInt = PyLong_FromLong(new_entry.dci_format == "1_1" ? new_entry.dl_dci.tpc : new_entry.ul_dci.tpc),
           PyDict_SetItemString(pDict, "tpc", pInt);
-          pInt = PyLong_FromLong(new_entry.dl_dci.ctx.rnti == new_entry.grant.grant.rnti ? new_entry.dl_dci.pucch_resource : 0),
+          pInt = PyLong_FromLong(new_entry.dci_format == "1_1" ? new_entry.dl_dci.pucch_resource : 0),
           PyDict_SetItemString(pDict, "pucch_resource", pInt);
-          pInt = PyLong_FromLong(new_entry.dl_dci.ctx.rnti == new_entry.grant.grant.rnti ? new_entry.dl_dci.harq_feedback : 0),
+          pInt = PyLong_FromLong(new_entry.dci_format == "1_1" ? new_entry.dl_dci.harq_feedback : 0),
           PyDict_SetItemString(pDict, "harq_feedback", pInt);
 
           PyList_SetItem(pList[rf_id], list_count[rf_id], pDict);

@@ -10,7 +10,7 @@ usrp_setting_0:
   rf_log_level: "debug"
   nof_threads: 4
 
-  log_name: "../../../../data/dci_log/dci_log_3649440000.csv"
+  log_name: "a.csv" #"/home/wanhr/Documents/data/nrscope/evaluation/coverage_amarisoft/dci_tx_50.csv" # x (0-10), y(0-8) coordinates
   google_dataset_id: "ngscope5g_dci_log_wanhr"
 
 # usrp_setting_1:
@@ -28,6 +28,6 @@ usrp_setting_0:
 
 log_config:
   local_log: true
-  push_to_google: false
+  push_to_google: true
   google_service_account_credential: "/home/wanhr/Downloads/nsf-2223556-222187-02b924918c95.json"
 

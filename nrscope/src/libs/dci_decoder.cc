@@ -610,6 +610,11 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
                                master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().max_mimo_layers_present ?
                                master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().max_mimo_layers : 2 : 2;
   
+  carrier_ul = base_carrier;
+  carrier_ul.nof_prb = dci_cfg.bwp_ul_active_bw;
+  carrier_ul.max_mimo_layers = dci_cfg.nof_ul_layers;
+  printf("carrier_ul.max_mimo_layers: %d\n", carrier_ul.max_mimo_layers);
+
   // update the nof_prb for carrier settings.
 
   if (srsran_ue_dl_nr_init_nrscope(&ue_dl_dci, input, &ue_dl_args, arg_scs)) {
@@ -779,8 +784,8 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
         // The grant may not be decoded correctly, since srsRAN's code is not complete. 
         // We can calculate the UL bandwidth for this subframe by ourselves.
         srsran_sch_cfg_nr_t pusch_cfg = {};
-        pusch_hl_cfg.mcs_table = srsran_mcs_table_qam64LowSE;
-        if (srsran_ra_ul_dci_to_grant_nr(&carrier_dl, slot, &pusch_hl_cfg, &dci_ul[dci_idx_ul], 
+        pusch_hl_cfg.mcs_table = srsran_mcs_table_256qam;
+        if (srsran_ra_ul_dci_to_grant_nr(&carrier_ul, slot, &pusch_hl_cfg, &dci_ul[dci_idx_ul], 
                                         &pusch_cfg, &pusch_cfg.grant) < SRSRAN_SUCCESS) {
           ERROR("Error decoding PUSCH search");
           // return result;

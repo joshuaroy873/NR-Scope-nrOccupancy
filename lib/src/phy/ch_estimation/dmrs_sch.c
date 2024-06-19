@@ -960,11 +960,11 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
     nof_pilots_x_symbol = srsran_dmrs_sch_get_symbol(
         q, cfg, grant, cinit, delta, &sf_symbols[symbol_sz * l], &q->pilot_estimates[nof_pilots_x_symbol * i]);
 
-    printf("nof_pilots_x_symbol: %u\n", nof_pilots_x_symbol);
-    printf("pilot extimates:");
-    srsran_vec_fprint_c(stdout, &q->pilot_estimates[nof_pilots_x_symbol * i], nof_pilots_x_symbol);
-    printf("original symbols:");
-    srsran_vec_fprint_c(stdout, &sf_symbols[symbol_sz * l], symbol_sz);
+    // printf("nof_pilots_x_symbol: %u\n", nof_pilots_x_symbol);
+    // printf("pilot extimates:");
+    // srsran_vec_fprint_c(stdout, &q->pilot_estimates[nof_pilots_x_symbol * i], nof_pilots_x_symbol);
+    // printf("original symbols:");
+    // srsran_vec_fprint_c(stdout, &sf_symbols[symbol_sz * l], symbol_sz);
 
     if (nof_pilots_x_symbol == 0) {
       ERROR("Error, no pilots extracted (i=%d, l=%d)", i, l);

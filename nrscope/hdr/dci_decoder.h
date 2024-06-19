@@ -24,6 +24,7 @@ class DCIDecoder{
     asn1::rrc_nr::rrc_setup_s rrc_setup;
 
     srsran_carrier_nr_t carrier_dl;
+    srsran_carrier_nr_t carrier_ul;
     srsran_ue_dl_nr_t ue_dl_dci;
     srsue::nr::cell_search::cfg_t srsran_searcher_cfg_t;
     srsran_coreset_t coreset1_t; 

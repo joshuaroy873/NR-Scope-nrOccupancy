@@ -282,6 +282,7 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
   // Set OFDM object attributes
   q->nof_symbols       = SRSRAN_CP_NSYMB_NR(cp);
   // q->nof_symbols_mbsfn = SRSRAN_CP_NSYMB(SRSRAN_CP_EXT); // not necessary here
+  // q->nof_symbols       = SRSRAN_CP_NSYMB(cp);
   q->nof_re            = cfg->nof_prb * SRSRAN_NRE;
   q->nof_guards        = (q->cfg.symbol_sz - q->nof_re) / 2U;
   q->slot_sz           = (uint32_t)SRSRAN_SLOT_LEN_NR(q->cfg.symbol_sz);
@@ -349,7 +350,6 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
       perror("malloc");
       return SRSRAN_ERROR;
     }
-
     q->max_prb = cfg->nof_prb;
   }
 
@@ -366,8 +366,9 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
   int cp1 = SRSRAN_CP_ISNORM(cp) ? SRSRAN_CP_LEN_NORM(0, symbol_sz) : SRSRAN_CP_LEN_EXT(symbol_sz);
   int cp2 = SRSRAN_CP_ISNORM(cp) ? SRSRAN_CP_LEN_NORM(1, symbol_sz) : SRSRAN_CP_LEN_EXT(symbol_sz);
 
-
   // printf("cp1: %d\n", cp1);
+  // printf("cp2: %d\n", cp2);
+
   // Slides DFT window a fraction of cyclic prefix, it does not apply for the inverse-DFT
   // we skip the window offset by setting cfg.rx_window_offset = 0;
   if (isnormal(cfg->rx_window_offset)) {
@@ -375,9 +376,12 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
     cfg->rx_window_offset = SRSRAN_MIN(100, cfg->rx_window_offset); // Needs to be below 100
     q->window_offset_n = (uint32_t)roundf((float)cp2 * cfg->rx_window_offset);
 
-    // printf()
     for (uint32_t i = 0; i < symbol_sz; i++) {
       q->window_offset_buffer[i] = cexpf(I * M_PI * 2.0f * (float)q->window_offset_n * (float)i / (float)symbol_sz);
+    }
+
+    for (uint32_t i = symbol_sz; i < 2*symbol_sz; i++){
+      q->window_offset_buffer[i] = cexpf(I * M_PI * 2.0f * (cp1 - cp2) * (float)(i-symbol_sz) / (float)symbol_sz);
     }
   }
 
@@ -847,7 +851,7 @@ static void ofdm_rx_slot(srsran_ofdm_t* q, int slot_in_sf)
 }
 
 // slot_in_sf is always 0 since we input each slot into it
-static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_offset_scs)
+static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_offset_scs, int scs_idx)
 {
 #ifdef AVOID_GURU
   srsran_ofdm_rx_slot_ng(
@@ -864,22 +868,26 @@ static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_o
   float norm = 1.0f / sqrtf(q->fft_plan.size);
   cf_t* tmp = q->tmp; // where the dft results store
   uint32_t dc = (q->fft_plan.dc) ? 1 : 0;
-  printf("symbol_sz: %d\n", symbol_sz);
-  printf("nof_re: %d\n", nof_re);
+  // printf("symbol_sz: %d\n", symbol_sz);
+  // printf("nof_re: %d\n", nof_re);
 
-  printf("fft-input:");
-  srsran_vec_fprint_c(stdout, q->cfg.in_buffer, (symbol_sz + 54) * 14);
+  // printf("fft-input:");
+  // srsran_vec_fprint_c(stdout, q->cfg.in_buffer, 11520);
 
   srsran_dft_run_guru_c(&q->fft_plan_sf[slot_in_sf]);
 
-  printf("fft-output:");
-  srsran_vec_fprint_c(stdout, tmp, (symbol_sz) * 14);
+  // printf("fft-output:");
+  // srsran_vec_fprint_c(stdout, tmp, (symbol_sz) * 7);
 
   uint32_t re_count = 0;
   for (int i = 0; i < q->nof_symbols; i++) {
     // Apply frequency domain window offset
     if (q->window_offset_n) {
       srsran_vec_prod_ccc(tmp, q->window_offset_buffer, tmp, symbol_sz);
+
+      if(scs_idx == 0 && i > 6) {
+        srsran_vec_prod_ccc(tmp, &q->window_offset_buffer[symbol_sz], tmp, symbol_sz);
+      }
       // printf("q->window_offset_buffer:");
       // srsran_vec_fprint_c(stdout, q->window_offset_buffer, symbol_sz);
     }
@@ -903,7 +911,7 @@ static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_o
       // Get phase compensation
       cf_t phase_compensation = conjf(q->phase_compensation[slot_in_sf * q->nof_symbols + i]);
 
-      printf("phase_compensation: %f+%fi\n", creal(phase_compensation), cimag(phase_compensation));
+      // printf("phase_compensation: %f+%fi\n", creal(phase_compensation), cimag(phase_compensation));
 
       // Apply normalization
       if (q->fft_plan.norm) {
@@ -994,7 +1002,7 @@ void srsran_ofdm_rx_sf_nrscope(srsran_ofdm_t* q, int scs_idx, int coreset_offset
 
   // we don't need to do the condition
   for (uint32_t n = 0; n < 1; n++) {
-    ofdm_rx_slot_nrscope(q, n, coreset_offset_scs);
+    ofdm_rx_slot_nrscope(q, n, coreset_offset_scs, scs_idx);
   }
 }
 

@@ -192,7 +192,7 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
 
 int Radio::SyncandDownlinkInit(){
   //***** DL args Config Start *****//
-  rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * slot_sz);
+  rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * slot_sz * 2);
   // it appears the srsRAN is build on 15kHz scs, we need to use the srate and 
   // scs to calculate the correct subframe size 
   arg_scs.srate = task_scheduler_nrscope.args_t.srate_hz;
@@ -200,7 +200,7 @@ int Radio::SyncandDownlinkInit(){
 
   arg_scs.coreset_offset_scs = (cs_args.ssb_freq_hz - task_scheduler_nrscope.coreset0_args_t.coreset0_center_freq_hz) / task_scheduler_nrscope.cell.abs_pdcch_scs;// + 12;
   arg_scs.coreset_slot = (uint32_t)task_scheduler_nrscope.coreset0_args_t.n_0;
-  arg_scs.phase_diff_first_second_half = 0;
+  // arg_scs.phase_diff_first_second_half = 0;
   //***** DL args Config End *****//
 
   //***** Slot Sync Start *****//
@@ -248,8 +248,14 @@ int Radio::RadioCapture(){
     std::cout << "SIB Decoder Initializing..." << std::endl;
   }
 
+  // FILE *fp2;
+  // fp2 = fopen("/home/wanhr/Documents/codes/cpp/srsRAN_4G/build/srsue/src/SIB_debug_slot_idx.txt", "r");
+  // long int file_position = 0;
+  // long int slot_idx_position = 0;
+
   while(true){
-    outcome.timestamp = last_rx_time.get(0);
+    outcome.timestamp = last_rx_time.get(0);    
+
     if (srsran_ue_sync_nr_zerocopy(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
       logger.error("SYNC: error in zerocopy");
@@ -265,6 +271,18 @@ int Radio::RadioCapture(){
         slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
         // Move rx_buffer
         srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);  
+        
+
+        // fseek(fp, file_position * sizeof(cf_t), SEEK_SET);
+        // // uint32_t a = fread(ue_dl.fft[0].cfg.in_buffer, sizeof(cf_t), ue_dl.fft[0].sf_sz, fp);
+        // uint32_t a = fread(&sibs_decoder.ue_dl_sibs.fft[0].cfg.in_buffer, sizeof(cf_t), sibs_decoder.ue_dl_sibs.fft[0].sf_sz, fp);
+        // file_position += sibs_decoder.ue_dl_sibs.fft[0].sf_sz;
+
+        // fseek(fp2, slot_idx_position * sizeof(uint32_t), SEEK_SET);
+        // // uint32_t a = fread(ue_dl.fft[0].cfg.in_buffer, sizeof(cf_t), ue_dl.fft[0].sf_sz, fp);
+        // uint32_t b = fread(&slot.idx, sizeof(uint32_t), 1, fp2);
+        // slot_idx_position += 1;
+
 
         struct timeval t0, t1;
         gettimeofday(&t0, NULL);  
@@ -386,5 +404,7 @@ int Radio::RadioCapture(){
       } 
     } 
   }
+  // fclose(fp);
+  // fclose(fp2);
   return SRSRAN_SUCCESS;
 }

@@ -190,8 +190,7 @@ bool slot_sync::run_sfn_sync()
 
   // If in sync, update slot index
   if (outcome.in_sync) {
-    slot_cfg.idx = outcome.sfn * SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_30kHz) + outcome.sf_idx;
-    // slot_cfg.idx = outcome.sfn * SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_15kHz) + outcome.sf_idx;
+    slot_cfg.idx = outcome.sfn * SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_15kHz) + outcome.sf_idx;
   }
 
   // Return true if the PHY in-sync
@@ -210,8 +209,7 @@ bool slot_sync::run_camping(srsran::rf_buffer_t& buffer, srsran::rf_timestamp_t&
   // std::cout << "outcome.in_sync: " << outcome.in_sync << std::endl;
   // If in sync, update slot index
   if (outcome.in_sync) {
-    slot_cfg.idx = outcome.sfn * SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_30kHz) + outcome.sf_idx;
-    // slot_cfg.idx = outcome.sfn * SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_15kHz) + outcome.sf_idx;
+    slot_cfg.idx = outcome.sfn * SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_15kHz) + outcome.sf_idx;
   }
 
   // Set RF timestamp

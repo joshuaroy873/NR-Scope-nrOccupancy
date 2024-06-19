@@ -28,6 +28,9 @@ class SIBsDecoder{
 
     cell_search_result_t cell;
 
+    long int file_position = 0;
+
+
     SIBsDecoder();
     ~SIBsDecoder();
 

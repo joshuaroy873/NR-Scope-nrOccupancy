@@ -92,6 +92,13 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   }
 
   memset(&dci_sibs, 0, sizeof(srsran_dci_dl_nr_t));
+
+  // FILE *fp;
+  // fp = fopen("/home/wanhr/Documents/codes/cpp/srsRAN_4G/build/srsue/src/SIB_debug.txt", "r");
+  // fseek(fp, file_position * sizeof(cf_t), SEEK_SET);
+  // uint32_t a = fread(ue_dl.fft[0].cfg.in_buffer, sizeof(cf_t), ue_dl.fft[0].sf_sz, fp);
+  // uint32_t a = fread(ue_dl_sibs.fft[0].cfg.in_buffer, sizeof(cf_t), ue_dl_sibs.fft[0].sf_sz, fp);
+  // file_position += ue_dl_sibs.fft[0].sf_sz;
   
   // Check the fft plan and how does it manipulate the buffer
   srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_sibs, slot, arg_scs);
@@ -103,22 +110,22 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_ERROR;
   }
   // Print PDCCH blind search candidates
-  for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl_sibs.pdcch_info_count; pdcch_idx++) {
-    const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl_sibs.pdcch_info[pdcch_idx]);
-    printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
-    "nof_bits=%d; crc=%s;\n",
-    srsran_rnti_type_str_short(info->dci_ctx.rnti_type),
-    info->dci_ctx.rnti,
-    info->dci_ctx.coreset_id,
-    srsran_ss_type_str(info->dci_ctx.ss_type),
-    info->dci_ctx.location.ncce,
-    info->dci_ctx.location.L,
-    info->measure.epre_dBfs,
-    info->measure.rsrp_dBfs,
-    info->measure.norm_corr,
-    info->nof_bits,
-    info->result.crc ? "OK" : "KO");
-  }
+  // for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl_sibs.pdcch_info_count; pdcch_idx++) {
+  //   const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl_sibs.pdcch_info[pdcch_idx]);
+  //   printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
+  //   "nof_bits=%d; crc=%s;\n",
+  //   srsran_rnti_type_str_short(info->dci_ctx.rnti_type),
+  //   info->dci_ctx.rnti,
+  //   info->dci_ctx.coreset_id,
+  //   srsran_ss_type_str(info->dci_ctx.ss_type),
+  //   info->dci_ctx.location.ncce,
+  //   info->dci_ctx.location.L,
+  //   info->measure.epre_dBfs,
+  //   info->measure.rsrp_dBfs,
+  //   info->measure.norm_corr,
+  //   info->nof_bits,
+  //   info->result.crc ? "OK" : "KO");
+  // }
   if (nof_found_dci < 1) {
     printf("SIBDecoder -- No DCI found :'(\n");
     return SRSRAN_ERROR;

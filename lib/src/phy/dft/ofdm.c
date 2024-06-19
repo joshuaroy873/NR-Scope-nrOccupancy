@@ -287,10 +287,10 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
   q->slot_sz           = (uint32_t)SRSRAN_SLOT_LEN_NR(q->cfg.symbol_sz);
   q->sf_sz             = (uint32_t)SRSRAN_SF_LEN_NR(q->cfg.symbol_sz, scs_idx);
 
-  // printf("q->slot_sz: %d\n", q->slot_sz);
-  // printf("q->sf_sz: %d\n", q->sf_sz);
-  // printf("symbol_sz: %d\n", symbol_sz);
-  // printf("q->nof_symbols: %d\n", q->nof_symbols);
+  printf("q->slot_sz: %d\n", q->slot_sz);
+  printf("q->sf_sz: %d\n", q->sf_sz);
+  printf("symbol_sz: %d\n", symbol_sz);
+  printf("q->nof_symbols: %d\n", q->nof_symbols);
 
   // Set the CFR parameters related to OFDM symbol and FFT size
   q->cfg.cfr_tx_cfg.symbol_sz = symbol_sz;
@@ -359,15 +359,21 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
   uint32_t nof_prb = q->cfg.nof_prb;
   cf_t* in_buffer = q->cfg.in_buffer;
   cf_t* out_buffer = q->cfg.out_buffer;
+
   // change the cp setting for 5G NR
-  int cp1 = SRSRAN_CP_ISNORM(cp) ? SRSRAN_CP_LEN_NORM_NR(symbol_sz) : SRSRAN_CP_LEN_EXT_NR(symbol_sz);
+  // int cp1 = SRSRAN_CP_ISNORM(cp) ? SRSRAN_CP_LEN_NORM_NR(symbol_sz) : SRSRAN_CP_LEN_EXT_NR(symbol_sz);
+  
+  int cp1 = SRSRAN_CP_ISNORM(cp) ? SRSRAN_CP_LEN_NORM(0, symbol_sz) : SRSRAN_CP_LEN_EXT(symbol_sz);
+  int cp2 = SRSRAN_CP_ISNORM(cp) ? SRSRAN_CP_LEN_NORM(1, symbol_sz) : SRSRAN_CP_LEN_EXT(symbol_sz);
+
+
   // printf("cp1: %d\n", cp1);
   // Slides DFT window a fraction of cyclic prefix, it does not apply for the inverse-DFT
   // we skip the window offset by setting cfg.rx_window_offset = 0;
   if (isnormal(cfg->rx_window_offset)) {
     cfg->rx_window_offset = SRSRAN_MAX(0, cfg->rx_window_offset);   // Needs to be positive
     cfg->rx_window_offset = SRSRAN_MIN(100, cfg->rx_window_offset); // Needs to be below 100
-    q->window_offset_n = (uint32_t)roundf((float)cp1 * cfg->rx_window_offset);
+    q->window_offset_n = (uint32_t)roundf((float)cp2 * cfg->rx_window_offset);
 
     // printf()
     for (uint32_t i = 0; i < symbol_sz; i++) {
@@ -401,7 +407,7 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
                                  1,
                                  1,
                                  SRSRAN_CP_NSYMB_NR(cp),
-                                 symbol_sz + cp1,
+                                 symbol_sz + cp2,
                                  symbol_sz)) {
         ERROR("Creating Guru DFT plan (%d)", slot);
         return SRSRAN_ERROR;
@@ -685,6 +691,8 @@ int srsran_ofdm_set_phase_compensation_nrscope(srsran_ofdm_t* q, double center_f
   for (uint32_t l = 0; l < q->nof_symbols; l++) {
     uint32_t cp_len =
         SRSRAN_CP_ISNORM(q->cfg.cp) ? SRSRAN_CP_LEN_NORM_NR(symbol_sz) : SRSRAN_CP_LEN_EXT_NR(symbol_sz);
+    printf("cp_len: %d\n", cp_len);
+    printf("center_freq: %f\n", center_freq_hz);
     // Advance CP
     count += cp_len;
 
@@ -698,7 +706,7 @@ int srsran_ofdm_set_phase_compensation_nrscope(srsran_ofdm_t* q, double center_f
     // Calculate compensation phase in double precision and then convert to single
     q->phase_compensation[l] = (cf_t)cexp(I * phase_rad);
     // q->phase_compensation[l+q->nof_symbols/2] = (cf_t)cexp(I * phase_rad);
-    // printf("phase_compensation: %f+%fi\n", creal(q->phase_compensation[l]), cimag(q->phase_compensation[l]));
+    printf("phase_compensation: %f+%fi\n", creal(q->phase_compensation[l]), cimag(q->phase_compensation[l]));
 
     // the code multiplied first half frame some wierd phases, a very weird fix for that
     // only for FDD currently.
@@ -739,7 +747,6 @@ int srsran_ofdm_set_freq_shift(srsran_ofdm_t* q, float freq_shift)
 
   // Check if fft shift is required
   if (!isnormal(q->cfg.freq_shift_f)) {
-    // printf("skiped set freq shift.\n");
     srsran_dft_plan_set_dc(&q->fft_plan, true);
     return SRSRAN_SUCCESS;
   }
@@ -857,16 +864,24 @@ static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_o
   float norm = 1.0f / sqrtf(q->fft_plan.size);
   cf_t* tmp = q->tmp; // where the dft results store
   uint32_t dc = (q->fft_plan.dc) ? 1 : 0;
-  // printf("symbol_sz: %d\n", symbol_sz);
+  printf("symbol_sz: %d\n", symbol_sz);
+  printf("nof_re: %d\n", nof_re);
+
+  printf("fft-input:");
+  srsran_vec_fprint_c(stdout, q->cfg.in_buffer, (symbol_sz + 54) * 14);
 
   srsran_dft_run_guru_c(&q->fft_plan_sf[slot_in_sf]);
-  // printf("q->nof_symbols: %d\n", q->nof_symbols);
+
+  printf("fft-output:");
+  srsran_vec_fprint_c(stdout, tmp, (symbol_sz) * 14);
 
   uint32_t re_count = 0;
   for (int i = 0; i < q->nof_symbols; i++) {
     // Apply frequency domain window offset
     if (q->window_offset_n) {
-      srsran_vec_prod_ccc(tmp, q->window_offset_buffer, tmp, symbol_sz); // skipped for now
+      srsran_vec_prod_ccc(tmp, q->window_offset_buffer, tmp, symbol_sz);
+      // printf("q->window_offset_buffer:");
+      // srsran_vec_fprint_c(stdout, q->window_offset_buffer, symbol_sz);
     }
 
     // Perform FFT shift
@@ -877,14 +892,18 @@ static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_o
     // memcpy(output, tmp + symbol_sz - nof_re / 2, sizeof(cf_t) * nof_re / 2);
     // memcpy(output + nof_re / 2, &tmp[dc], sizeof(cf_t) * nof_re / 2);
 
+    // if(i == 2 || i == 7 || i == 11){
+    //   printf("fft-output symbol %d:", i);
+    //   srsran_vec_fprint_c(stdout, output, symbol_sz);
+    // }
+
     // Normalize output
     // q->cfg.phase_compensation_hz = 0;
     if (isnormal(q->cfg.phase_compensation_hz)) {
       // Get phase compensation
-      // Added by Haoran. A quick fix for the situation that first half and second half of slot has a phase shift.
       cf_t phase_compensation = conjf(q->phase_compensation[slot_in_sf * q->nof_symbols + i]);
 
-      // printf("phase_compensation: %f+%fi\n", creal(phase_compensation), cimag(phase_compensation));
+      printf("phase_compensation: %f+%fi\n", creal(phase_compensation), cimag(phase_compensation));
 
       // Apply normalization
       if (q->fft_plan.norm) {
@@ -903,13 +922,23 @@ static void ofdm_rx_slot_nrscope(srsran_ofdm_t* q, int slot_in_sf, int coreset_o
     // fp = fopen("SIB_debug.txt", "a");
     // fwrite(output, sizeof(cf_t), nof_re, fp);
     // fclose(fp);
+
+    // if(i == 2 || i == 7 || i == 11){
+    //   printf("fft-output symbol %d:", i);
+    //   srsran_vec_fprint_c(stdout, output, symbol_sz);
+    // }
     
     tmp += symbol_sz;
     output += nof_re;
     re_count += nof_re;
   }
 #endif
-  
+  // printf("original symbols:");
+  // srsran_vec_fprint_c(stdout, &q->cfg.out_buffer[nof_re * 2], nof_re);
+  // printf("original symbols:");
+  // srsran_vec_fprint_c(stdout, &q->cfg.out_buffer[nof_re * 7], nof_re);
+  // printf("original symbols:");
+  // srsran_vec_fprint_c(stdout, &q->cfg.out_buffer[nof_re * 11], nof_re);
 }
 
 static void ofdm_rx_slot_mbsfn(srsran_ofdm_t* q, cf_t* input, cf_t* output)

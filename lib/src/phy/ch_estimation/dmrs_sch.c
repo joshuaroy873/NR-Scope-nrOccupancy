@@ -131,6 +131,8 @@ static uint32_t srsran_dmrs_get_lse(srsran_dmrs_sch_t*       q,
 
   // Generate sequence for the given pilots
   srsran_sequence_state_gen_f(sequence_state, amplitude, (float*)q->temp, count * 2);
+  // printf("q->temp:");
+  // srsran_vec_fprint_c(stdout, q->temp, count);
 
   // Calculate least square estimates
   srsran_vec_prod_conj_ccc(least_square_estimates, q->temp, least_square_estimates, count);
@@ -931,7 +933,7 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
 
   cf_t*    ce        = q->temp;
   uint32_t symbol_sz = q->carrier.nof_prb * SRSRAN_NRE; // Symbol size in resource elements
-  // printf("symbol_sz in dmrs_sch: %u\n", symbol_sz);
+  printf("symbol_sz in dmrs_sch: %u\n", symbol_sz);
 
   // Get symbols indexes
   uint32_t symbols[SRSRAN_DMRS_SCH_MAX_SYMBOLS] = {};
@@ -958,9 +960,12 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
     nof_pilots_x_symbol = srsran_dmrs_sch_get_symbol(
         q, cfg, grant, cinit, delta, &sf_symbols[symbol_sz * l], &q->pilot_estimates[nof_pilots_x_symbol * i]);
 
-    // printf("nof_pilots_x_symbol: %u\n", nof_pilots_x_symbol);
-    // printf("pilot extimates:");
-    // srsran_vec_fprint_c(stdout, &q->pilot_estimates[nof_pilots_x_symbol * i], nof_pilots_x_symbol);
+    printf("nof_pilots_x_symbol: %u\n", nof_pilots_x_symbol);
+    printf("pilot extimates:");
+    srsran_vec_fprint_c(stdout, &q->pilot_estimates[nof_pilots_x_symbol * i], nof_pilots_x_symbol);
+    printf("original symbols:");
+    srsran_vec_fprint_c(stdout, &sf_symbols[symbol_sz * l], symbol_sz);
+
     if (nof_pilots_x_symbol == 0) {
       ERROR("Error, no pilots extracted (i=%d, l=%d)", i, l);
       return SRSRAN_ERROR;
@@ -1057,6 +1062,7 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
     // Calculate CFO corrections
     for (uint32_t l = 0; l < SRSRAN_NSYMB_PER_SLOT_NR; l++) {
       float arg         = arg0 + 2.0f * M_PI * cfo_avg_hz * srsran_symbol_distance_s(0, l, q->carrier.scs);
+      printf("srsran_symbol_distance_s(0, l, q->carrier.scs): %f\n", srsran_symbol_distance_s(0, l, q->carrier.scs));
       cfo_correction[l] = cexpf(I * arg); //cexpf(I * arg);
     }
 

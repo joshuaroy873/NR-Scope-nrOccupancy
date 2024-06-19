@@ -41,7 +41,7 @@ struct phy_cfg_nr_t {
   struct ssb_cfg_t {
     uint32_t                                    periodicity_ms    = 0;
     std::array<bool, SRSRAN_SSB_NOF_CANDIDATES> position_in_burst = {};
-    srsran_subcarrier_spacing_t                 scs               = srsran_subcarrier_spacing_30kHz;
+    srsran_subcarrier_spacing_t                 scs               = srsran_subcarrier_spacing_15kHz;
     srsran_ssb_pattern_t                        pattern           = SRSRAN_SSB_PATTERN_A;
   };
 

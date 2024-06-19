@@ -283,10 +283,10 @@ void sync_sa::run_state_sfn_sync()
     tti = slot_synchronizer.get_slot_cfg().idx;
     
     logger.info("SYNC: SFN synchronised successfully (SFN=%d). Transitioning to IDLE...",
-                tti / SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_30kHz));
+                tti / SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_15kHz));
     // std::cout << "run_state_sfn_sync success!" << std::endl;
     printf("SYNC: SFN synchronised successfully (SFN=%d). Transitioning to IDLE...\n",
-                tti / SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_30kHz));
+                tti / SRSRAN_NSLOTS_PER_FRAME_NR(srsran_subcarrier_spacing_15kHz));
     phy_state.state_exit(true);
     return;
   }

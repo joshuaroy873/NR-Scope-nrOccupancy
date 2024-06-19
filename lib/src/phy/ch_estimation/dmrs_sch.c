@@ -1062,7 +1062,7 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
     // Calculate CFO corrections
     for (uint32_t l = 0; l < SRSRAN_NSYMB_PER_SLOT_NR; l++) {
       float arg         = arg0 + 2.0f * M_PI * cfo_avg_hz * srsran_symbol_distance_s(0, l, q->carrier.scs);
-      printf("srsran_symbol_distance_s(0, l, q->carrier.scs): %f\n", srsran_symbol_distance_s(0, l, q->carrier.scs));
+      // printf("srsran_symbol_distance_s(0, l, q->carrier.scs): %f\n", srsran_symbol_distance_s(0, l, q->carrier.scs));
       cfo_correction[l] = cexpf(I * arg); //cexpf(I * arg);
     }
 

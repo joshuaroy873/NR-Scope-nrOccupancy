@@ -477,7 +477,7 @@ int srsran_ssb_set_cfg(srsran_ssb_t* q, const srsran_ssb_cfg_t* cfg)
   if ((q->args.enable_encode || q->args.enable_search) && q->symbol_sz != symbol_sz) {
     // free the current IFFT, it internally checks if the plan was created
     srsran_dft_plan_free(&q->ifft);
-    printf("replan iFFT\n");
+    // printf("replan iFFT\n");
 
     // Creates DFT plan
     if (srsran_dft_plan_guru_c(&q->ifft, (int)symbol_sz, SRSRAN_DFT_BACKWARD, q->tmp_freq, q->tmp_time, 1, 1, 1, 1, 1) <
@@ -492,7 +492,7 @@ int srsran_ssb_set_cfg(srsran_ssb_t* q, const srsran_ssb_cfg_t* cfg)
     // free the current FFT, it internally checks if the plan was created
     srsran_dft_plan_free(&q->fft);
 
-    printf("replan FFT\n");
+    // printf("replan FFT\n");
     // Creates DFT plan
     if (srsran_dft_plan_guru_c(&q->fft, (int)symbol_sz, SRSRAN_DFT_FORWARD, q->tmp_time, q->tmp_freq, 1, 1, 1, 1, 1) <
         SRSRAN_SUCCESS) {

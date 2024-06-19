@@ -288,10 +288,10 @@ static int ofdm_init_nr_nrscope(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, srsran
   q->slot_sz           = (uint32_t)SRSRAN_SLOT_LEN_NR(q->cfg.symbol_sz);
   q->sf_sz             = (uint32_t)SRSRAN_SF_LEN_NR(q->cfg.symbol_sz, scs_idx);
 
-  printf("q->slot_sz: %d\n", q->slot_sz);
-  printf("q->sf_sz: %d\n", q->sf_sz);
-  printf("symbol_sz: %d\n", symbol_sz);
-  printf("q->nof_symbols: %d\n", q->nof_symbols);
+  // printf("q->slot_sz: %d\n", q->slot_sz);
+  // printf("q->sf_sz: %d\n", q->sf_sz);
+  // printf("symbol_sz: %d\n", symbol_sz);
+  // printf("q->nof_symbols: %d\n", q->nof_symbols);
 
   // Set the CFR parameters related to OFDM symbol and FFT size
   q->cfg.cfr_tx_cfg.symbol_sz = symbol_sz;
@@ -695,8 +695,8 @@ int srsran_ofdm_set_phase_compensation_nrscope(srsran_ofdm_t* q, double center_f
   for (uint32_t l = 0; l < q->nof_symbols; l++) {
     uint32_t cp_len =
         SRSRAN_CP_ISNORM(q->cfg.cp) ? SRSRAN_CP_LEN_NORM_NR(symbol_sz) : SRSRAN_CP_LEN_EXT_NR(symbol_sz);
-    printf("cp_len: %d\n", cp_len);
-    printf("center_freq: %f\n", center_freq_hz);
+    // printf("cp_len: %d\n", cp_len);
+    // printf("center_freq: %f\n", center_freq_hz);
     // Advance CP
     count += cp_len;
 
@@ -710,23 +710,7 @@ int srsran_ofdm_set_phase_compensation_nrscope(srsran_ofdm_t* q, double center_f
     // Calculate compensation phase in double precision and then convert to single
     q->phase_compensation[l] = (cf_t)cexp(I * phase_rad);
     // q->phase_compensation[l+q->nof_symbols/2] = (cf_t)cexp(I * phase_rad);
-    printf("phase_compensation: %f+%fi\n", creal(q->phase_compensation[l]), cimag(q->phase_compensation[l]));
-
-    // the code multiplied first half frame some wierd phases, a very weird fix for that
-    // only for FDD currently.
-    // if (scs_idx == srsran_subcarrier_spacing_15kHz){
-    //   if(nof_prbs == 48){
-    //     printf("phase_comp for 15kHz scs, nof_prbs=48");
-    //     if (l < 7){
-    //       q->phase_compensation[l] = q->phase_compensation[l] * (cf_t)cexp(-I * 2.221039);
-    //     }
-    //   }else if(nof_prbs == 96){
-    //     printf("phase_comp for 15kHz scs, nof_prbs=96");
-    //     if (l < 7){
-    //       q->phase_compensation[l] = q->phase_compensation[l] * (cf_t)cexp(I * (1.3884313635562162));
-    //     }
-    //   }
-    // }
+    // printf("phase_compensation: %f+%fi\n", creal(q->phase_compensation[l]), cimag(q->phase_compensation[l]));
     
     // Advance symbol
     count += symbol_sz;

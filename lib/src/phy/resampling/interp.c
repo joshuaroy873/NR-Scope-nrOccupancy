@@ -221,8 +221,8 @@ int srsran_interp_linear_init(srsran_interp_lin_t* q, uint32_t vector_len, uint3
     q->max_vector_len = vector_len;
     q->max_M          = M;
   }
-  printf("vector_len: %u\n", vector_len);
-  printf("M: %u\n", M);
+  // printf("vector_len: %u\n", vector_len);
+  // printf("M: %u\n", M);
   return ret;
 }
 

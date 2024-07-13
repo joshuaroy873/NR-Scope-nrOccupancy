@@ -50,6 +50,7 @@ int Radio::ScanInitandStart(){
   rf_args.nof_antennas = 1;
   rf_args.nof_carriers = 1;
   rf_args.log_level = "debug";
+  rf_args.dl_freq = srsran_band_helper::get_freq_from_gscn(5279);
 
   // Static cell searcher parameters  
   args_t.srate_hz = rf_args.srate_hz;
@@ -69,7 +70,9 @@ int Radio::ScanInitandStart(){
   uint32_t gscn_low;
   uint32_t gscn_high;
   uint32_t gscn_step;
-  
+
+  srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
+  radio = std::move(raido_shared);
 
   std::cout << "Initialized radio; start cell scanning" << std::endl;
 
@@ -89,9 +92,6 @@ int Radio::ScanInitandStart(){
     ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
     std::cout << "Update min ssb center detect boundary to " << ssb_center_freq_min_hz << std::endl;
     std::cout << "Update max ssb center detect boundary to " << ssb_center_freq_max_hz << std::endl;
-
-    srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
-    radio = std::move(raido_shared);
 
     // Set RF
     radio->set_rx_srate(rf_args.srate_hz);

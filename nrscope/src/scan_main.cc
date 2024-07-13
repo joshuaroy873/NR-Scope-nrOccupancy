@@ -16,13 +16,13 @@ int main(int argc, char** argv){
 
   std::vector<Radio> radios(1);
 
-  radios[0].log_name = 'scan.txt';
+  radios[0].log_name = "scan.txt";
   radios[0].local_log = true;
 
   // All the radios have the same setting for local log or push to google
   if(radios[0].local_log){
-    std::vector<std::string> log_names(nof_usrp);
-    for(int i = 0; i < nof_usrp; i++){
+    std::vector<std::string> log_names(1);
+    for(int i = 0; i < 1; i++){
       log_names[i] = radios[i].log_name;
     }
     NRScopeLog::init_logger(log_names);

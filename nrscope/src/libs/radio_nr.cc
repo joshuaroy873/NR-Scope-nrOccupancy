@@ -46,7 +46,7 @@ int Radio::ScanInitandStart(){
   // Static rf parameters
   rf_args.srate_hz = 11520000;
   rf_args.rx_gain = 30;
-  rf_args.device_args = "clock=external,type=x300";
+  rf_args.device_args = "type=x300";
   rf_args.nof_antennas = 1;
   rf_args.nof_carriers = 1;
   rf_args.log_level = "debug";

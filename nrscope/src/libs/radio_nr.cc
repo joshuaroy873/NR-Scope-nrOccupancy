@@ -69,10 +69,6 @@ int Radio::ScanInitandStart(){
   cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
   cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
 
-  double ssb_bw_hz = SRSRAN_SSB_BW_SUBC * srsran_subcarrier_spacing_15kHz; // here might be a logic error
-  double ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-  double ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-
   srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
   radio = std::move(raido_shared);
 
@@ -81,10 +77,14 @@ int Radio::ScanInitandStart(){
   radio->set_rx_freq(0, (double)rf_args.dl_freq);
   radio->set_rx_gain(rf_args.rx_gain);
 
+  double ssb_bw_hz, double ssb_center_freq_min_hz, double ssb_center_freq_max_hz;
+
+  std::cout << "Initialized radio; start cell scanning" << std::endl;
+
   // Traverse GSCN per band
   for (const srsran_band_helper::nr_band_ss_raster& ss_raster : srsran_band_helper::nr_band_ss_raster_table) {
     srsran::srsran_band_helper::sync_raster_t ss = bands.get_sync_raster(ss_raster.band, ss_raster.scs);
-    
+    std::cout << "Start scaning band " << ss_raster.band << std::endl;
     srsran_assert(ss.valid(), "Invalid synchronization raster");
 
     // Set ssb scs relevant logics
@@ -105,8 +105,15 @@ int Radio::ScanInitandStart(){
     cs_args.duplex_mode = args_t.duplex_mode;
     uint32_t ssb_scs_hz = SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
 
+    ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs); // here might be a logic error
+    ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+    ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+
     // Traverse possible SSB freq in the band
     while (not ss.end()) {
+
+      std::cout << "Start scaning GSCN number " << ss.get_gscn() << std::endl;
+
       // Get SSB center frequency for this GSCN point
       cs_args.ssb_freq_hz = ss.get_frequency();
       // Advance SSB frequency raster
@@ -123,9 +130,8 @@ int Radio::ScanInitandStart(){
       // The SSB absolute frequency is invalid if it is outside the range and 
       // the offset is NOT multiple of the subcarrier spacing
       if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or (cs_args.ssb_freq_hz > ssb_center_freq_max_hz)) {
-
         // update and measure
-        ssb_bw_hz = SRSRAN_SSB_BW_SUBC * cs_args.ssb_scs;
+        ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
         ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
         ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
 
@@ -187,7 +193,7 @@ int Radio::ScanInitandStart(){
     }
   }
 
-  return 0;
+  return SRSRAN_SUCCESS;
 }
 
 int Radio::RadioInitandStart(){

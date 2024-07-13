@@ -16,7 +16,7 @@ Radio::Radio() :
   raido_shared = std::make_shared<srsran::radio>();
   radio = nullptr;
 
-  nof_trials = 100;
+  nof_trials = 1000;
   srsran_searcher_args_t.max_srate_hz = 30.72e6;
   srsran_searcher_args_t.ssb_min_scs = srsran_subcarrier_spacing_15kHz;
   srsran_searcher.init(srsran_searcher_args_t);
@@ -79,7 +79,7 @@ int Radio::ScanInitandStart(){
   // Traverse GSCN per band
   for (const srsran_band_helper::nr_band_ss_raster& ss_raster : srsran_band_helper::nr_band_ss_raster_table) {
     std::cout << "Start scaning band " << ss_raster.band << " with scs idx " << ss_raster.scs << std::endl;
-    std::cout << "gscn " << ss_raster.gscn_first << "to gscn " << ss_raster.gscn_last << std::endl;
+    std::cout << "gscn " << ss_raster.gscn_first << " to gscn " << ss_raster.gscn_last << std::endl;
 
     rf_args.dl_freq = srsran_band_helper::get_freq_from_gscn(ss_raster.gscn_first);
     args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;

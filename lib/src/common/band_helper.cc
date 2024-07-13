@@ -239,7 +239,7 @@ uint32_t srsran_band_helper::get_freq_from_gscn(uint32_t gscn){
   else if (gscn >= 7499 && gscn <= 22255) {
     uint32_t n; 
     n = gscn - 7499;
-    return n * 1440000 + 2400000000;
+    return n * 1440000 + 3000000000;
   }
   else if (gscn >= 22256 && gscn <= 26639) {
     uint32_t n; 

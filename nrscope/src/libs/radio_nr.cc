@@ -43,13 +43,13 @@ int Radio::ScanThread(){
 
 int Radio::ScanInitandStart(){
 
-  srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
-  radio = std::move(raido_shared);
-
   // Static rf parameters
   rf_args.srate_hz = 11520000;
   rf_args.rx_gain = 30;
   rf_args.device_args = "clock=external,type=x300";
+  rf_args.nof_antennas = 1;
+  rf_args.nof_carriers = 1;
+  rf_args.log_level = "debug";
 
   // Static cell searcher parameters  
   args_t.srate_hz = rf_args.srate_hz;
@@ -72,6 +72,9 @@ int Radio::ScanInitandStart(){
   double ssb_bw_hz = SRSRAN_SSB_BW_SUBC * srsran_subcarrier_spacing_15kHz; // here might be a logic error
   double ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
   double ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+
+  srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
+  radio = std::move(raido_shared);
 
   // Set RF
   radio->set_rx_srate(rf_args.srate_hz);

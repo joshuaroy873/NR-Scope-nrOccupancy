@@ -215,6 +215,41 @@ srsran_ssb_pattern_t srsran_band_helper::get_ssb_pattern(uint16_t band, srsran_s
   return SRSRAN_SSB_PATTERN_INVALID;
 }
 
+uint32_t srsran_band_helper::get_freq_from_gscn(uint32_t gscn){
+
+  if (gscn >= 2 && gscn <= 7498) {
+    uint32_t n;
+    uint32_t m;
+    uint32_t q = (int)gscn / (int)3;
+    uint32_t r = (int)gscn % (int)3;
+    if (r == 2) {
+      n = q + 1;
+      m = 1;
+    }
+    else if (r == 1) {
+      n = q;
+      m = 5;
+    }
+    else {
+      n = q;
+      m = 3;
+    }
+    return n * 1200000 + m * 50000;
+  }
+  else if (gscn >= 7499 && gscn <= 22255) {
+    uint32_t n; 
+    n = gscn - 7499;
+    return n * 1440000 + 2400000000;
+  }
+  else if (gscn >= 22256 && gscn <= 26639) {
+    uint32_t n; 
+    n = gscn - 22256;
+    return n * 17280000 + 24250080000;
+  }
+
+  return 0;
+}
+
 srsran_subcarrier_spacing_t srsran_band_helper::get_ssb_scs(uint16_t band) const
 {
   // Look for the given band and SCS

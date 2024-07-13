@@ -136,6 +136,8 @@ public:
    */
   static srsran_ssb_pattern_t get_ssb_pattern(uint16_t band, srsran_subcarrier_spacing_t scs);
 
+  static uint32_t get_freq_from_gscn(uint32_t gscn);
+
   /**
    * @brief Select the lower SSB subcarrier spacing valid for this band
    * @param band NR band number

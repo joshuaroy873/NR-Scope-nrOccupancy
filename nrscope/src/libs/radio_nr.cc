@@ -62,21 +62,6 @@ int Radio::ScanInitandStart(){
   args_t.stack_log_level = "warning";
   args_t.duration_ms = 1000;
 
-  // Here manually set to a value suitable for searching n1 band, the first one in GSCN
-  // Whenever the to-scan SSB not in search-filter range, readjust the center freq to be the to-scan SSB
-  rf_args.dl_freq = 2112050000;
-  args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
-  cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
-  cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
-
-  srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
-  radio = std::move(raido_shared);
-
-  // Set RF
-  radio->set_rx_srate(rf_args.srate_hz);
-  radio->set_rx_freq(0, (double)rf_args.dl_freq);
-  radio->set_rx_gain(rf_args.rx_gain);
-
   double ssb_bw_hz;
   double ssb_center_freq_min_hz;
   double ssb_center_freq_max_hz;
@@ -92,6 +77,26 @@ int Radio::ScanInitandStart(){
   for (const srsran_band_helper::nr_band_ss_raster& ss_raster : srsran_band_helper::nr_band_ss_raster_table) {
     std::cout << "Start scaning band " << ss_raster.band << " with scs idx " << ss_raster.scs << std::endl;
     std::cout << "gscn " << ss_raster.gscn_first << "to gscn " << ss_raster.gscn_last << std::endl;
+
+    rf_args.dl_freq = srsran_band_helper::get_freq_from_gscn(ss_raster.gscn_first);
+    args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
+    cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
+    cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
+
+    std::cout << "Update RF's meas central freq to " << cs_args.ssb_freq_hz << std::endl;
+    ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs); // here might be a logic error
+    ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+    ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+    std::cout << "Update min ssb center detect boundary to " << ssb_center_freq_min_hz << std::endl;
+    std::cout << "Update max ssb center detect boundary to " << ssb_center_freq_max_hz << std::endl;
+
+    srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
+    radio = std::move(raido_shared);
+
+    // Set RF
+    radio->set_rx_srate(rf_args.srate_hz);
+    radio->set_rx_freq(0, (double)rf_args.dl_freq);
+    radio->set_rx_gain(rf_args.rx_gain);
 
     gscn_low = ss_raster.gscn_first;
     gscn_high = ss_raster.gscn_last;
@@ -114,10 +119,6 @@ int Radio::ScanInitandStart(){
     cs_args.ssb_pattern = args_t.ssb_pattern;
     cs_args.duplex_mode = args_t.duplex_mode;
     uint32_t ssb_scs_hz = SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
-
-    ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs); // here might be a logic error
-    ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-    ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
 
     // Traverse possible SSB freq in the band
     for(uint32_t gscn = gscn_low; gscn <= gscn_high; gscn = gscn + gscn_step){

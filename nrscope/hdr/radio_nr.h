@@ -78,6 +78,8 @@ class Radio{
     */
     int RadioThread();
 
+    int ScanThread();
+
     /**
     * This function first sets up some parameters related to the radio sample caputure according to the config file, 
     * such as sampling frequency, SSB frequency and SCS. Then it will search the MIB within the range of 
@@ -89,6 +91,8 @@ class Radio{
     * @return SRSRAN_SUCCESS (0) if no cell is found. NR_FAILURE (-1) if something is wrong in the function.
     */
     int RadioInitandStart();
+
+    int ScanInitandStart();
 
     /**
     * After finding the cell and decoding the cell and synchronization signal, this function sets up the parameters

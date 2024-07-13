@@ -36,6 +36,156 @@ int Radio::RadioThread(){
   return SRSRAN_SUCCESS;
 }
 
+int Radio::ScanThread(){
+  ScanInitandStart();
+  return SRSRAN_SUCCESS;
+}
+
+int Radio::ScanInitandStart(){
+
+  srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
+  radio = std::move(raido_shared);
+
+  // Static rf parameters
+  rf_args.srate_hz = 11520000;
+  rf_args.rx_gain = 30;
+  rf_args.device_args = "clock=external,type=x300";
+
+  // Static cell searcher parameters  
+  args_t.srate_hz = rf_args.srate_hz;
+  args_t.rf_device_name = rf_args.device_name;
+  args_t.rf_device_args = rf_args.device_args;
+  args_t.rf_log_level = "info";
+  args_t.rf_rx_gain_dB = rf_args.rx_gain;
+  args_t.rf_freq_offset_Hz = rf_args.freq_offset;
+  args_t.phy_log_level   = "warning";
+  args_t.stack_log_level = "warning";
+  args_t.duration_ms = 1000;
+
+  // Here manually set to a value suitable for searching n1 band, the first one in GSCN
+  // Whenever the to-scan SSB not in search-filter range, readjust the center freq to be the to-scan SSB
+  rf_args.dl_freq = 0; // TO MODIFY
+  args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
+  cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
+  cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
+
+  double ssb_bw_hz = SRSRAN_SSB_BW_SUBC * srsran_subcarrier_spacing_15kHz; // here might be a logic error
+  double ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+  double ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+
+  // Set RF
+  radio->set_rx_srate(rf_args.srate_hz);
+  radio->set_rx_freq(0, (double)rf_args.dl_freq);
+  radio->set_rx_gain(rf_args.rx_gain);
+
+  // Traverse GSCN per band
+  for (const srsran_band_helper::nr_band_ss_raster& ss_raster : srsran_band_helper::nr_band_ss_raster_table) {
+    srsran::srsran_band_helper::sync_raster_t ss = sync_raster_impl(ss_raster.gscn_first, ss_raster.gscn_step, ss_raster.gscn_last);
+    srsran_assert(ss.valid(), "Invalid synchronization raster");
+
+    // Set ssb scs relevant logics
+    ssb_scs = ss_raster.scs;
+    args_t.set_ssb_from_band(ssb_scs);
+    args_t.base_carrier.scs = args_t.ssb_scs;
+    if(args_t.duplex_mode == SRSRAN_DUPLEX_MODE_TDD){
+      args_t.base_carrier.ul_center_frequency_hz = args_t.base_carrier.dl_center_frequency_hz;
+    }
+
+    // Allocate receive buffer
+    slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
+    rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
+    srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
+
+    cs_args.ssb_scs = args_t.ssb_scs;
+    cs_args.ssb_pattern = args_t.ssb_pattern;
+    cs_args.duplex_mode = args_t.duplex_mode;
+    uint32_t ssb_scs_hz = SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
+
+    // Traverse possible SSB freq in the band
+    while (not ss.end()) {
+      // Get SSB center frequency for this GSCN point
+      cs_args.ssb_freq_hz = ss.get_frequency();
+      // Advance SSB frequency raster
+      ss.next();
+
+      // Calculate frequency offset between the base-band center frequency and the SSB absolute frequency
+      uint32_t offset_hz = (uint32_t)std::abs(std::round(cs_args.ssb_freq_hz - args_t.base_carrier.dl_center_frequency_hz));
+
+      if (offset_hz % ssb_scs_hz != 0) {
+        // Skip this frequency
+        continue;
+      }
+
+      // The SSB absolute frequency is invalid if it is outside the range and 
+      // the offset is NOT multiple of the subcarrier spacing
+      if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or (cs_args.ssb_freq_hz > ssb_center_freq_max_hz)) {
+
+        // update and measure
+        ssb_bw_hz = SRSRAN_SSB_BW_SUBC * cs_args.ssb_scs;
+        ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+        ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+
+        rf_args.dl_freq = cs_args.ssb_freq_hz;
+        args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
+        // Set RF
+        radio->release_freq(0);
+        radio->set_rx_freq(0, (double)rf_args.dl_freq);
+      }
+
+      srsran_searcher_cfg_t.srate_hz = args_t.srate_hz;
+      srsran_searcher_cfg_t.center_freq_hz = cs_args.ssb_freq_hz;
+      srsran_searcher_cfg_t.ssb_freq_hz = cs_args.ssb_freq_hz;
+      srsran_searcher_cfg_t.ssb_scs = args_t.ssb_scs;
+      srsran_searcher_cfg_t.ssb_pattern = args_t.ssb_pattern;
+      srsran_searcher_cfg_t.duplex_mode = args_t.duplex_mode;
+      if (not srsran_searcher.start(srsran_searcher_cfg_t)) {
+        std::cout << "Searcher: failed to start cell search" << std::endl;
+        return NR_FAILURE;
+      }
+
+      // Set the searching frequency to ssb_freq
+      // Because the srsRAN implementation use the center_freq_hz for cell searching
+      cs_args.center_freq_hz = cs_args.ssb_freq_hz;  // not necessary?
+      args_t.base_carrier.ssb_center_freq_hz = cs_args.ssb_freq_hz;
+
+      // TO-CONFIRM: not reconfig RF here should be good based on discussion
+      // radio->release_freq(0);
+      // radio->set_rx_freq(0, srsran_searcher_cfg_t.ssb_freq_hz);
+
+      srsran::rf_buffer_t rf_buffer = {};
+      rf_buffer.set_nof_samples(slot_sz);
+      rf_buffer.set(0, rx_buffer);// + slot_sz);
+
+      for(uint32_t trial=0; trial < nof_trials; trial++){
+        if (trial == 0) {
+          srsran_vec_cf_zero(rx_buffer, slot_sz);
+        }
+        // srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_sz, slot_sz);
+
+        srsran::rf_timestamp_t& rf_timestamp = last_rx_time;
+
+        if (not radio->rx_now(rf_buffer, rf_timestamp)) {
+          return SRSRAN_ERROR;
+        }
+        *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
+
+        cs_ret = srsran_searcher.run_slot(rx_buffer, slot_sz);
+        // std::cout << "Slot_sz: " << slot_sz << std::endl;
+        if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND ){
+          // printf("found cell in this slot\n");
+          break;
+        }
+      }
+      if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND){
+        std::cout << "Cell Found!" << std::endl;
+        std::cout << "N_id: " << cs_ret.ssb_res.N_id << std::endl;
+      }
+    }
+  }
+
+  return 0;
+}
+
 int Radio::RadioInitandStart(){
 
   srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");

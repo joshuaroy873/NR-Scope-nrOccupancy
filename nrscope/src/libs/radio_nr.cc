@@ -80,7 +80,7 @@ int Radio::ScanInitandStart(){
 
   // Traverse GSCN per band
   for (const srsran_band_helper::nr_band_ss_raster& ss_raster : srsran_band_helper::nr_band_ss_raster_table) {
-    srsran::srsran_band_helper::sync_raster_t ss = sync_raster_impl(ss_raster.gscn_first, ss_raster.gscn_step, ss_raster.gscn_last);
+    srsran::srsran_band_helper::sync_raster_t ss = srsran_band_helper::sync_raster_t(ss_raster.gscn_first, ss_raster.gscn_step, ss_raster.gscn_last);
     srsran_assert(ss.valid(), "Invalid synchronization raster");
 
     // Set ssb scs relevant logics

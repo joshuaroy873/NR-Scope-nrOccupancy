@@ -53,6 +53,49 @@ public:
     KHZ_120
   };
 
+  // Elements of TS 38.101-1 Table 5.4.3.3-1 : Applicable SS raster entries per operating band
+  struct nr_band_ss_raster {
+    uint16_t                    band;
+    srsran_subcarrier_spacing_t scs;
+    srsran_ssb_pattern_t        pattern;
+    uint32_t                    gscn_first;
+    uint32_t                    gscn_step;
+    uint32_t                    gscn_last;
+  };
+
+  static const uint32_t nof_nr_band_ss_raster                                                   = 29;
+  static constexpr std::array<nr_band_ss_raster, nof_nr_band_ss_raster> nr_band_ss_raster_table = {{
+      {1, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5279, 1, 5419},
+      {2, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4829, 1, 4969},
+      {3, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4517, 1, 4693},
+      {5, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 2177, 1, 2230},
+      {5, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_B, 2183, 1, 2224},
+      {7, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 6554, 1, 6718},
+      {8, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 2318, 1, 2395},
+      {12, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1828, 1, 1858},
+      {20, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1982, 1, 2047},
+      {25, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4829, 1, 4981},
+      {28, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1901, 1, 2002},
+      {34, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5030, 1, 5056},
+      {38, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 6431, 1, 6544},
+      {39, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4706, 1, 4795},
+      {40, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5756, 1, 5995},
+      {41, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 6246, 3, 6717},
+      {41, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 6252, 3, 6714},
+      {50, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3584, 1, 3787},
+      {51, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3572, 1, 3574},
+      {66, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5279, 1, 5494},
+      {66, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_B, 5285, 1, 5488},
+      {70, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4993, 1, 5044},
+      {71, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1547, 1, 1624},
+      {74, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3692, 1, 3790},
+      {75, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3584, 1, 3787},
+      {76, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3572, 1, 3574},
+      {77, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 7711, 1, 8329},
+      {78, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 7711, 1, 8051},
+      {79, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 8480, 16, 8880},
+  }};
+
   // Return vector of bands that ARFCN is valid for
   // For bands with 2 possible raster offsets, delta_f_raster needs to be specified
   std::vector<uint32_t> get_bands_nr(uint32_t nr_arfcn, delta_f_raster_t delta_f_raster = DEFAULT);
@@ -423,48 +466,6 @@ private:
 
        {261, KHZ_60, 2070833, 1, 2084999, 2070833, 1, 2084999},
        {261, KHZ_120, 2070833, 2, 2084999, 2070833, 2, 2084999}}};
-
-  // Elements of TS 38.101-1 Table 5.4.3.3-1 : Applicable SS raster entries per operating band
-  struct nr_band_ss_raster {
-    uint16_t                    band;
-    srsran_subcarrier_spacing_t scs;
-    srsran_ssb_pattern_t        pattern;
-    uint32_t                    gscn_first;
-    uint32_t                    gscn_step;
-    uint32_t                    gscn_last;
-  };
-  static const uint32_t nof_nr_band_ss_raster                                                   = 29;
-  static constexpr std::array<nr_band_ss_raster, nof_nr_band_ss_raster> nr_band_ss_raster_table = {{
-      {1, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5279, 1, 5419},
-      {2, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4829, 1, 4969},
-      {3, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4517, 1, 4693},
-      {5, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 2177, 1, 2230},
-      {5, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_B, 2183, 1, 2224},
-      {7, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 6554, 1, 6718},
-      {8, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 2318, 1, 2395},
-      {12, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1828, 1, 1858},
-      {20, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1982, 1, 2047},
-      {25, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4829, 1, 4981},
-      {28, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1901, 1, 2002},
-      {34, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5030, 1, 5056},
-      {38, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 6431, 1, 6544},
-      {39, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4706, 1, 4795},
-      {40, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5756, 1, 5995},
-      {41, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 6246, 3, 6717},
-      {41, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 6252, 3, 6714},
-      {50, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3584, 1, 3787},
-      {51, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3572, 1, 3574},
-      {66, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5279, 1, 5494},
-      {66, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_B, 5285, 1, 5488},
-      {70, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4993, 1, 5044},
-      {71, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1547, 1, 1624},
-      {74, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3692, 1, 3790},
-      {75, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3584, 1, 3787},
-      {76, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3572, 1, 3574},
-      {77, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 7711, 1, 8329},
-      {78, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 7711, 1, 8051},
-      {79, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 8480, 16, 8880},
-  }};
 };
 
 } // namespace srsran

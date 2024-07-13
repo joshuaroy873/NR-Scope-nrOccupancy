@@ -64,7 +64,7 @@ int Radio::ScanInitandStart(){
 
   // Here manually set to a value suitable for searching n1 band, the first one in GSCN
   // Whenever the to-scan SSB not in search-filter range, readjust the center freq to be the to-scan SSB
-  rf_args.dl_freq = 0; // TO MODIFY
+  rf_args.dl_freq = 2112050000;
   args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
   cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
   cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;

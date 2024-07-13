@@ -77,7 +77,9 @@ int Radio::ScanInitandStart(){
   radio->set_rx_freq(0, (double)rf_args.dl_freq);
   radio->set_rx_gain(rf_args.rx_gain);
 
-  double ssb_bw_hz, double ssb_center_freq_min_hz, double ssb_center_freq_max_hz;
+  double ssb_bw_hz;
+  double ssb_center_freq_min_hz;
+  double ssb_center_freq_max_hz;
 
   std::cout << "Initialized radio; start cell scanning" << std::endl;
 

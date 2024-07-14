@@ -75,7 +75,8 @@ int Radio::ScanInitandStart(){
   // initialize radio
   srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
   radio = std::move(raido_shared);
-
+  radio->set_rx_srate(rf_args.srate_hz);
+  radio->set_rx_gain(rf_args.rx_gain);
   std::cout << "Initialized radio; start cell scanning" << std::endl;
 
   // Traverse GSCN per band
@@ -97,9 +98,8 @@ int Radio::ScanInitandStart(){
     std::cout << "Update max ssb center detect boundary to " << ssb_center_freq_max_hz << std::endl;
 
     // Set RF
-    radio->set_rx_srate(rf_args.srate_hz);
+    radio->release_freq(0);
     radio->set_rx_freq(0, (double)rf_args.dl_freq);
-    radio->set_rx_gain(rf_args.rx_gain);
 
     gscn_low = ss_raster.gscn_first;
     gscn_high = ss_raster.gscn_last;

@@ -69,6 +69,7 @@ Entry: /nrscope/src/main.cc
 Load config: /nrscope/src/libs/load_config.cc
 Radio thread (cell search, mib decoding, coreset decoding, etc.): /nrscope/src/libs/radio_nr.cc
 Config file: /nrscope/config/config.yaml
+Cell scan entry: /nrscope/src/scan_main.cc
 ```
 
 ## Usage
@@ -77,12 +78,17 @@ Config file: /nrscope/config/config.yaml
 mkdir build
 cd build
 cmake ../
-make -j ${nof_proc}
+make all -j ${nof_proc}
 cd nrscope/src/
 sudo ./nrscope
+# or to scan all 5G SA cells
+sudo ./nrscan
 ```
 
 ## Logs
+
+(July 14, 2024) Implemented NR SA cell scan utility: run `./nrscan` after build. TO-DO: (1) 1 out of 10 times the scan will terminate when switch to a new band; restart 
+the SDR to solve the issue (verified). (2) Log results to file. 
 
 (Aug 9, 2023) Solved some problems in synchronization, see how to use external clock to perform the synchronization.
 

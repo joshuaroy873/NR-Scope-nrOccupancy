@@ -68,6 +68,11 @@ int Radio::ScanInitandStart(){
   double ssb_center_freq_min_hz;
   double ssb_center_freq_max_hz;
 
+  // Store the double args_t.base_carrier.dl_center_frequency_hz and cs_args.center_freq_hz in a mirror int version
+  // for precise diff calculation
+  long long dl_center_frequency_hz_int_ver;
+  long long cs_args_ssb_freq_hz_int_ver;
+
   uint32_t gscn_low;
   uint32_t gscn_high;
   uint32_t gscn_step;
@@ -85,10 +90,13 @@ int Radio::ScanInitandStart(){
     std::cout << "gscn " << ss_raster.gscn_first << " to gscn " << ss_raster.gscn_last << std::endl;
 
     // adjust the RF's central meas freq to the first GSCN point of the band
-    rf_args.dl_freq = srsran_band_helper::get_freq_from_gscn(ss_raster.gscn_first);
+    cs_args_ssb_freq_hz_int_ver = srsran_band_helper::get_freq_from_gscn(ss_raster.gscn_first);
+    dl_center_frequency_hz_int_ver = cs_args_ssb_freq_hz_int_ver;
+    rf_args.dl_freq = cs_args_ssb_freq_hz_int_ver;
     args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
     cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
     cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
+    
     // calculate the bandpass 
     std::cout << "Update RF's meas central freq to " << cs_args.ssb_freq_hz << std::endl;
     ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs); // here might be a logic error
@@ -128,7 +136,8 @@ int Radio::ScanInitandStart(){
 
       std::cout << "Start scaning GSCN number " << gscn << std::endl;
       // Get SSB center frequency for this GSCN point
-      cs_args.ssb_freq_hz = srsran_band_helper::get_freq_from_gscn(gscn);
+      cs_args_ssb_freq_hz_int_ver = srsran_band_helper::get_freq_from_gscn(gscn);
+      cs_args.ssb_freq_hz = cs_args_ssb_freq_hz_int_ver;
       std::cout << "Absolute freq " << cs_args.ssb_freq_hz << std::endl; 
 
       if (cs_args.ssb_freq_hz == 0) {
@@ -136,7 +145,7 @@ int Radio::ScanInitandStart(){
       }
 
       // Calculate frequency offset between the base-band center frequency and the SSB absolute frequency
-      long long offset_hz = (long long)std::abs(std::round(cs_args.ssb_freq_hz) - std::round(args_t.base_carrier.dl_center_frequency_hz));
+      long long offset_hz = std::abs(cs_args_ssb_freq_hz_int_ver - dl_center_frequency_hz_int_ver);
        
       if (offset_hz % ssb_scs_hz != 0) {
         std::cout << "the offset " << offset_hz << " is NOT multiple of the subcarrier spacing " << ssb_scs_hz << std::endl;
@@ -153,6 +162,7 @@ int Radio::ScanInitandStart(){
 
         rf_args.dl_freq = cs_args.ssb_freq_hz;
         args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
+        dl_center_frequency_hz_int_ver = cs_args_ssb_freq_hz_int_ver;
         // Set RF
         radio->release_freq(0);
         radio->set_rx_freq(0, (double)rf_args.dl_freq);

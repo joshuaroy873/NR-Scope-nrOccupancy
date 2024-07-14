@@ -97,6 +97,9 @@ int Radio::ScanInitandStart(){
     args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
     cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
     cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
+
+    std::cout << "cs_args_ssb_freq_hz_int_ver " << cs_args_ssb_freq_hz_int_ver << std::endl;
+    std::cout << "args_t.base_carrier.dl_center_frequency_hz " << args_t.base_carrier.dl_center_frequency_hz << std::endl;
     
     gscn_low = ss_raster.gscn_first;
     gscn_high = ss_raster.gscn_last;

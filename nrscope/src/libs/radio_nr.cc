@@ -79,10 +79,10 @@ int Radio::RadioInitandStart(){
   cs_args.ssb_pattern = args_t.ssb_pattern;
   cs_args.duplex_mode = args_t.duplex_mode;
 
-  double ssb_bw_hz = SRSRAN_SSB_BW_SUBC * cs_args.ssb_scs;
+  uint32_t ssb_scs_hz = SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
+  double ssb_bw_hz = SRSRAN_SSB_BW_SUBC * ssb_scs_hz;
   double ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
   double ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-  uint32_t ssb_scs_hz = SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
 
   uint32_t band = bands.get_band_from_dl_freq_Hz_and_scs(args_t.base_carrier.dl_center_frequency_hz, cs_args.ssb_scs);
   srsran::srsran_band_helper::sync_raster_t ss = bands.get_sync_raster(band, cs_args.ssb_scs);

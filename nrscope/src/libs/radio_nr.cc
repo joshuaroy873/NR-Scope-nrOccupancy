@@ -138,8 +138,8 @@ int Radio::ScanInitandStart(){
       // Calculate frequency offset between the base-band center frequency and the SSB absolute frequency
       uint32_t offset_hz = (uint32_t)std::abs(std::round(cs_args.ssb_freq_hz - args_t.base_carrier.dl_center_frequency_hz));
        
-      // the offset is NOT multiple of the subcarrier spacing
       if (offset_hz % ssb_scs_hz != 0) {
+        std::cout << "the offset " << offset_hz << " is NOT multiple of the subcarrier spacing " << ssb_scs_hz << std::endl;
         continue;
       }
 

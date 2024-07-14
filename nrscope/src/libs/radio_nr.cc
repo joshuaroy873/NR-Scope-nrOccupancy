@@ -1,4 +1,5 @@
 #include "nrscope/hdr/radio_nr.h"
+#include<unistd.h>
 
 std::mutex lock_radio_nr;
 
@@ -97,18 +98,6 @@ int Radio::ScanInitandStart(){
     cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
     cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
     
-    // calculate the bandpass 
-    std::cout << "Update RF's meas central freq to " << cs_args.ssb_freq_hz << std::endl;
-    ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs); // here might be a logic error
-    ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-    ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-    std::cout << "Update min ssb center detect boundary to " << ssb_center_freq_min_hz << std::endl;
-    std::cout << "Update max ssb center detect boundary to " << ssb_center_freq_max_hz << std::endl;
-
-    // Set RF
-    radio->release_freq(0);
-    radio->set_rx_freq(0, (double)rf_args.dl_freq);
-
     gscn_low = ss_raster.gscn_first;
     gscn_high = ss_raster.gscn_last;
     gscn_step = ss_raster.gscn_step;
@@ -130,6 +119,20 @@ int Radio::ScanInitandStart(){
     cs_args.ssb_pattern = args_t.ssb_pattern;
     cs_args.duplex_mode = args_t.duplex_mode;
     uint32_t ssb_scs_hz = SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
+
+    // calculate the bandpass 
+    std::cout << "Update RF's meas central freq to " << cs_args.ssb_freq_hz << std::endl;
+    ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs); // here might be a logic error
+    ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+    ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+    std::cout << "Update min ssb center detect boundary to " << ssb_center_freq_min_hz << std::endl;
+    std::cout << "Update max ssb center detect boundary to " << ssb_center_freq_max_hz << std::endl;
+
+    // Set RF
+    radio->release_freq(0);
+    radio->set_rx_freq(0, (double)rf_args.dl_freq);
+
+    sleep(2);
 
     // Traverse possible SSB freq in the band
     for(uint32_t gscn = gscn_low; gscn <= gscn_high; gscn = gscn + gscn_step){

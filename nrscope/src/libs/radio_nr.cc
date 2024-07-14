@@ -93,7 +93,7 @@ int Radio::ScanInitandStart(){
     std::cout << "Update RF's meas central freq to " << cs_args.ssb_freq_hz << std::endl;
     ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs); // here might be a logic error
     ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-    ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+    ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequencjny_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
     std::cout << "Update min ssb center detect boundary to " << ssb_center_freq_min_hz << std::endl;
     std::cout << "Update max ssb center detect boundary to " << ssb_center_freq_max_hz << std::endl;
 
@@ -136,7 +136,7 @@ int Radio::ScanInitandStart(){
       }
 
       // Calculate frequency offset between the base-band center frequency and the SSB absolute frequency
-      uint32_t offset_hz = (uint32_t)std::abs(std::round(cs_args.ssb_freq_hz - args_t.base_carrier.dl_center_frequency_hz));
+      uint32_t offset_hz = (uint32_t)std::abs((uint32_t)cs_args.ssb_freq_hz - (uint32_t)args_t.base_carrier.dl_center_frequency_hz);
        
       if (offset_hz % ssb_scs_hz != 0) {
         std::cout << "the offset " << offset_hz << " is NOT multiple of the subcarrier spacing " << ssb_scs_hz << std::endl;

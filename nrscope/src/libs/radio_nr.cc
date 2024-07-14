@@ -141,19 +141,28 @@ int Radio::ScanInitandStart(){
       std::cout << "Absolute freq " << cs_args.ssb_freq_hz << std::endl; 
 
       if (cs_args.ssb_freq_hz == 0) {
+        std::cout << "Invalid GSCN to SSB freq? GSCN " << gscn << std::endl;
         continue;
       }
+
+      bool offset_not_scs_aligned = false;
+      bool not_in_bandpass_range = false;
 
       // Calculate frequency offset between the base-band center frequency and the SSB absolute frequency
       long long offset_hz = std::abs(cs_args_ssb_freq_hz_int_ver - dl_center_frequency_hz_int_ver);
        
       if (offset_hz % ssb_scs_hz != 0) {
         std::cout << "the offset " << offset_hz << " is NOT multiple of the subcarrier spacing " << ssb_scs_hz << std::endl;
-        continue;
+        offset_not_scs_aligned = true;
       }
 
       // The SSB absolute frequency is invalid if it is outside the bandpass range 
       if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or (cs_args.ssb_freq_hz > ssb_center_freq_max_hz)) {
+        std::cout << "SSB freq not in RF bandpass range" << std::endl;
+        not_in_bandpass_range = true;
+      }
+
+      if (offset_not_scs_aligned || not_in_bandpass_range) {
         // update and measure
         std::cout << "Update RF's meas central freq to " << cs_args.ssb_freq_hz << std::endl;
         ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);

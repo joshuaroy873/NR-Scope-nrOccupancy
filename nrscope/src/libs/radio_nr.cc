@@ -71,8 +71,8 @@ int Radio::ScanInitandStart(){
 
   // Store the double args_t.base_carrier.dl_center_frequency_hz and cs_args.center_freq_hz in a mirror int version
   // for precise diff calculation
-  long long dl_center_frequency_hz_int_ver;
-  long long cs_args_ssb_freq_hz_int_ver;
+  uint64_t dl_center_frequency_hz_int_ver;
+  uint64_t cs_args_ssb_freq_hz_int_ver;
 
   uint32_t gscn_low;
   uint32_t gscn_high;

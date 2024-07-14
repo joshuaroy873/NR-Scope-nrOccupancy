@@ -217,13 +217,13 @@ srsran_ssb_pattern_t srsran_band_helper::get_ssb_pattern(uint16_t band, srsran_s
   return SRSRAN_SSB_PATTERN_INVALID;
 }
 
-uint32_t srsran_band_helper::get_freq_from_gscn(uint32_t gscn){
+uint64_t srsran_band_helper::get_freq_from_gscn(uint32_t gscn){
 
   if (gscn >= 2 && gscn <= 7498) {
-    uint32_t n;
-    uint32_t m;
-    uint32_t q = (int)gscn / (int)3;
-    uint32_t r = (int)gscn % (int)3;
+    uint64_t n;
+    uint64_t m;
+    uint64_t q = (int)gscn / (int)3;
+    uint64_t r = (int)gscn % (int)3;
     if (r == 2) {
       n = q + 1;
       m = 1;
@@ -239,12 +239,12 @@ uint32_t srsran_band_helper::get_freq_from_gscn(uint32_t gscn){
     return n * 1200000 + m * 50000;
   }
   else if (gscn >= 7499 && gscn <= 22255) {
-    uint32_t n; 
+    uint64_t n; 
     n = gscn - 7499;
     return n * 1440000 + 3000000000;
   }
   else if (gscn >= 22256 && gscn <= 26639) {
-    uint32_t n; 
+    uint64_t n; 
     n = gscn - 22256;
     return n * 17280000 + 24250080000;
   }

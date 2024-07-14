@@ -113,6 +113,8 @@ int Radio::ScanInitandStart(){
     // Allocate receive buffer
     slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
     rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
+    std::cout << "slot_sz: " << slot_sz << std::endl;
+    std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
     srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
 
     cs_args.ssb_scs = args_t.ssb_scs;
@@ -200,7 +202,7 @@ int Radio::ScanInitandStart(){
       rf_buffer.set_nof_samples(slot_sz);
       rf_buffer.set(0, rx_buffer);
 
-      for(uint32_t trial=0; trial < nof_trials_scan; trial++){
+      for(uint32_t trial=0; trial < nof_trials; trial++){
         if (trial == 0) {
           srsran_vec_cf_zero(rx_buffer, slot_sz);
         }
@@ -222,6 +224,8 @@ int Radio::ScanInitandStart(){
         std::cout << "N_id: " << cs_ret.ssb_res.N_id << std::endl;
       }
     }
+
+    free(rx_buffer);
   }
 
   return SRSRAN_SUCCESS;

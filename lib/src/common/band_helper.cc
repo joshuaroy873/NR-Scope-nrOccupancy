@@ -94,12 +94,8 @@ uint16_t srsran_band_helper::get_band_from_dl_freq_Hz(double freq) const
 uint16_t srsran_band_helper::get_band_from_dl_freq_Hz_and_scs(double freq, srsran_subcarrier_spacing_t ssb_scs) const
 {
   uint32_t freq_MHz = (uint32_t)round(freq / 1e6);
-  std::cout << "freq_MHz: " << freq_MHz << std::endl;
-  // std::cout << freq_MHz << std::endl;
   for (const nr_operating_band& band : nr_operating_bands_fr1) {
-    std::cout << "h and l: " << band.F_DL_low << "  " << band.F_DL_high << std::endl;
     if (freq_MHz >= band.F_DL_low and freq_MHz <= band.F_DL_high) {
-      std::cout << "entered " << std::endl;
       srsran::srsran_band_helper::sync_raster_t ss = get_sync_raster(band.band, ssb_scs);
       if(!ss.valid()){
         continue;

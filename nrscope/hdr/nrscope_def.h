@@ -74,7 +74,6 @@ struct cell_searcher_args_t {
     srsran::srsran_band_helper bands;
 
     // Deduce band number
-    std::cout << "base_carrier.dl_center_frequency_hz " << base_carrier.dl_center_frequency_hz << std::endl;
     uint16_t band = bands.get_band_from_dl_freq_Hz_and_scs(base_carrier.dl_center_frequency_hz, scs_input);
 
     srsran_assert(band != UINT16_MAX, "Invalid band");

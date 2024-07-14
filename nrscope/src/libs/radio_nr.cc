@@ -16,7 +16,8 @@ Radio::Radio() :
   raido_shared = std::make_shared<srsran::radio>();
   radio = nullptr;
 
-  nof_trials = 1000;
+  nof_trials = 100;
+  nof_trials_scan = 1000;
   srsran_searcher_args_t.max_srate_hz = 30.72e6;
   srsran_searcher_args_t.ssb_min_scs = srsran_subcarrier_spacing_15kHz;
   srsran_searcher.init(srsran_searcher_args_t);
@@ -180,7 +181,7 @@ int Radio::ScanInitandStart(){
       rf_buffer.set_nof_samples(slot_sz);
       rf_buffer.set(0, rx_buffer);
 
-      for(uint32_t trial=0; trial < nof_trials; trial++){
+      for(uint32_t trial=0; trial < nof_trials_scan; trial++){
         if (trial == 0) {
           srsran_vec_cf_zero(rx_buffer, slot_sz);
         }

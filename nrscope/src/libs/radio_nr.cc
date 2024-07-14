@@ -71,8 +71,8 @@ int Radio::ScanInitandStart(){
 
   // Store the double args_t.base_carrier.dl_center_frequency_hz and cs_args.center_freq_hz in a mirror int version
   // for precise diff calculation
-  uint64_t dl_center_frequency_hz_int_ver;
-  uint64_t cs_args_ssb_freq_hz_int_ver;
+  long long dl_center_frequency_hz_int_ver;
+  long long cs_args_ssb_freq_hz_int_ver;
 
   uint32_t gscn_low;
   uint32_t gscn_high;
@@ -91,7 +91,7 @@ int Radio::ScanInitandStart(){
     std::cout << "gscn " << ss_raster.gscn_first << " to gscn " << ss_raster.gscn_last << std::endl;
 
     // adjust the RF's central meas freq to the first GSCN point of the band
-    cs_args_ssb_freq_hz_int_ver = srsran_band_helper::get_freq_from_gscn(ss_raster.gscn_first);
+    cs_args_ssb_freq_hz_int_ver = (long long)srsran_band_helper::get_freq_from_gscn(ss_raster.gscn_first);
     dl_center_frequency_hz_int_ver = cs_args_ssb_freq_hz_int_ver;
     rf_args.dl_freq = cs_args_ssb_freq_hz_int_ver;
     args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
@@ -144,7 +144,7 @@ int Radio::ScanInitandStart(){
 
       std::cout << "Start scaning GSCN number " << gscn << std::endl;
       // Get SSB center frequency for this GSCN point
-      cs_args_ssb_freq_hz_int_ver = srsran_band_helper::get_freq_from_gscn(gscn);
+      cs_args_ssb_freq_hz_int_ver = (long long)srsran_band_helper::get_freq_from_gscn(gscn);
       cs_args.ssb_freq_hz = cs_args_ssb_freq_hz_int_ver;
       std::cout << "Absolute freq " << cs_args.ssb_freq_hz << std::endl; 
 

@@ -202,7 +202,10 @@ int Radio::ScanInitandStart(){
       rf_buffer.set_nof_samples(slot_sz);
       rf_buffer.set(0, rx_buffer);
 
+      std::cout << "after rf_buffer" << std::endl;
+
       for(uint32_t trial=0; trial < nof_trials; trial++){
+        std::cout << "trial " << trial << std::endl;
         if (trial == 0) {
           srsran_vec_cf_zero(rx_buffer, slot_sz);
         }

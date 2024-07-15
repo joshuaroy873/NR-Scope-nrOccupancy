@@ -38,7 +38,6 @@ class Radio{
     srsue::nr::cell_search::args_t                srsran_searcher_args_t;
     srsue::nr::cell_search::ret_t                 cs_ret;
     uint32_t                                      nof_trials;
-    uint32_t                                      nof_trials_scan;
     cell_search_result_t                          cell;
 
     coreset0_args                                 coreset0_args_t;

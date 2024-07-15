@@ -78,6 +78,12 @@ class Radio{
     */
     int RadioThread();
 
+    /**
+    * Another entry to this class -- start the NR SA FR1 scan thread 
+    * and output found cell(s) 
+    * 
+    * @return SRSRAN_SUCCESS - 0 for successfuly exit
+    */
     int ScanThread();
 
     /**
@@ -92,6 +98,12 @@ class Radio{
     */
     int RadioInitandStart();
 
+    /**
+    * This function goes through the per band (denoted by outer loop), and search each GSCN raster point in the band
+    * (denoted by inner loop)
+    * 
+    * @return SRSRAN_SUCCESS (0) if no cell is found. NR_FAILURE (-1) if something is wrong in the function.
+    */
     int ScanInitandStart();
 
     /**

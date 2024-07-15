@@ -1,5 +1,4 @@
 #include "nrscope/hdr/radio_nr.h"
-#include<unistd.h>
 
 std::mutex lock_radio_nr;
 
@@ -135,8 +134,6 @@ int Radio::ScanInitandStart(){
     
     // reset the cell searcher params
     srsran_searcher.init(srsran_searcher_args_t);
-
-    sleep(2);
 
     // Traverse possible SSB freq in the band
     for(uint32_t gscn = gscn_low; gscn <= gscn_high; gscn = gscn + gscn_step){

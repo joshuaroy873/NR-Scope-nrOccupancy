@@ -132,6 +132,9 @@ int Radio::ScanInitandStart(){
     // Set RF
     radio->release_freq(0);
     radio->set_rx_freq(0, (double)rf_args.dl_freq);
+    
+    // reset the cell searcher params
+    srsran_searcher.init(srsran_searcher_args_t);
 
     sleep(2);
 

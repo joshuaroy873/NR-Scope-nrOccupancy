@@ -221,11 +221,21 @@ int Radio::ScanInitandStart(){
       if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND){
         std::cout << "Cell Found!" << std::endl;
         std::cout << "N_id: " << cs_ret.ssb_res.N_id << std::endl;
+
+        if (local_log) {
+          ScanLogNode scan_log_node;
+          scan_log_node.gscn = gscn;
+          scan_log_node.freq = cs_args.ssb_freq_hz;
+          scan_log_node.pci = cs_ret.ssb_res.N_id;
+          NRScopeLog::push_node(scan_log_node, rf_index);
+        }
       }
     }
 
     free(rx_buffer);
   }
+
+  NRScopeLog::exit_logger();
 
   return SRSRAN_SUCCESS;
 }

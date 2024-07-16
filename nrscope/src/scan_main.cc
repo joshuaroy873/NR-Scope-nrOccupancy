@@ -26,7 +26,7 @@ int main(int argc, char** argv){
     for(int i = 0; i < 1; i++){
       log_names[i] = radios[i].log_name;
     }
-    NRScopeLog::init_logger(log_names);
+    NRScopeLog::init_scan_logger(log_names);
   }
 
   std::vector<std::thread> radio_threads;

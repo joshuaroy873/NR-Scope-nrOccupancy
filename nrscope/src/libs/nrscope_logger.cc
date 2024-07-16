@@ -3,12 +3,15 @@
 namespace NRScopeLog{
   std::vector<std::string> filename;
   std::vector< std::queue<LogNode> > log_queue;
+  std::vector< std::queue<ScanLogNode> > scan_log_queue;
   std::thread log_thread;
   std::mutex lock;
   char buff[2048];
   bool run_log;
+  bool is_cell_scan;
 
   void init_logger(std::vector<std::string> filename_input){
+    is_cell_scan = false;
     filename.resize(filename_input.size());
     log_queue.resize(filename_input.size());
     for (uint32_t f_id = 0; f_id < filename_input.size(); f_id++){
@@ -27,10 +30,30 @@ namespace NRScopeLog{
     log_thread = std::thread{logger_thread};
   }
 
+  void init_scan_logger(std::vector<std::string> filename_input) {
+    is_cell_scan = true;
+    filename.resize(filename_input.size());
+    scan_log_queue.resize(filename_input.size());
+    for (uint32_t f_id = 0; f_id < filename_input.size(); f_id++){
+      filename[f_id] = filename_input[f_id];
+      FILE* pFile = fopen(filename[f_id].c_str(), "a");
+      fprintf(pFile, "%s\n", "GSCN,absolute_ssb_center_frequency,PCI");
+      fclose(pFile);
+    }
+    run_log = true;
+    log_thread = std::thread{logger_thread};
+  }
+
   // Called to add node into the queue
   void push_node(LogNode input_node, int rf_index){
     lock.lock();
     log_queue[rf_index].push(input_node);
+    lock.unlock();
+  }
+
+  void push_node(ScanLogNode input_node, int rf_index){
+    lock.lock();
+    scan_log_queue[rf_index].push(input_node);
     lock.unlock();
   }
 
@@ -86,6 +109,22 @@ namespace NRScopeLog{
     fclose(pFile);
   }
 
+  void write_entry(ScanLogNode input_node, int rf_index){
+    // Write the data in a CSV format.
+    memset(buff, 0, sizeof(buff));
+
+    snprintf(buff, sizeof(buff), "%d,%f,%d", 
+            input_node.gscn,
+            input_node.freq,
+            input_node.pci
+    );
+    FILE* pFile = fopen(filename[rf_index].c_str(), "a");
+    
+    // Transform the input_node into one log entry row.
+    fprintf(pFile, "%s\n", buff);
+    fclose(pFile);
+  }
+
   void logger_thread(){
     struct sigaction sigIntHandler;
 
@@ -98,19 +137,33 @@ namespace NRScopeLog{
     while(run_log){
       // printf("Queue length: %ld\n", log_queue.size());
       for (int rf_index = 0; rf_index < (int)filename.size(); rf_index++){
-        if(log_queue[rf_index].size() > 0){
-          lock.lock();
-          LogNode new_node = log_queue[rf_index].front();
-          // Write to local disk
-          write_entry(new_node, rf_index);
-          printf("new_node_timestamp: %f\n", new_node.timestamp);
-          log_queue[rf_index].pop();
-          lock.unlock();
-        }else{
-          usleep(1000);
+        if (is_cell_scan) {
+          if(scan_log_queue[rf_index].size() > 0){
+            lock.lock();
+            ScanLogNode new_node = scan_log_queue[rf_index].front();
+            // Write to local disk
+            write_entry(new_node, rf_index);
+            printf("new found cell written to log\n");
+            scan_log_queue[rf_index].pop();
+            lock.unlock();
+          }else{
+            usleep(1000);
+          }
+        }
+        else {
+          if(log_queue[rf_index].size() > 0){
+            lock.lock();
+            LogNode new_node = log_queue[rf_index].front();
+            // Write to local disk
+            write_entry(new_node, rf_index);
+            printf("new_node_timestamp: %f\n", new_node.timestamp);
+            log_queue[rf_index].pop();
+            lock.unlock();
+          }else{
+            usleep(1000);
+          }
         }
       }
-      
     }
   }
 

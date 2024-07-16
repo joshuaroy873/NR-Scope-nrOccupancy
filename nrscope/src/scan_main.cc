@@ -16,7 +16,7 @@ int main(int argc, char** argv){
 
   std::vector<Radio> radios(1);
 
-  radios[0].log_name = "scan.txt";
+  radios[0].log_name = "scan.scv";
   radios[0].local_log = true;
   radios[0].nof_threads = 4;
 

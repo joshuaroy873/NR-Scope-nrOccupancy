@@ -14,7 +14,6 @@ include_directories(
 
 if(PUSH_TO_GOOGLE)
     include_directories(${PYTHON_INCLUDE_DIR})
-    include_directories(${GOOGLE_CLOUD_CPP_INCLUDE_DIRS})
 endif()
 
 link_directories(

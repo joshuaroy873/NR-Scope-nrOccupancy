@@ -34,10 +34,6 @@ if(PUSH_TO_GOOGLE)
   target_link_libraries(nrscope ${PYTHON_LIBRARIES})
 endif()
 
-if(PUSH_TO_GOOGLE)
-  target_link_libraries(nrscope ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
-endif(PUSH_TO_GOOGLE)
-
 if (RPATH)
   set_target_properties(nrscope PROPERTIES INSTALL_RPATH ".")
 endif (RPATH)

@@ -63,7 +63,7 @@ public:
     uint32_t                    gscn_last;
   };
 
-  static const uint32_t nof_nr_band_ss_raster                                                   = 2;
+  static const uint32_t nof_nr_band_ss_raster                                                   = 4;
   static constexpr std::array<nr_band_ss_raster, nof_nr_band_ss_raster> nr_band_ss_raster_table = {{
       // {1, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5279, 1, 5419},
       // {2, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4829, 1, 4969},
@@ -74,15 +74,15 @@ public:
       // {8, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 2318, 1, 2395},
       // {12, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1828, 1, 1858},
       // {20, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1982, 1, 2047},
-      {25, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4829, 1, 4981},
-      {28, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1901, 1, 2002},
+      // {25, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4829, 1, 4981},
+      // {28, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 1901, 1, 2002},
       // {34, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5030, 1, 5056},
       // {38, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 6431, 1, 6544},
       // {39, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 4706, 1, 4795},
-      // {40, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5756, 1, 5995},
-      // {41, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 6246, 3, 6717},
-      // {41, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 6252, 3, 6714},
-      // {50, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3584, 1, 3787},
+      {40, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5756, 1, 5995},
+      {41, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 6246, 3, 6717},
+      {41, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_C, 6252, 3, 6714},
+      {50, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3584, 1, 3787},
       // {51, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 3572, 1, 3574},
       // {66, srsran_subcarrier_spacing_15kHz, SRSRAN_SSB_PATTERN_A, 5279, 1, 5494},
       // {66, srsran_subcarrier_spacing_30kHz, SRSRAN_SSB_PATTERN_B, 5285, 1, 5488},

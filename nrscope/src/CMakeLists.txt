@@ -48,11 +48,6 @@ if(PUSH_TO_GOOGLE)
   target_link_libraries(nrscan ${PYTHON_LIBRARIES})
 endif()
 
-if(PUSH_TO_GOOGLE)
-  target_link_libraries(nrscope ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
-  target_link_libraries(nrscan ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
-endif(PUSH_TO_GOOGLE)
-
 if (RPATH)
   set_target_properties(nrscope PROPERTIES INSTALL_RPATH ".")
   set_target_properties(nrscan PROPERTIES INSTALL_RPATH ".")

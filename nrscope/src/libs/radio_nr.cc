@@ -16,7 +16,8 @@ Radio::Radio() :
   raido_shared = std::make_shared<srsran::radio>();
   radio = nullptr;
 
-  nof_trials = 500;
+  nof_trials = 100;
+  nof_trials_scan = 200;
   srsran_searcher_args_t.max_srate_hz = 30.72e6;
   srsran_searcher_args_t.ssb_min_scs = srsran_subcarrier_spacing_15kHz;
   srsran_searcher.init(srsran_searcher_args_t);
@@ -184,6 +185,10 @@ int Radio::ScanInitandStart(){
       }
 
       srsran_searcher_cfg_t.srate_hz = args_t.srate_hz;
+      // Currently looks like there is some coarse correlation issue
+      // that the next several GSCN can possibly detect the same ssb
+      // Just need to add some "deduplicate" logic when using the scanned cell info
+      // TO-DO: maybe fix this at a later point
       srsran_searcher_cfg_t.center_freq_hz = cs_args.ssb_freq_hz;
       srsran_searcher_cfg_t.ssb_freq_hz = cs_args.ssb_freq_hz;
       srsran_searcher_cfg_t.ssb_scs = args_t.ssb_scs;

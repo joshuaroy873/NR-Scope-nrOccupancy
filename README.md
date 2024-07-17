@@ -69,7 +69,7 @@ Entry: /nrscope/src/main.cc
 Load config: /nrscope/src/libs/load_config.cc
 Radio thread (cell search, mib decoding, coreset decoding, etc.): /nrscope/src/libs/radio_nr.cc
 Config file: /nrscope/config/config.yaml
-Cell scan entry: /nrscope/src/scan_main.cc
+Cell scan entry (scan all GSCN/SSB points): /nrscope/src/scan_main.cc
 ```
 
 ## Usage
@@ -81,14 +81,14 @@ cmake ../
 make all -j ${nof_proc}
 cd nrscope/src/
 sudo ./nrscope
-# or to scan all 5G SA cells
+
+# or to scan all 5G SA cells (in nrscope/src/)
 sudo ./nrscan
 ```
 
 ## Logs
 
-(July 14, 2024) Implemented NR SA cell scan utility: run `./nrscan` after build. TO-DO: (1) 1 out of 10 times the scan will terminate when switch to a new band; restart 
-the SDR to solve the issue (verified). (2) Log results to file. 
+(July 17, 2024) Implemented NR SA cell scan utility: run `./nrscan` after build. The found cell information will be logged at `scan.csv`.
 
 (Aug 9, 2023) Solved some problems in synchronization, see how to use external clock to perform the synchronization.
 
@@ -131,3 +131,4 @@ There are some on-going plans for the near future:
 * Try to decode RRC reconfiguration message, it's hard to do so because current srsRAN 5G UE code doesn't support MIMO PDSCH decoding.
 * Test the tool with different bandwidth, SCS, and different duplexing modes (TDD and FDD), with the help of Amarisoft. If decoding the DCIs for more UEs takes longer time than one TTI, we need to add multi-thread DCI decoding functionality.
 * Add carrier aggregation decoding function (multiple USRP to decode multiple cell towers that the UE is connected to).
+* Found cell searcher can mistakenly found cells in nearby frequency (e.g., GSCN -1/-2 steps). In other words, when cell searcher's to-search SSB central frequency is x, it can find SSSB at x - 1/2 step. We guess it's because the coarse correlation. Investigate possibly later.

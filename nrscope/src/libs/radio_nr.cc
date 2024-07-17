@@ -16,7 +16,7 @@ Radio::Radio() :
   raido_shared = std::make_shared<srsran::radio>();
   radio = nullptr;
 
-  nof_trials = 100;
+  nof_trials = 500;
   srsran_searcher_args_t.max_srate_hz = 30.72e6;
   srsran_searcher_args_t.ssb_min_scs = srsran_subcarrier_spacing_15kHz;
   srsran_searcher.init(srsran_searcher_args_t);
@@ -172,6 +172,8 @@ int Radio::ScanInitandStart(){
         ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
         ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
         ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+        std::cout << "Update min ssb center detect boundary to " << ssb_center_freq_min_hz << std::endl;
+        std::cout << "Update max ssb center detect boundary to " << ssb_center_freq_max_hz << std::endl;
 
         rf_args.dl_freq = cs_args.ssb_freq_hz;
         args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;

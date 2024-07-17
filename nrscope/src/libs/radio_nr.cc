@@ -226,7 +226,7 @@ int Radio::ScanInitandStart(){
         }
       }
       if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND){
-        std::cout << "Cell Found!" << std::endl;
+        std::cout << "Cell Found! (maybe reported multiple times in the next several GSCN; see README)" << std::endl;
         std::cout << "N_id: " << cs_ret.ssb_res.N_id << std::endl;
 
         if (local_log) {

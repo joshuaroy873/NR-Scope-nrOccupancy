@@ -38,6 +38,7 @@ class Radio{
     srsue::nr::cell_search::args_t                srsran_searcher_args_t;
     srsue::nr::cell_search::ret_t                 cs_ret;
     uint32_t                                      nof_trials;
+    uint32_t                                      nof_trials_scan;
     cell_search_result_t                          cell;
 
     coreset0_args                                 coreset0_args_t;
@@ -79,6 +80,14 @@ class Radio{
     int RadioThread();
 
     /**
+    * Another entry to this class -- start the NR SA FR1 scan thread 
+    * and output found cell(s) 
+    * 
+    * @return SRSRAN_SUCCESS - 0 for successfuly exit
+    */
+    int ScanThread();
+
+    /**
     * This function first sets up some parameters related to the radio sample caputure according to the config file, 
     * such as sampling frequency, SSB frequency and SCS. Then it will search the MIB within the range of 
     * [SSB frequency - 0.7 * sampling frequency / 2, SSB frequency + 0.7 * sampling frequency / 2].
@@ -89,6 +98,14 @@ class Radio{
     * @return SRSRAN_SUCCESS (0) if no cell is found. NR_FAILURE (-1) if something is wrong in the function.
     */
     int RadioInitandStart();
+
+    /**
+    * This function goes through the per band (denoted by outer loop), and search each GSCN raster point in the band
+    * (denoted by inner loop)
+    * 
+    * @return SRSRAN_SUCCESS (0) if no cell is found. NR_FAILURE (-1) if something is wrong in the function.
+    */
+    int ScanInitandStart();
 
     /**
     * After finding the cell and decoding the cell and synchronization signal, this function sets up the parameters

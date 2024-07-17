@@ -94,9 +94,7 @@ uint16_t srsran_band_helper::get_band_from_dl_freq_Hz(double freq) const
 uint16_t srsran_band_helper::get_band_from_dl_freq_Hz_and_scs(double freq, srsran_subcarrier_spacing_t ssb_scs) const
 {
   uint32_t freq_MHz = (uint32_t)round(freq / 1e6);
-  // std::cout << freq_MHz << std::endl;
   for (const nr_operating_band& band : nr_operating_bands_fr1) {
-    // std::cout << band.F_DL_low << "  " << band.F_DL_high << std::endl;
     if (freq_MHz >= band.F_DL_low and freq_MHz <= band.F_DL_high) {
       srsran::srsran_band_helper::sync_raster_t ss = get_sync_raster(band.band, ssb_scs);
       if(!ss.valid()){
@@ -213,6 +211,41 @@ srsran_ssb_pattern_t srsran_band_helper::get_ssb_pattern(uint16_t band, srsran_s
 
   // Band is out of range, so consider invalid
   return SRSRAN_SSB_PATTERN_INVALID;
+}
+
+uint64_t srsran_band_helper::get_freq_from_gscn(uint32_t gscn){
+
+  if (gscn >= 2 && gscn <= 7498) {
+    uint64_t n;
+    uint64_t m;
+    uint64_t q = (int)gscn / (int)3;
+    uint64_t r = (int)gscn % (int)3;
+    if (r == 2) {
+      n = q + 1;
+      m = 1;
+    }
+    else if (r == 1) {
+      n = q;
+      m = 5;
+    }
+    else {
+      n = q;
+      m = 3;
+    }
+    return n * 1200000 + m * 50000;
+  }
+  else if (gscn >= 7499 && gscn <= 22255) {
+    uint64_t n; 
+    n = gscn - 7499;
+    return n * 1440000 + 3000000000;
+  }
+  else if (gscn >= 22256 && gscn <= 26639) {
+    uint64_t n; 
+    n = gscn - 22256;
+    return n * 17280000 + 24250080000;
+  }
+
+  return 0;
 }
 
 srsran_subcarrier_spacing_t srsran_band_helper::get_ssb_scs(uint16_t band) const

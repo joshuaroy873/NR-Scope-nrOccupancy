@@ -154,6 +154,13 @@ typedef struct LogNode_ LogNode;
     srsran_sch_cfg_nr_t grant;
   };
 
+typedef struct ScanLogNode_ ScanLogNode;
+  struct ScanLogNode_{
+    uint32 gscn;
+    double freq;
+    uint32 pci;
+  };
+
 struct sib1_task_element{
   srsran_ue_sync_nr_outcome_t outcome;
   srsran_slot_cfg_t slot;

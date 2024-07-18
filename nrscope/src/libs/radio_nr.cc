@@ -208,7 +208,7 @@ int Radio::ScanInitandStart(){
       rf_buffer.set_nof_samples(slot_sz);
       rf_buffer.set(0, rx_buffer);
 
-      for(uint32_t trial=0; trial < nof_trials; trial++){
+      for(uint32_t trial=0; trial < nof_trials_scan; trial++){
         if (trial == 0) {
           srsran_vec_cf_zero(rx_buffer, slot_sz);
         }

@@ -131,4 +131,4 @@ There are some on-going plans for the near future:
 * Try to decode RRC reconfiguration message, it's hard to do so because current srsRAN 5G UE code doesn't support MIMO PDSCH decoding.
 * Test the tool with different bandwidth, SCS, and different duplexing modes (TDD and FDD), with the help of Amarisoft. If decoding the DCIs for more UEs takes longer time than one TTI, we need to add multi-thread DCI decoding functionality.
 * Add carrier aggregation decoding function (multiple USRP to decode multiple cell towers that the UE is connected to).
-* Found cell searcher can mistakenly found cells in nearby frequency (e.g., GSCN -1/-2 steps). In other words, when cell searcher's to-search SSB central frequency is x, it can find SSSB at x - 1/2 step. We guess it's because the coarse correlation. Investigate possibly later.
+* Found cell searcher can mistakenly find cells in nearby frequency (e.g., GSCN -1/-2 steps). In other words, when cell searcher's to-search SSB central frequency is x, it can find SSB at x - 1/2 step. We guess it's because the coarse correlation. Investigate possibly later.

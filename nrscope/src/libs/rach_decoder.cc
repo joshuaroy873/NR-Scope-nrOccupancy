@@ -273,24 +273,24 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     ERROR("RACHDecoder -- Error in blind search");
     return SRSRAN_ERROR;
   }
-  for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl_rach.pdcch_info_count; pdcch_idx++) {
-    const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl_rach.pdcch_info[pdcch_idx]);
-    if(info->result.crc){ // Only print the RSRP result when the DCI's CRC is correct.
-      printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
-        "nof_bits=%d; crc=%s;\n",
-        srsran_rnti_type_str_short(info->dci_ctx.rnti_type),
-        info->dci_ctx.rnti,
-        info->dci_ctx.coreset_id,
-        srsran_ss_type_str(info->dci_ctx.ss_type),
-        info->dci_ctx.location.ncce,
-        info->dci_ctx.location.L,
-        info->measure.epre_dBfs,
-        info->measure.rsrp_dBfs,
-        info->measure.norm_corr,
-        info->nof_bits,
-        info->result.crc ? "OK" : "KO");
-    }
-  }
+  // for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl_rach.pdcch_info_count; pdcch_idx++) {
+  //   const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl_rach.pdcch_info[pdcch_idx]);
+  //   if(info->result.crc){ // Only print the RSRP result when the DCI's CRC is correct.
+  //     printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
+  //       "nof_bits=%d; crc=%s;\n",
+  //       srsran_rnti_type_str_short(info->dci_ctx.rnti_type),
+  //       info->dci_ctx.rnti,
+  //       info->dci_ctx.coreset_id,
+  //       srsran_ss_type_str(info->dci_ctx.ss_type),
+  //       info->dci_ctx.location.ncce,
+  //       info->dci_ctx.location.L,
+  //       info->measure.epre_dBfs,
+  //       info->measure.rsrp_dBfs,
+  //       info->measure.norm_corr,
+  //       info->nof_bits,
+  //       info->result.crc ? "OK" : "KO");
+  //   }
+  // }
 
   if (nof_found_dci < 1) {
     printf("RACHDecoder -- No DCI found :'(\n");
@@ -337,8 +337,8 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
       return SRSRAN_ERROR;
     }
 
-    printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
-    srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+    // printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
+    // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
     uint32_t bytes_offset = 0;
 
     for (uint32_t pdsch_res_idx = 0; pdsch_res_idx < (uint32_t)pdsch_cfg.grant.tb[0].tbs / 8 - 1; pdsch_res_idx ++){
@@ -400,9 +400,9 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
       break;
     }
 
-    asn1::json_writer js_msg4;
-    task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
-    printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
+    // asn1::json_writer js_msg4;
+    // task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
+    // printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
     asn1::cbit_ref bref_cg((task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.data(),
                       (task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.size());
     if (task_scheduler_nrscope->master_cell_group.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
@@ -410,9 +410,9 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
       return SRSRAN_ERROR;
     }        
     
-    asn1::json_writer js;
-    task_scheduler_nrscope->master_cell_group.to_json(js);
-    printf("masterCellGroup: %s\n", js.to_string().c_str());
+    // asn1::json_writer js;
+    // task_scheduler_nrscope->master_cell_group.to_json(js);
+    // printf("masterCellGroup: %s\n", js.to_string().c_str());
 
     // Tells the task scheduler that the RACH is decoded and there are some entries in the know_rntis vector.
     task_scheduler_nrscope->rach_found = true;

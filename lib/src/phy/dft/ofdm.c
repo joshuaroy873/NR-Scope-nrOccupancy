@@ -380,9 +380,9 @@ static int ofdm_init_nr_nrscope_30khz(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, 
       q->window_offset_buffer[i] = cexpf(I * M_PI * 2.0f * (float)q->window_offset_n * (float)i / (float)symbol_sz);
     }
 
-    for (uint32_t i = symbol_sz; i < 2*symbol_sz; i++){
-      q->window_offset_buffer[i] = cexpf(I * M_PI * 2.0f * (cp1 - cp2) * (float)(i-symbol_sz) / (float)symbol_sz);
-    }
+    // for (uint32_t i = symbol_sz; i < 2*symbol_sz; i++){
+    //   q->window_offset_buffer[i] = cexpf(I * M_PI * 2.0f * (cp1 - cp2) * (float)(i-symbol_sz) / (float)symbol_sz);
+    // }
   }
 
   // Zero temporal and input buffers always
@@ -622,10 +622,6 @@ static int ofdm_init_nr_nrscope_15khz(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, 
 
     for (uint32_t i = 0; i < symbol_sz; i++) {
       q->window_offset_buffer[i] = cexpf(I * M_PI * 2.0f * (float)q->window_offset_n * (float)i / (float)symbol_sz);
-    }
-
-    for (uint32_t i = symbol_sz; i < 2*symbol_sz; i++){
-      q->window_offset_buffer[i] = cexpf(I * M_PI * 2.0f * (cp2 - cp1) * (float)(i-symbol_sz) / (float)symbol_sz);
     }
   }
 
@@ -1133,10 +1129,6 @@ static void ofdm_rx_slot_nrscope_15khz(srsran_ofdm_t* q, int slot_in_sf, int cor
     if (q->window_offset_n) {
       srsran_vec_prod_ccc(tmp, q->window_offset_buffer, tmp, symbol_sz);
 
-      // if(scs_idx == 1 && slot_in_sf == 1) {
-      //   srsran_vec_prod_ccc(tmp, &q->window_offset_buffer[symbol_sz], tmp, symbol_sz);
-      // }
-
       // printf("q->window_offset_buffer:");
       // srsran_vec_fprint_c(stdout, q->window_offset_buffer, symbol_sz);
     }
@@ -1233,9 +1225,9 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
     if (q->window_offset_n) {
       srsran_vec_prod_ccc(tmp, q->window_offset_buffer, tmp, symbol_sz);
 
-      if(scs_idx == 0 && i > 6) {
-        srsran_vec_prod_ccc(tmp, &q->window_offset_buffer[symbol_sz], tmp, symbol_sz);
-      }
+      // if(scs_idx == 0 && i > 6) {
+      //   srsran_vec_prod_ccc(tmp, &q->window_offset_buffer[symbol_sz], tmp, symbol_sz);
+      // }
       // printf("q->window_offset_buffer:");
       // srsran_vec_fprint_c(stdout, q->window_offset_buffer, symbol_sz);
     }

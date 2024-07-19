@@ -615,8 +615,6 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   carrier_ul.max_mimo_layers = dci_cfg.nof_ul_layers;
   printf("carrier_ul.max_mimo_layers: %d\n", carrier_ul.max_mimo_layers);
 
-  // update the nof_prb for carrier settings.
-
   if (srsran_ue_dl_nr_init_nrscope(&ue_dl_dci, input, &ue_dl_args, arg_scs)) {
     ERROR("Error UE DL");
     return SRSRAN_ERROR;

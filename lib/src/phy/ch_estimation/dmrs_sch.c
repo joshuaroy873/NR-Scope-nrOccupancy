@@ -1083,11 +1083,11 @@ int srsran_dmrs_sch_estimate(srsran_dmrs_sch_t*           q,
        cfo_avg_hz,
        chest_res->sync_error * 1e6);
   
-  // printf("PDSCH-DMRS: RSRP=%+.2fdB EPRE=%+.2fdB CFO=%+.0fHz Sync=%.3fus\n",
-  //      chest_res->rsrp_dbm,
-  //      srsran_convert_power_to_dB(epre),
-  //      cfo_avg_hz,
-  //      chest_res->sync_error * 1e6);
+  printf("PDSCH-DMRS: RSRP=%+.2fdB EPRE=%+.2fdB CFO=%+.0fHz Sync=%.3fus\n",
+       chest_res->rsrp_dbm,
+       srsran_convert_power_to_dB(epre),
+       cfo_avg_hz,
+       chest_res->sync_error * 1e6);
 
   // Average over time, only if more than one DMRS symbol
   for (uint32_t i = 1; i < nof_symbols; i++) {

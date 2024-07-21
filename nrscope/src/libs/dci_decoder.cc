@@ -226,8 +226,16 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
                                                 nrof_candidates.aggregation_level16;
 
   dci_cfg.carrier_indicator_size = 0; // for carrier aggregation, we don't consider this situation.
-  dci_cfg.enable_sul = false; // by default
-  dci_cfg.enable_hopping = false; // by default
+  
+  dci_cfg.enable_sul = false; // if the supplementary_ul in sp_cell_cfg_ded is present.
+  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.supplementary_ul_present()){
+    dci_cfg.enable_sul = true;
+  }
+
+  dci_cfg.enable_hopping = false; // if the setting is absent, it's false.
+  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().freq_hop_present()){
+    dci_cfg.enable_hopping = true;
+  }
 
   /// Format 0_1 specific configuration (for PUSCH only)
   ///< Number of UL BWPs excluding the initial UL BWP, mentioned in the TS as N_BWP_RRC

@@ -80,7 +80,7 @@ cd build
 cmake ../
 make all -j ${nof_proc}
 cd nrscope/src/
-sudo ./nrscope
+sudo ./nrscope | tee ./$(date +"%Y-%m-%d_%H:%M:%S").txt | grep Found # This command can save the trace and show if cell or DCIs are found.
 
 # or to scan all 5G SA cells (in nrscope/src/)
 sudo ./nrscan

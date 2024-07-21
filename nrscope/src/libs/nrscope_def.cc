@@ -41,3 +41,25 @@ void my_sig_handler(int s){
   printf("Caught signal %d\n",s);
   exit(0); 
 }
+
+uint32_t get_P(uint32_t bwp_nof_prb, bool config_1_or_2)
+{
+  srsran_assert(bwp_nof_prb > 0 and bwp_nof_prb <= 275, "Invalid BWP size");
+  if (bwp_nof_prb <= 36) {
+    return config_1_or_2 ? 2 : 4;
+  }
+  if (bwp_nof_prb <= 72) {
+    return config_1_or_2 ? 4 : 8;
+  }
+  if (bwp_nof_prb <= 144) {
+    return config_1_or_2 ? 8 : 16;
+  }
+  return 16;
+}
+
+/// TS 38.214 - total number of RBGs for a uplink bandwidth part of size "bwp_nof_prb" PRBs
+uint32_t get_nof_rbgs(uint32_t bwp_nof_prb, uint32_t bwp_start, bool config1_or_2)
+{
+  uint32_t P = get_P(bwp_nof_prb, config1_or_2);
+  return srsran::ceil_div(bwp_nof_prb + (bwp_start % P), P);
+}

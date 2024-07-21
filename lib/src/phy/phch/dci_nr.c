@@ -702,7 +702,8 @@ static int dci_nr_format_0_1_unpack(const srsran_dci_nr_t* q, srsran_dci_msg_nr_
   if (!cfg->enable_transform_precoding && cfg->pusch_dmrs_max_len == srsran_dmrs_sch_len_1) {
     dci->ports = srsran_bit_pack(&y, 3);
   } else {
-    ERROR("Not implemented: antenna ports");
+    dci->ports = srsran_bit_pack(&y, dci_nr_ul_ports_size(cfg));
+    // ERROR("Not implemented: antenna ports");
     // return 0;
   }
 

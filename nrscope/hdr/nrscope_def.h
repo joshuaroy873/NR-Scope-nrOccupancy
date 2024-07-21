@@ -203,4 +203,16 @@ double get_now_timestamp_in_double();
   * Handle the CTRL+C signal in each thread.
   */
 void my_sig_handler(int s);
+
+
+
+/**
+  * Calculate nof_rbgs, from sched_nr_rb.cc
+  */
+uint32_t get_P(uint32_t bwp_nof_prb, bool config_1_or_2);
+
+/**
+  * Calculate nof_rbgs, from sched_nr_rb.cc
+  */
+uint32_t get_nof_rbgs(uint32_t bwp_nof_prb, uint32_t bwp_start, bool config1_or_2);
 #endif

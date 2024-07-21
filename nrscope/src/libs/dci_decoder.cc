@@ -634,6 +634,16 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   carrier_ul.max_mimo_layers = dci_cfg.nof_ul_layers;
   printf("carrier_ul.max_mimo_layers: %d\n", carrier_ul.max_mimo_layers);
 
+  dci_cfg.nof_rb_groups = 0;
+  if(dci_cfg.pdsch_alloc_type == srsran_resource_alloc_type0){
+    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().rbg_size == asn1::rrc_nr::pdsch_cfg_s::rbg_size_opts::cfg1){
+      // BWP start prb is set to 0 since this is the only scenario that we see
+      dci_cfg.nof_rb_groups = get_nof_rbgs(dci_cfg.bwp_dl_active_bw, 0, true); 
+    }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().rbg_size == asn1::rrc_nr::pdsch_cfg_s::rbg_size_opts::cfg2){
+      dci_cfg.nof_rb_groups = get_nof_rbgs(dci_cfg.bwp_dl_active_bw, 0, false);
+    }
+  }
+
   if (srsran_ue_dl_nr_init_nrscope(&ue_dl_dci, input, &ue_dl_args, arg_scs)) {
     ERROR("Error UE DL");
     return SRSRAN_ERROR;

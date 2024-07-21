@@ -531,10 +531,10 @@ static int ofdm_init_nr_nrscope_15khz(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, 
   q->sf_sz             = (uint32_t)SRSRAN_SF_LEN(q->cfg.symbol_sz);
 
 
-  printf("q->slot_sz: %d\n", q->slot_sz);
-  printf("q->sf_sz: %d\n", q->sf_sz);
-  printf("symbol_sz: %d\n", symbol_sz);
-  printf("q->nof_symbols: %d\n", q->nof_symbols);
+  // printf("q->slot_sz: %d\n", q->slot_sz);
+  // printf("q->sf_sz: %d\n", q->sf_sz);
+  // printf("symbol_sz: %d\n", symbol_sz);
+  // printf("q->nof_symbols: %d\n", q->nof_symbols);
 
   // Set the CFR parameters related to OFDM symbol and FFT size
   q->cfg.cfr_tx_cfg.symbol_sz = symbol_sz;
@@ -610,8 +610,8 @@ static int ofdm_init_nr_nrscope_15khz(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, 
   int cp1 = SRSRAN_CP_ISNORM(cp) ? SRSRAN_CP_LEN_NORM(0, symbol_sz) : SRSRAN_CP_LEN_EXT(symbol_sz);
   int cp2 = SRSRAN_CP_ISNORM(cp) ? SRSRAN_CP_LEN_NORM(1, symbol_sz) : SRSRAN_CP_LEN_EXT(symbol_sz);
 
-  printf("cp1: %d\n", cp1);
-  printf("cp2: %d\n", cp2);
+  // printf("cp1: %d\n", cp1);
+  // printf("cp2: %d\n", cp2);
 
   // Slides DFT window a fraction of cyclic prefix, it does not apply for the inverse-DFT
   // we skip the window offset by setting cfg.rx_window_offset = 0;
@@ -940,9 +940,9 @@ int srsran_ofdm_set_phase_compensation_nrscope(srsran_ofdm_t* q, double center_f
   uint32_t symbol_sz = q->cfg.symbol_sz;
   double   scs       = (double)SRSRAN_SUBC_SPACING_NR(scs_idx); 
   double   srate_hz  = symbol_sz * scs;
-  printf("symbol_sz: %u\n", symbol_sz);
-  printf("srate_hz: %lf\n", srate_hz);
-  printf("scs: %lf\n", scs);
+  // printf("symbol_sz: %u\n", symbol_sz);
+  // printf("srate_hz: %lf\n", srate_hz);
+  // printf("scs: %lf\n", scs);
 
   // Assert parameters
   if (!isnormal(srate_hz)) {
@@ -1104,9 +1104,9 @@ static void ofdm_rx_slot_nrscope_15khz(srsran_ofdm_t* q, int slot_in_sf, int cor
   uint32_t nof_symbols = q->nof_symbols;
   uint32_t nof_re = q->nof_re;
   cf_t* output = q->cfg.out_buffer + slot_in_sf * nof_re * nof_symbols;  // time-freq domain: subcarrier x symbol
-  printf("nof_symbols: %d\n", nof_symbols);
-  printf("nof_re: %d\n", nof_re);
-  printf("slot_in_sf * nof_re * nof_symbols: %d\n", slot_in_sf * nof_re * nof_symbols);
+  // printf("nof_symbols: %d\n", nof_symbols);
+  // printf("nof_re: %d\n", nof_re);
+  // printf("slot_in_sf * nof_re * nof_symbols: %d\n", slot_in_sf * nof_re * nof_symbols);
 
   uint32_t symbol_sz = q->cfg.symbol_sz;
   float norm = 1.0f / sqrtf(q->fft_plan.size);

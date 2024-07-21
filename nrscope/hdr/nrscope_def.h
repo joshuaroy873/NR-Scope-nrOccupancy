@@ -40,6 +40,7 @@
 #include "srsran/phy/phch/prach.h"
 #include "srsran/srsran.h"
 #include "srsran/common/band_helper.h"
+#include "srsgnb/hdr/stack/mac/sched_nr_rb.h"
 
 #define MAX_NOF_DCI_DECODER 4
 #define MAX_NOF_RF_DEV 4

@@ -228,12 +228,12 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   dci_cfg.carrier_indicator_size = 0; // for carrier aggregation, we don't consider this situation.
   
   dci_cfg.enable_sul = false; // if the supplementary_ul in sp_cell_cfg_ded is present.
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.supplementary_ul_present()){
+  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.supplementary_ul_present){
     dci_cfg.enable_sul = true;
   }
 
   dci_cfg.enable_hopping = false; // if the setting is absent, it's false.
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().freq_hop_present()){
+  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().freq_hop_present){
     dci_cfg.enable_hopping = true;
   }
 
@@ -351,14 +351,14 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
 
   // get_nof_rbgs(uint32_t bwp_nof_prb, uint32_t bwp_start, bool config1_or_2)
   dci_cfg.nof_rb_groups = 0;
-  if(dci_cfg.pusch_alloc_type == srsran_resource_alloc_type0){
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().rbg_size_present){
-      // BWP start prb is set to 0 since this is the only scenario that we see
-      dci_cfg.nof_rb_groups = get_nof_rbgs(dci_cfg.bwp_ul_active_bw, 0, true); 
-    }else{
-      dci_cfg.nof_rb_groups = get_nof_rbgs(dci_cfg.bwp_ul_active_bw, 0, false);
-    }
-  }
+  // if(dci_cfg.pusch_alloc_type == srsran_resource_alloc_type0){
+  //   if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().rbg_size_present){
+  //     // BWP start prb is set to 0 since this is the only scenario that we see
+  //     dci_cfg.nof_rb_groups = get_nof_rbgs(dci_cfg.bwp_ul_active_bw, 0, true); 
+  //   }else{
+  //     dci_cfg.nof_rb_groups = get_nof_rbgs(dci_cfg.bwp_ul_active_bw, 0, false);
+  //   }
+  // }
 
   if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present){
     if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().dmrs_type_present){

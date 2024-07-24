@@ -64,6 +64,35 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   pdcch_cfg.search_space_present[1]      = false;
   pdcch_cfg.search_space_present[2]      = false;
   pdcch_cfg.ra_search_space_present      = false;
+
+  asn1::rrc_nr::bwp_dl_ded_s * bwp_dl_ded_s_ptr = NULL;
+
+  if (bwp_id == 0) {
+    bwp_dl_ded_s_ptr = &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp);
+  }
+  else if (bwp_id <= 3) {
+    for (uint8_t i = 0; i < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.dl_bwp_to_add_mod_list.size(); i++) {
+      if (bwp_id == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.dl_bwp_to_add_mod_list[i].bwp_id) {
+        if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.dl_bwp_to_add_mod_list[i].bwp_ded_present) {
+          bwp_dl_ded_s_ptr = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.dl_bwp_to_add_mod_list[i].bwp_ded;
+          break;
+        }
+        else {
+          printf("bwp id %u does not have a ded config in RRCSetup", bwp_id);
+        }
+      }
+    }
+  }
+  else {
+    ERROR("bwp id cannot be greater than 3!\n");
+    return SRSRAN_ERROR;
+  }
+
+  if (bwp_dl_ded_s_ptr == NULL) {
+    ERROR("bwp id %d config never appears in RRCSetup (what we assume now only checking in RRCSetup)\n", bwp_id);
+    return SRSRAN_ERROR;
+  }
+
   if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.is_setup()){
     pdcch_cfg.search_space[0].id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
                                    search_spaces_to_add_mod_list[0].search_space_id;

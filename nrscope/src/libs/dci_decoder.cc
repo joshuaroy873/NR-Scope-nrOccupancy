@@ -726,9 +726,10 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_SUCCESS;
   }
 
-  uint32_t n_rntis = (uint32_t) ceil((float) task_scheduler_nrscope->nof_known_rntis / (float) task_scheduler_nrscope->nof_threads);
-  uint32_t rnti_s = dci_decoder_id * n_rntis;
-  uint32_t rnti_e = dci_decoder_id * n_rntis + n_rntis;
+  // uint32_t n_rntis = (uint32_t) ceil((float) task_scheduler_nrscope->nof_known_rntis / (float) task_scheduler_nrscope->nof_threads);
+  uint32_t n_rntis = (uint32_t) task_scheduler_nrscope->nof_known_rntis;
+  uint32_t rnti_s = 0;
+  uint32_t rnti_e = n_rntis + n_rntis;
 
   if(rnti_s >= task_scheduler_nrscope->nof_known_rntis){
     std::cout << "DCI decoder " << dci_decoder_id << " exits because it's excessive.." << std::endl;
@@ -740,7 +741,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
     n_rntis = rnti_e - rnti_s;
   }
 
-  // std::cout << "DCI decoder " << dci_decoder_id << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
+  std::cout << "DCI decoder " << dci_decoder_id << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
 
   DCIFeedback new_result;
   task_scheduler_nrscope->sharded_results[dci_decoder_id] = new_result;

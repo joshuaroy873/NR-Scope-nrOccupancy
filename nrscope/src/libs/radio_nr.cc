@@ -523,13 +523,16 @@ int Radio::RadioCapture(){
           task_scheduler_nrscope.nof_threads = nof_threads;
 
           for(uint32_t i = 0; i < nof_threads; i++){
-            DCIDecoder *decoder = new DCIDecoder(100);
-            if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t(), i) < SRSASN_SUCCESS){
-              ERROR("DCIDecoder Init Error");
-              return NR_FAILURE;
+            // for each rnti worker group, for each bwp, spawn a decoder
+            for(uint8_t j = 0; j < nof_bwps; j++){
+              DCIDecoder *decoder = new DCIDecoder(100);
+              if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t(), j) < SRSASN_SUCCESS){
+                ERROR("DCIDecoder Init Error");
+                return NR_FAILURE;
+              }
+              decoder->dci_decoder_id = i;
+              dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
             }
-            decoder->dci_decoder_id = i;
-            dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
           }
           
           std::cout << "DCI Decoder Initialized.." << std::endl;

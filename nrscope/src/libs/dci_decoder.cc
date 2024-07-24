@@ -16,7 +16,8 @@ DCIDecoder::~DCIDecoder(){
 
 int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
                                                TaskSchedulerNRScope* task_scheduler_nrscope,
-                                               cf_t* input[SRSRAN_MAX_PORTS]){ 
+                                               cf_t* input[SRSRAN_MAX_PORTS],
+                                               u_int8_t bwp_id){ 
   
   memcpy(&base_carrier, &task_scheduler_nrscope->args_t.base_carrier, sizeof(srsran_carrier_nr_t));
   arg_scs = arg_scs_; 

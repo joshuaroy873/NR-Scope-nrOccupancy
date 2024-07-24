@@ -19,6 +19,9 @@ class DCIDecoder{
     srsran_coreset_t coreset0_t;
     srsran_search_space_t* search_space;
 
+    // pdcch for non-0 bwps
+    std::vector<srsran_pdcch_cfg_nr_t> more_bwp_pdcch_cfgs;
+
     asn1::rrc_nr::sib1_s sib1;
     asn1::rrc_nr::cell_group_cfg_s master_cell_group;
     asn1::rrc_nr::rrc_setup_s rrc_setup;
@@ -54,7 +57,8 @@ class DCIDecoder{
 
     int dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
                                        TaskSchedulerNRScope* task_scheduler_nrscope,
-                                       cf_t* input[SRSRAN_MAX_PORTS]);
+                                       cf_t* input[SRSRAN_MAX_PORTS],
+                                       u_int8_t bwp_id);
 
     int decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
                                        TaskSchedulerNRScope* task_scheduler_nrscope);

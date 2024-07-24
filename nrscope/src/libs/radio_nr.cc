@@ -524,7 +524,7 @@ int Radio::RadioCapture(){
 
           for(uint32_t i = 0; i < nof_threads; i++){
             DCIDecoder *decoder = new DCIDecoder(100);
-            if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
+            if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t(), i) < SRSASN_SUCCESS){
               ERROR("DCIDecoder Init Error");
               return NR_FAILURE;
             }
@@ -542,7 +542,10 @@ int Radio::RadioCapture(){
         task_scheduler_nrscope.dl_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
         task_scheduler_nrscope.ul_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
 
-        std::thread sibs_thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
+        // To save computing resources for dci decoders: assume SIB1 info should be static
+        if (!task_scheduler_nrscope.sib1_found) {
+          std::thread sibs_thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
+        }
         std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
 
         std::vector <std::thread> dci_threads;

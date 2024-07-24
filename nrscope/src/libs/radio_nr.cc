@@ -545,7 +545,7 @@ int Radio::RadioCapture(){
         // To save computing resources for dci decoders: assume SIB1 info should be static
         std::thread sibs_thread;
         if (!task_scheduler_nrscope.sib1_found) {
-          sibs_thread(&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope);
+          sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
         }
         std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
 

@@ -68,6 +68,9 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
                                    search_spaces_to_add_mod_list[0].search_space_id;
     pdcch_cfg.search_space[0].coreset_id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
                                            ctrl_res_set_to_add_mod_list[0].ctrl_res_set_id;
+    
+    printf("pdcch_cfg.search_space[0].coreset_id in bwp0: %u\n", pdcch_cfg.search_space[0].coreset_id);
+
     pdcch_cfg.search_space[0].type = srsran_search_space_type_ue;
     if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
        search_spaces_to_add_mod_list[0].search_space_type.ue_specific().dci_formats.formats0_minus1_and_minus1_minus1){
@@ -102,6 +105,8 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     srsran_coreset_t coreset_n;
     coreset_n.id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
                   ctrl_res_set_to_add_mod_list[0].ctrl_res_set_id; 
+
+    printf("to addmod coreset_n.id in bwp0: %u\n", coreset_n.id);
     coreset_n.duration = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
                           ctrl_res_set_to_add_mod_list[0].dur;
     for(int i = 0; i < 45; i++){

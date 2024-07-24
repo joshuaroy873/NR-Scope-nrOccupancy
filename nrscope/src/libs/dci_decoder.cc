@@ -227,7 +227,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
           break;
       }
     }
-    coreset_n.dmrs_scrambling_id_present = bwp_dl_ded_s_ptr->.pdcch_cfg.
+    coreset_n.dmrs_scrambling_id_present = bwp_dl_ded_s_ptr->pdcch_cfg.
                                             setup().ctrl_res_set_to_add_mod_list[0].pdcch_dmrs_scrambling_id_present;
     if (coreset_n.dmrs_scrambling_id_present){
       coreset_n.dmrs_scrambling_id = bwp_dl_ded_s_ptr->pdcch_cfg.
@@ -545,7 +545,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
 
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
   pusch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
-  if(bwp_dl_ded_s_ptr->.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present){
+  if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present){
     pdsch_hl_cfg.dmrs_typeA.present = bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present;
     switch(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().dmrs_add_position){
       case asn1::rrc_nr::dmrs_dl_cfg_s::dmrs_add_position_opts::pos0:

@@ -523,6 +523,7 @@ int Radio::RadioCapture(){
           task_scheduler_nrscope.nof_threads = nof_threads;
           task_scheduler_nrscope.nof_rnti_worker_groups = nof_rnti_worker_groups;
           task_scheduler_nrscope.nof_bwps = nof_bwps;
+          task_scheduler_nrscope.results.resize(nof_bwps);
 
           for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
             // for each rnti worker group, for each bwp, spawn a decoder

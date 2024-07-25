@@ -69,7 +69,6 @@ class TaskSchedulerNRScope{
       return results;
     }
 
-  private:
     // per bwp DCI decoding result for current TTI
     std::vector <DCIFeedback> results;
 };

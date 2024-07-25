@@ -65,12 +65,13 @@ class TaskSchedulerNRScope{
 
     int update_known_rntis();
 
-    DCIFeedback get_result(){
-      return result;
+    std::vector <DCIFeedback> get_results(){
+      return results;
     }
 
   private:
-    DCIFeedback result; // DCI decoding result for current TTI
+    // per bwp DCI decoding result for current TTI
+    std::vector <DCIFeedback> results;
 };
 
 

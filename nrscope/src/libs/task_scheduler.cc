@@ -115,74 +115,69 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
 }
 
 int TaskSchedulerNRScope::merge_results(){
+  
+  for (uint8_t b = 0; b < nof_bwps; b++) {
+    DCIFeedback new_result;
+    result[b] = new_result;
+    result[b].dl_grants.resize(nof_known_rntis);
+    result[b].ul_grants.resize(nof_known_rntis);
+    result[b].spare_dl_prbs.resize(nof_known_rntis);
+    result[b].spare_dl_tbs.resize(nof_known_rntis);
+    result[b].spare_dl_bits.resize(nof_known_rntis);
+    result[b].spare_ul_prbs.resize(nof_known_rntis);
+    result[b].spare_ul_tbs.resize(nof_known_rntis);
+    result[b].spare_ul_bits.resize(nof_known_rntis);
+    result[b].dl_dcis.resize(nof_known_rntis);
+    result[b].ul_dcis.resize(nof_known_rntis);
 
-  DCIFeedback new_result;
-  result = new_result;
-  result.dl_grants.resize(nof_known_rntis);
-  result.ul_grants.resize(nof_known_rntis);
-  result.spare_dl_prbs.resize(nof_known_rntis);
-  result.spare_dl_tbs.resize(nof_known_rntis);
-  result.spare_dl_bits.resize(nof_known_rntis);
-  result.spare_ul_prbs.resize(nof_known_rntis);
-  result.spare_ul_tbs.resize(nof_known_rntis);
-  result.spare_ul_bits.resize(nof_known_rntis);
-  result.dl_dcis.resize(nof_known_rntis);
-  result.ul_dcis.resize(nof_known_rntis);
+    uint32_t rnti_s = 0;
+    uint32_t rnti_e = 0;
+    for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
 
-  uint32_t rnti_s = 0;
-  uint32_t rnti_e = 0;
-  for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
+      if(rnti_s >= nof_known_rntis){
+        continue;
+      }
+      uint32_t n_rntis = nof_sharded_rntis[i * nof_bwps];
+      rnti_e = rnti_s + n_rntis;
+      if(rnti_e > nof_known_rntis){
+        rnti_e = nof_known_rntis;
+      }
 
-    if(rnti_s >= nof_known_rntis){
-      continue;
-    }
-    uint32_t n_rntis = nof_sharded_rntis[i * nof_bwps];
-    rnti_e = rnti_s + n_rntis;
-    if(rnti_e > nof_known_rntis){
-      rnti_e = nof_known_rntis;
-    }
-
-    for(uint32_t k = 0; k < n_rntis; k++) {
-      result.dl_dcis[k+rnti_s] = 0;
-      result.ul_dcis[k+rnti_s] = 0;
-      result.dl_grants[k+rnti_s] = 0;
-      result.ul_grants[k+rnti_s] = 0;
-    }
-
-    for(uint8_t j = 0; j < nof_bwps; j++) {
-      uint32_t thread_id = i * nof_bwps + j;
-      result.nof_dl_used_prbs += sharded_results[thread_id].nof_dl_used_prbs;
-      result.nof_ul_used_prbs += sharded_results[thread_id].nof_ul_used_prbs;
+      uint32_t thread_id = i * nof_bwps + b;
+      result[b].nof_dl_used_prbs += sharded_results[thread_id].nof_dl_used_prbs;
+      result[b].nof_ul_used_prbs += sharded_results[thread_id].nof_ul_used_prbs;
 
       for(uint32_t k = 0; k < n_rntis; k++) {
-        result.dl_dcis[k+rnti_s] += sharded_results[thread_id].dl_dcis[k];;
-        result.ul_dcis[k+rnti_s] += sharded_results[thread_id].ul_dcis[k];;
-        result.dl_grants[k+rnti_s] += sharded_results[thread_id].dl_grants[k];;
-        result.ul_grants[k+rnti_s] += sharded_results[thread_id].ul_grants[k];
+        result[b].dl_dcis[k+rnti_s] = sharded_results[thread_id].dl_dcis[k];
+        result[b].ul_dcis[k+rnti_s] = sharded_results[thread_id].ul_dcis[k];
+        result[b].dl_grants[k+rnti_s] = sharded_results[thread_id].dl_grants[k];
+        result[b].ul_grants[k+rnti_s] = sharded_results[thread_id].ul_grants[k];
       }
+      rnti_s = rnti_e;
     }
-    rnti_s = rnti_e;
-  }
-  std::cout << "End of nof_threads..." << std::endl;
 
-  result.nof_dl_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - result.nof_dl_used_prbs;
-  for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
-    result.spare_dl_prbs[idx] = result.nof_dl_spare_prbs / nof_known_rntis;
-    if(abs(result.spare_dl_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
-      result.spare_dl_prbs[idx] = 0;
-    }
-    result.spare_dl_tbs[idx] = (int) ((float)result.spare_dl_prbs[idx] * dl_prb_rate[idx]);
-    result.spare_dl_bits[idx] = (int) ((float)result.spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
-  }
+    std::cout << "End of nof_threads..." << std::endl;
 
-  result.nof_ul_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - result.nof_ul_used_prbs;
-  for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
-    result.spare_ul_prbs[idx] = result.nof_ul_spare_prbs / nof_known_rntis;
-    if(abs(result.spare_ul_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
-      result.spare_ul_prbs[idx] = 0;
+    // TO-DISCUSS: to obtain even more precise result, here maybe we should total user payload prb in that bwp - used prb
+    result[b].nof_dl_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - result.nof_dl_used_prbs;
+    for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
+      result[b].spare_dl_prbs[idx] = result[b].nof_dl_spare_prbs / nof_known_rntis;
+      if(abs(result[b].spare_dl_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
+        result[b].spare_dl_prbs[idx] = 0;
+      }
+      result[b].spare_dl_tbs[idx] = (int) ((float)result[b].spare_dl_prbs[idx] * dl_prb_rate[idx]);
+      result[b].spare_dl_bits[idx] = (int) ((float)result[b].spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
     }
-    result.spare_ul_tbs[idx] = (int) ((float)result.spare_ul_prbs[idx] * ul_prb_rate[idx]);
-    result.spare_ul_bits[idx] = (int) ((float)result.spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
+
+    result[b].nof_ul_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - result[b].nof_ul_used_prbs;
+    for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
+      result[b].spare_ul_prbs[idx] = result[b].nof_ul_spare_prbs / nof_known_rntis;
+      if(abs(result[b].spare_ul_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
+        result[b].spare_ul_prbs[idx] = 0;
+      }
+      result[b].spare_ul_tbs[idx] = (int) ((float)result[b].spare_ul_prbs[idx] * ul_prb_rate[idx]);
+      result[b].spare_ul_bits[idx] = (int) ((float)resul[b].spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
+    }
   }
 
   return SRSRAN_SUCCESS;

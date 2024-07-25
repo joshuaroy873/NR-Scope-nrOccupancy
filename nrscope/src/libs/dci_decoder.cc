@@ -23,6 +23,8 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   arg_scs = arg_scs_; 
   cell = task_scheduler_nrscope->cell;
 
+  bwp_worker_id = bwp_id;
+
   ue_dl_args.nof_rx_antennas               = 1;
   ue_dl_args.pdsch.sch.disable_simd        = false;
   ue_dl_args.pdsch.sch.decoder_use_flooded = false;
@@ -726,12 +728,12 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_SUCCESS;
   }
 
-  uint32_t n_rntis = (uint32_t) ceil((float) task_scheduler_nrscope->nof_known_rntis / (float) task_scheduler_nrscope->nof_threads);
-  uint32_t rnti_s = dci_decoder_id * n_rntis;
-  uint32_t rnti_e = dci_decoder_id * n_rntis + n_rntis;
+  uint32_t n_rntis = (uint32_t) ceil((float) task_scheduler_nrscope->nof_known_rntis / (float) task_scheduler_nrscope->nof_rnti_worker_groups);
+  uint32_t rnti_s = rnti_worker_group_id * n_rntis;
+  uint32_t rnti_e = rnti_worker_group_id * n_rntis + n_rntis;
 
   if(rnti_s >= task_scheduler_nrscope->nof_known_rntis){
-    std::cout << "DCI decoder " << dci_decoder_id << " exits because it's excessive.." << std::endl;
+    std::cout << "DCI decoder " << dci_decoder_id << "|" << rnti_worker_group_id << " exits because it's excessive.." << std::endl;
     return SRSRAN_SUCCESS;
   }
 

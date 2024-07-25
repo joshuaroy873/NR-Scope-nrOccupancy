@@ -33,6 +33,8 @@ class DCIDecoder{
     srsran_coreset_t coreset1_t; 
 
     uint32_t dci_decoder_id;
+    uint32_t rnti_worker_group_id;
+    uint8_t bwp_worker_id;
 
     // std::vector<float> dl_prb_rate;
     // std::vector<float> ul_prb_rate;

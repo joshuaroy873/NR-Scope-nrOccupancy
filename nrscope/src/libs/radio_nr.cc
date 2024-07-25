@@ -521,8 +521,10 @@ int Radio::RadioCapture(){
           task_scheduler_nrscope.nof_sharded_rntis.resize(nof_threads);
           task_scheduler_nrscope.sharded_rntis.resize(nof_threads);
           task_scheduler_nrscope.nof_threads = nof_threads;
+          task_scheduler_nrscope.nof_rnti_worker_groups = nof_rnti_worker_groups;
+          task_scheduler_nrscope.nof_bwps = nof_bwps;
 
-          for(uint32_t i = 0; i < nof_threads; i++){
+          for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
             // for each rnti worker group, for each bwp, spawn a decoder
             for(uint8_t j = 0; j < nof_bwps; j++){
               DCIDecoder *decoder = new DCIDecoder(100);
@@ -530,7 +532,8 @@ int Radio::RadioCapture(){
                 ERROR("DCIDecoder Init Error");
                 return NR_FAILURE;
               }
-              decoder->dci_decoder_id = i;
+              decoder->dci_decoder_id = i * nof_bwps + j;
+              decoder->rnti_worker_group_id = i;
               dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
             }
           }

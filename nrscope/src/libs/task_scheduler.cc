@@ -131,29 +131,35 @@ int TaskSchedulerNRScope::merge_results(){
 
   uint32_t rnti_s = 0;
   uint32_t rnti_e = 0;
-  for(uint32_t i = 0; i < nof_threads; i++){
-    result.nof_dl_used_prbs += sharded_results[i].nof_dl_used_prbs;
-    result.nof_ul_used_prbs += sharded_results[i].nof_ul_used_prbs;
-
-    uint32_t n_rntis = nof_sharded_rntis[i];
-    // std::cout << "n_rnti: " << n_rntis << std::endl; 
-    rnti_e = rnti_s + n_rntis;
-    // std::cout << "rnti_s: " << rnti_s << std::endl;
-    // std::cout << "rnti_e: " << rnti_e << std::endl;
+  for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
 
     if(rnti_s >= nof_known_rntis){
       continue;
     }
-
+    uint32_t n_rntis = nof_sharded_rntis[i * nof_bwps];
+    rnti_e = rnti_s + n_rntis;
     if(rnti_e > nof_known_rntis){
       rnti_e = nof_known_rntis;
     }
 
-    for(uint32_t j = 0; j < n_rntis; j++){
-      result.dl_dcis[j+rnti_s] = sharded_results[i].dl_dcis[j];
-      result.ul_dcis[j+rnti_s] = sharded_results[i].ul_dcis[j];
-      result.dl_grants[j+rnti_s] = sharded_results[i].dl_grants[j];
-      result.ul_grants[j+rnti_s] = sharded_results[i].ul_grants[j];
+    for(uint32_t k = 0; k < n_rntis; k++) {
+      result.dl_dcis[k+rnti_s] = 0;
+      result.ul_dcis[k+rnti_s] = 0;
+      result.dl_grants[k+rnti_s] = 0;
+      result.ul_grants[k+rnti_s] = 0;
+    }
+
+    for(uint8_t j = 0; j < nof_bwps; j++) {
+      uint32_t thread_id = i * nof_bwps + j;
+      result.nof_dl_used_prbs += sharded_results[thread_id].nof_dl_used_prbs;
+      result.nof_ul_used_prbs += sharded_results[thread_id].nof_ul_used_prbs;
+
+      for(uint32_t k = 0; k < n_rntis; k++) {
+        result.dl_dcis[k+rnti_s] += sharded_results[thread_id].dl_dcis[k];;
+        result.ul_dcis[k+rnti_s] += sharded_results[thread_id].ul_dcis[k];;
+        result.dl_grants[k+rnti_s] += sharded_results[thread_id].dl_grants[k];;
+        result.ul_grants[k+rnti_s] += sharded_results[thread_id].ul_grants[k];
+      }
     }
     rnti_s = rnti_e;
   }

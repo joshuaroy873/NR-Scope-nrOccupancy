@@ -19,9 +19,6 @@ class DCIDecoder{
     srsran_coreset_t coreset0_t;
     srsran_search_space_t* search_space;
 
-    // pdcch for non-0 bwps
-    std::vector<srsran_pdcch_cfg_nr_t> more_bwp_pdcch_cfgs;
-
     asn1::rrc_nr::sib1_s sib1;
     asn1::rrc_nr::cell_group_cfg_s master_cell_group;
     asn1::rrc_nr::rrc_setup_s rrc_setup;

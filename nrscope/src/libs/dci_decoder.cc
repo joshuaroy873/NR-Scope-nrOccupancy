@@ -109,7 +109,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   }
 
   if (bwp_dl_ded_s_ptr == NULL || bwp_ul_ded_s_ptr == NULL) {
-    ERROR("bwp id %d ul or dl config never appears in RRCSetup (what we assume now only checking in RRCSetup)\n", bwp_id);
+    ERROR("bwp id %d ul or dl config never appears in RRCSetup (what we assume now only checking in RRCSetup). Currently please bring back nof_bwps back to 1 in config.yaml as we are working on encrypted RRCReconfiguration-based BWP config monitoring.\n", bwp_id);
     return SRSRAN_ERROR;
   }
 

@@ -88,6 +88,9 @@ sudo ./nrscan
 
 ## Logs
 
+(July 25, 2024) Implemented monitoring of non-initial BWPs if the additional BWPs are configured through plaintext RRCSetup, regardless of whether the BWP(s)
+are switched by plaintext DCI or encrypted RRCReconfiguration. TO-DO: (blind) detection of BWPs configured by encrypted RRCReconfigurations, homomorphic to CA detection.
+
 (July 17, 2024) Implemented NR SA cell scan utility: run `./nrscan` after build. The found cell information will be logged at `scan.csv`.
 
 (Aug 9, 2023) Solved some problems in synchronization, see how to use external clock to perform the synchronization.

@@ -41,6 +41,8 @@ class TaskSchedulerNRScope{
     std::vector <std::vector <uint16_t> > sharded_rntis;
     std::vector <DCIFeedback> sharded_results;
     uint32_t nof_threads;
+    uint32_t nof_rnti_worker_groups;
+    uint8_t nof_bwps;
 
     std::vector <float> dl_prb_rate;
     std::vector <float> ul_prb_rate;
@@ -63,12 +65,12 @@ class TaskSchedulerNRScope{
 
     int update_known_rntis();
 
-    DCIFeedback get_result(){
-      return result;
+    std::vector <DCIFeedback> get_results(){
+      return results;
     }
 
-  private:
-    DCIFeedback result; // DCI decoding result for current TTI
+    // per bwp DCI decoding result for current TTI
+    std::vector <DCIFeedback> results;
 };
 
 

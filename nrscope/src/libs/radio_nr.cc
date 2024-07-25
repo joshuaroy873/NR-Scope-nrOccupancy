@@ -521,15 +521,22 @@ int Radio::RadioCapture(){
           task_scheduler_nrscope.nof_sharded_rntis.resize(nof_threads);
           task_scheduler_nrscope.sharded_rntis.resize(nof_threads);
           task_scheduler_nrscope.nof_threads = nof_threads;
+          task_scheduler_nrscope.nof_rnti_worker_groups = nof_rnti_worker_groups;
+          task_scheduler_nrscope.nof_bwps = nof_bwps;
+          task_scheduler_nrscope.results.resize(nof_bwps);
 
-          for(uint32_t i = 0; i < nof_threads; i++){
-            DCIDecoder *decoder = new DCIDecoder(100);
-            if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
-              ERROR("DCIDecoder Init Error");
-              return NR_FAILURE;
+          for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
+            // for each rnti worker group, for each bwp, spawn a decoder
+            for(uint8_t j = 0; j < nof_bwps; j++){
+              DCIDecoder *decoder = new DCIDecoder(100);
+              if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t(), j) < SRSASN_SUCCESS){
+                ERROR("DCIDecoder Init Error");
+                return NR_FAILURE;
+              }
+              decoder->dci_decoder_id = i * nof_bwps + j;
+              decoder->rnti_worker_group_id = i;
+              dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
             }
-            decoder->dci_decoder_id = i;
-            dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
           }
           
           std::cout << "DCI Decoder Initialized.." << std::endl;
@@ -542,7 +549,11 @@ int Radio::RadioCapture(){
         task_scheduler_nrscope.dl_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
         task_scheduler_nrscope.ul_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
 
-        std::thread sibs_thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
+        // To save computing resources for dci decoders: assume SIB1 info should be static
+        std::thread sibs_thread;
+        if (!task_scheduler_nrscope.sib1_found) {
+          sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
+        }
         std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
 
         std::vector <std::thread> dci_threads;
@@ -570,42 +581,47 @@ int Radio::RadioCapture(){
 
         if(task_scheduler_nrscope.dci_inited){
           task_scheduler_nrscope.merge_results();
-          DCIFeedback result = task_scheduler_nrscope.get_result();
+          std::vector <DCIFeedback> results = task_scheduler_nrscope.get_results();
 
-          if((result.dl_grants.size()>0 or result.ul_grants.size()>0)){
-            for (uint32_t i = 0; i < task_scheduler_nrscope.nof_known_rntis; i++){
-              if(result.dl_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-                LogNode log_node;
-                log_node.slot_idx = slot.idx;
-                log_node.system_frame_idx = outcome.sfn;
-                log_node.timestamp = get_now_timestamp_in_double();
-                log_node.grant = result.dl_grants[i];
-                log_node.dci_format = srsran_dci_format_nr_string(result.dl_dcis[i].ctx.format);
-                log_node.dl_dci = result.dl_dcis[i];
-                if(local_log){
-                  NRScopeLog::push_node(log_node, rf_index);
+          for (uint8_t b = 0; b < nof_bwps; b++) {
+            DCIFeedback result = results[b];
+            if((result.dl_grants.size()>0 or result.ul_grants.size()>0)){
+              for (uint32_t i = 0; i < task_scheduler_nrscope.nof_known_rntis; i++){
+                if(result.dl_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
+                  LogNode log_node;
+                  log_node.slot_idx = slot.idx;
+                  log_node.system_frame_idx = outcome.sfn;
+                  log_node.timestamp = get_now_timestamp_in_double();
+                  log_node.grant = result.dl_grants[i];
+                  log_node.dci_format = srsran_dci_format_nr_string(result.dl_dcis[i].ctx.format);
+                  log_node.dl_dci = result.dl_dcis[i];
+                  log_node.bwp_id = result.dl_dcis[i].bwp_id;
+                  if(local_log){
+                    NRScopeLog::push_node(log_node, rf_index);
+                  }
+                  if(to_google){
+                    ToGoogle::push_google_node(log_node, rf_index);
+                  }
                 }
-                if(to_google){
-                  ToGoogle::push_google_node(log_node, rf_index);
-                }
-              }
 
-              if(result.ul_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-                LogNode log_node;
-                log_node.slot_idx = slot.idx;
-                log_node.system_frame_idx = outcome.sfn;
-                log_node.timestamp = get_now_timestamp_in_double();
-                log_node.grant = result.ul_grants[i];
-                log_node.dci_format = srsran_dci_format_nr_string(result.ul_dcis[i].ctx.format);
-                log_node.ul_dci = result.ul_dcis[i];
-                if(local_log){
-                  NRScopeLog::push_node(log_node, rf_index);
+                if(result.ul_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
+                  LogNode log_node;
+                  log_node.slot_idx = slot.idx;
+                  log_node.system_frame_idx = outcome.sfn;
+                  log_node.timestamp = get_now_timestamp_in_double();
+                  log_node.grant = result.ul_grants[i];
+                  log_node.dci_format = srsran_dci_format_nr_string(result.ul_dcis[i].ctx.format);
+                  log_node.ul_dci = result.ul_dcis[i];
+                  log_node.bwp_id = result.ul_dcis[i].bwp_id;
+                  if(local_log){
+                    NRScopeLog::push_node(log_node, rf_index);
+                  }
+                  if(to_google){
+                    ToGoogle::push_google_node(log_node, rf_index);
+                  }
                 }
-                if(to_google){
-                  ToGoogle::push_google_node(log_node, rf_index);
-                }
-              }
-            } 
+              } 
+            }
           }
         }
         task_scheduler_nrscope.update_known_rntis();

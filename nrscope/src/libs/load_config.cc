@@ -124,12 +124,22 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
         radios[i].google_dataset_id = config_yaml[setting_name]["google_dataset_id"].as<string>();
       }
 
-      if(config_yaml[setting_name]["nof_threads"]){
-        radios[i].nof_threads = config_yaml[setting_name]["nof_threads"].as<int>();
+      if(config_yaml[setting_name]["nof_rnti_worker_groups"]){
+        radios[i].nof_rnti_worker_groups = config_yaml[setting_name]["nof_rnti_worker_groups"].as<int>();
       }else{
-        radios[i].nof_threads = 1;
+        radios[i].nof_rnti_worker_groups = 1;
       }
-      
+
+      radios[i].nof_threads = radios[i].nof_rnti_worker_groups;
+
+      if(config_yaml[setting_name]["nof_bwps"]){
+        radios[i].nof_bwps = config_yaml[setting_name]["nof_bwps"].as<int>();
+      }else{
+        radios[i].nof_bwps = 1;
+      }
+
+      radios[i].nof_threads = radios[i].nof_threads * radios[i].nof_bwps;
+
       // std::cout << "    nof_thread: " << radios[i].nof_thread << std::endl;
     }else{
       std::cout << "Please set the usrp_setting_" << i << " in config.yaml properly." << std::endl;

@@ -153,6 +153,7 @@ typedef struct LogNode_ LogNode;
     srsran_dci_dl_nr_t dl_dci;
     srsran_dci_ul_nr_t ul_dci;
     srsran_sch_cfg_nr_t grant;
+    uint8_t bwp_id;
   };
 
 typedef struct ScanLogNode_ ScanLogNode;

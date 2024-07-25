@@ -16,11 +16,14 @@ DCIDecoder::~DCIDecoder(){
 
 int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
                                                TaskSchedulerNRScope* task_scheduler_nrscope,
-                                               cf_t* input[SRSRAN_MAX_PORTS]){ 
+                                               cf_t* input[SRSRAN_MAX_PORTS],
+                                               u_int8_t bwp_id){ 
   
   memcpy(&base_carrier, &task_scheduler_nrscope->args_t.base_carrier, sizeof(srsran_carrier_nr_t));
   arg_scs = arg_scs_; 
   cell = task_scheduler_nrscope->cell;
+
+  bwp_worker_id = bwp_id;
 
   ue_dl_args.nof_rx_antennas               = 1;
   ue_dl_args.pdsch.sch.disable_simd        = false;
@@ -63,19 +66,69 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   pdcch_cfg.search_space_present[1]      = false;
   pdcch_cfg.search_space_present[2]      = false;
   pdcch_cfg.ra_search_space_present      = false;
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.is_setup()){
-    pdcch_cfg.search_space[0].id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
+
+  asn1::rrc_nr::bwp_dl_ded_s * bwp_dl_ded_s_ptr = NULL;
+  asn1::rrc_nr::bwp_ul_ded_s * bwp_ul_ded_s_ptr = NULL;
+
+  // assume ul bwp n and dl bwp n should be activated and used at the same time (lso for sure for TDD)
+  if (bwp_id == 0) {
+    bwp_dl_ded_s_ptr = &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp);
+    bwp_ul_ded_s_ptr = &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp);
+  }
+  else if (bwp_id <= 3) {
+    for (uint8_t i = 0; i < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.dl_bwp_to_add_mod_list.size(); i++) {
+      if (bwp_id == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.dl_bwp_to_add_mod_list[i].bwp_id) {
+        if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.dl_bwp_to_add_mod_list[i].bwp_ded_present) {
+          bwp_dl_ded_s_ptr = &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.dl_bwp_to_add_mod_list[i].bwp_ded);
+          break;
+        }
+        else {
+          printf("bwp id %u does not have a ded dl config in RRCSetup", bwp_id);
+        }
+      }
+    }
+
+    if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg_present) {
+      for (uint8_t i = 0; i < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.ul_bwp_to_add_mod_list.size(); i++) {
+        if (bwp_id == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.ul_bwp_to_add_mod_list[i].bwp_id) {
+          if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.ul_bwp_to_add_mod_list[i].bwp_ded_present) {
+            bwp_ul_ded_s_ptr = &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.ul_bwp_to_add_mod_list[i].bwp_ded);
+            break;
+          }
+          else {
+            printf("bwp id %u does not have a ded ul config in RRCSetup", bwp_id);
+          }
+        }
+      }
+    }
+    
+  }
+  else {
+    ERROR("bwp id cannot be greater than 3!\n");
+    return SRSRAN_ERROR;
+  }
+
+  if (bwp_dl_ded_s_ptr == NULL || bwp_ul_ded_s_ptr == NULL) {
+    ERROR("bwp id %d ul or dl config never appears in RRCSetup (what we assume now only checking in RRCSetup). Currently please bring back nof_bwps back to 1 in config.yaml as we are working on encrypted RRCReconfiguration-based BWP config monitoring.\n", bwp_id);
+    return SRSRAN_ERROR;
+  }
+
+  if(bwp_dl_ded_s_ptr->pdcch_cfg.is_setup()){
+    pdcch_cfg.search_space[0].id = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
                                    search_spaces_to_add_mod_list[0].search_space_id;
-    pdcch_cfg.search_space[0].coreset_id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
+    pdcch_cfg.search_space[0].coreset_id = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
                                            ctrl_res_set_to_add_mod_list[0].ctrl_res_set_id;
+    
+    printf("pdcch_cfg.search_space[0].coreset_id in bwp%u: %u\n", bwp_id, pdcch_cfg.search_space[0].coreset_id);
+
     pdcch_cfg.search_space[0].type = srsran_search_space_type_ue;
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
+    if(bwp_dl_ded_s_ptr->pdcch_cfg.setup().
        search_spaces_to_add_mod_list[0].search_space_type.ue_specific().dci_formats.formats0_minus1_and_minus1_minus1){
       pdcch_cfg.search_space[0].formats[0] = srsran_dci_format_nr_1_1;
       pdcch_cfg.search_space[0].formats[1] = srsran_dci_format_nr_0_1;
       dci_cfg.monitor_0_0_and_1_0 = false;
       dci_cfg.monitor_common_0_0 = false;
-    }else if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
+    }else if(bwp_dl_ded_s_ptr->pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
              search_space_type.ue_specific().dci_formats.formats0_minus0_and_minus1_minus0){
       pdcch_cfg.search_space[0].formats[0] = srsran_dci_format_nr_1_0; 
       pdcch_cfg.search_space[0].formats[1] = srsran_dci_format_nr_0_0;
@@ -97,32 +150,34 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   }
   
   // all the Coreset information is from RRCSetup
-  for (uint32_t crst_id = 0; crst_id < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
+  for (uint32_t crst_id = 0; crst_id < bwp_dl_ded_s_ptr->pdcch_cfg.setup().
     ctrl_res_set_to_add_mod_list.size(); crst_id++){
     srsran_coreset_t coreset_n;
-    coreset_n.id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
+    coreset_n.id = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
                   ctrl_res_set_to_add_mod_list[0].ctrl_res_set_id; 
-    coreset_n.duration = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().
+
+    printf("to addmod coreset_n.id in bwp0: %u\n", coreset_n.id);
+    coreset_n.duration = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
                           ctrl_res_set_to_add_mod_list[0].dur;
     for(int i = 0; i < 45; i++){
-      coreset_n.freq_resources[i] = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+      coreset_n.freq_resources[i] = bwp_dl_ded_s_ptr->pdcch_cfg.
                                     setup().ctrl_res_set_to_add_mod_list[0].freq_domain_res.get(45-i-1);
     }
     coreset_n.offset_rb = 0;
-    if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+    if (bwp_dl_ded_s_ptr->pdcch_cfg.
         setup().ctrl_res_set_to_add_mod_list[0].precoder_granularity == 
         asn1::rrc_nr::ctrl_res_set_s::precoder_granularity_opts::same_as_reg_bundle){
       coreset_n.precoder_granularity = srsran_coreset_precoder_granularity_reg_bundle;
-    }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+    }else if (bwp_dl_ded_s_ptr->pdcch_cfg.
               setup().ctrl_res_set_to_add_mod_list[0].precoder_granularity == 
               asn1::rrc_nr::ctrl_res_set_s::precoder_granularity_opts::all_contiguous_rbs){
       coreset_n.precoder_granularity = srsran_coreset_precoder_granularity_contiguous;
     }
 
-    if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+    if (bwp_dl_ded_s_ptr->pdcch_cfg.
       setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.type() == 
       asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::types_opts::non_interleaved ||
-      master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+      bwp_dl_ded_s_ptr->pdcch_cfg.
       setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.type() == 
       asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::types_opts::nulltype){
       coreset_n.mapping_type = srsran_coreset_mapping_type_non_interleaved; 
@@ -131,7 +186,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
       coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n6; // doesen't matter, fill a random value
     }else{
       coreset_n.mapping_type = srsran_coreset_mapping_type_interleaved; 
-      switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+      switch(bwp_dl_ded_s_ptr->pdcch_cfg.
             setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.interleaved().interleaver_size){
         case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::interleaver_size_e_::n2:
           coreset_n.interleaver_size = srsran_coreset_bundle_size_n2;
@@ -151,9 +206,9 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
           coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n6;
           break;
       }
-      coreset_n.shift_index = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+      coreset_n.shift_index = bwp_dl_ded_s_ptr->pdcch_cfg.
       setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.interleaved().shift_idx;
-      switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+      switch(bwp_dl_ded_s_ptr->pdcch_cfg.
             setup().ctrl_res_set_to_add_mod_list[0].cce_reg_map_type.interleaved().reg_bundle_size){
         case asn1::rrc_nr::ctrl_res_set_s::cce_reg_map_type_c_::interleaved_s_::reg_bundle_size_e_::n2:
           coreset_n.reg_bundle_size = srsran_coreset_bundle_size_n2;
@@ -174,10 +229,10 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
           break;
       }
     }
-    coreset_n.dmrs_scrambling_id_present = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+    coreset_n.dmrs_scrambling_id_present = bwp_dl_ded_s_ptr->pdcch_cfg.
                                             setup().ctrl_res_set_to_add_mod_list[0].pdcch_dmrs_scrambling_id_present;
     if (coreset_n.dmrs_scrambling_id_present){
-      coreset_n.dmrs_scrambling_id = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.
+      coreset_n.dmrs_scrambling_id = bwp_dl_ded_s_ptr->pdcch_cfg.
                                       setup().ctrl_res_set_to_add_mod_list[0].pdcch_dmrs_scrambling_id;
     }
     printf("coreset_dmrs_scrambling id: %u\n", coreset_n.dmrs_scrambling_id);
@@ -209,19 +264,19 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   std::cout << "current offset: " << arg_scs.coreset_offset_scs << std::endl;
   
    // set ra search space directly from the RRC Setup
-  pdcch_cfg.search_space[0].nof_candidates[0] = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.
+  pdcch_cfg.search_space[0].nof_candidates[0] = bwp_dl_ded_s_ptr->
                                                 pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
                                                 nrof_candidates.aggregation_level1;
-  pdcch_cfg.search_space[0].nof_candidates[1] = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.
+  pdcch_cfg.search_space[0].nof_candidates[1] = bwp_dl_ded_s_ptr->
                                                 pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
                                                 nrof_candidates.aggregation_level2;
-  pdcch_cfg.search_space[0].nof_candidates[2] = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.
+  pdcch_cfg.search_space[0].nof_candidates[2] = bwp_dl_ded_s_ptr->
                                                 pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
                                                 nrof_candidates.aggregation_level4;
-  pdcch_cfg.search_space[0].nof_candidates[3] = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.
+  pdcch_cfg.search_space[0].nof_candidates[3] = bwp_dl_ded_s_ptr->
                                                 pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
                                                 nrof_candidates.aggregation_level8;
-  pdcch_cfg.search_space[0].nof_candidates[4] = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.
+  pdcch_cfg.search_space[0].nof_candidates[4] = bwp_dl_ded_s_ptr->
                                                 pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
                                                 nrof_candidates.aggregation_level16;
 
@@ -233,7 +288,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   }
 
   dci_cfg.enable_hopping = false; // if the setting is absent, it's false.
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().freq_hop_present){
+  if(bwp_ul_ded_s_ptr->pusch_cfg.setup().freq_hop_present){
     dci_cfg.enable_hopping = true;
   }
 
@@ -241,20 +296,20 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   ///< Number of UL BWPs excluding the initial UL BWP, mentioned in the TS as N_BWP_RRC
   dci_cfg.nof_ul_bwp = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.ul_bwp_to_add_mod_list.size(); 
   ///< Number of dedicated PUSCH time domain resource assigment, set to 0 for default
-  dci_cfg.nof_ul_time_res = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().
+  dci_cfg.nof_ul_time_res = bwp_ul_ded_s_ptr->pusch_cfg.setup().
                             pusch_time_domain_alloc_list_present ? 
-                            master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().
+                            bwp_ul_ded_s_ptr->pusch_cfg.setup().
                             pusch_time_domain_alloc_list.setup().size() : 
                             (sib1.serving_cell_cfg_common.ul_cfg_common_present ? 
                             (sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.pusch_cfg_common_present ?
                             sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.pusch_cfg_common.setup().pusch_time_domain_alloc_list.size() : 0) : 0);     
-  dci_cfg.nof_srs = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.srs_cfg_present ? 
-                    master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.srs_cfg.setup().
+  dci_cfg.nof_srs = bwp_ul_ded_s_ptr->srs_cfg_present ? 
+                    bwp_ul_ded_s_ptr->srs_cfg.setup().
                     srs_res_to_add_mod_list.size() : 0;             ///< Number of configured SRS resources
 
   ///< Set to the maximum number of layers for PUSCH
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().max_rank_present){
-    dci_cfg.nof_ul_layers = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().max_rank;       
+  if(bwp_ul_ded_s_ptr->pusch_cfg.setup().max_rank_present){
+    dci_cfg.nof_ul_layers = bwp_ul_ded_s_ptr->pusch_cfg.setup().max_rank;       
   } else {
     dci_cfg.nof_ul_layers = 1;
   }
@@ -290,36 +345,36 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     dci_cfg.report_trigger_size = 0; ///< determined by reportTriggerSize
   }
 
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().transform_precoder == 
+  if(bwp_ul_ded_s_ptr->pusch_cfg.setup().transform_precoder == 
      asn1::rrc_nr::pusch_cfg_s::transform_precoder_opts::disabled){
     dci_cfg.enable_transform_precoding = false;      ///< Set to true if PUSCH transform precoding is enabled
-  } else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().transform_precoder == 
+  } else if (bwp_ul_ded_s_ptr->pusch_cfg.setup().transform_precoder == 
      asn1::rrc_nr::pusch_cfg_s::transform_precoder_opts::enabled){
     dci_cfg.enable_transform_precoding = true;      ///< Set to true if PUSCH transform precoding is enabled
   }
   
   dci_cfg.pusch_tx_config_non_codebook = false;    ///< Set to true if PUSCH txConfig is set to non-codebook
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().tx_cfg_present){
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().tx_cfg.value == 
-      master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().tx_cfg.codebook){
+  if(bwp_ul_ded_s_ptr->pusch_cfg.setup().tx_cfg_present){
+    if(bwp_ul_ded_s_ptr->pusch_cfg.setup().tx_cfg.value == 
+      bwp_ul_ded_s_ptr->pusch_cfg.setup().tx_cfg.codebook){
       dci_cfg.pusch_tx_config_non_codebook = false;
-    }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().tx_cfg.value == 
-      master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().tx_cfg.non_codebook){
+    }else if (bwp_ul_ded_s_ptr->pusch_cfg.setup().tx_cfg.value == 
+      bwp_ul_ded_s_ptr->pusch_cfg.setup().tx_cfg.non_codebook){
       dci_cfg.pusch_tx_config_non_codebook = true;
     }
   }
   
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().phase_tracking_rs_present){
+  if(bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().phase_tracking_rs_present){
     dci_cfg.pusch_ptrs = true;                      ///< Set to true if PT-RS are enabled for PUSCH transmissionß
   } else {
     dci_cfg.pusch_ptrs = false;
   }
 
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().uci_on_pusch.setup().beta_offsets_present){
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().uci_on_pusch.setup().beta_offsets.type() == 
+  if(bwp_ul_ded_s_ptr->pusch_cfg.setup().uci_on_pusch.setup().beta_offsets_present){
+    if(bwp_ul_ded_s_ptr->pusch_cfg.setup().uci_on_pusch.setup().beta_offsets.type() == 
        asn1::rrc_nr::uci_on_pusch_s::beta_offsets_c_::types_opts::dynamic_type){
       dci_cfg.pusch_dynamic_betas = true;             ///< Set to true if beta offsets operation is not semi-static
-    } else if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().uci_on_pusch.setup().beta_offsets.type() == 
+    } else if(bwp_ul_ded_s_ptr->pusch_cfg.setup().uci_on_pusch.setup().beta_offsets.type() == 
        asn1::rrc_nr::uci_on_pusch_s::beta_offsets_c_::types_opts::semi_static){
       dci_cfg.pusch_dynamic_betas = false;             ///< Set to true if beta offsets operation is not semi-static
     } else{
@@ -328,8 +383,8 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   }
 
   ///< PUSCH resource allocation type
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg_present){
-    switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().res_alloc){
+  if(bwp_ul_ded_s_ptr->pusch_cfg_present){
+    switch(bwp_ul_ded_s_ptr->pusch_cfg.setup().res_alloc){
       case asn1::rrc_nr::pusch_cfg_s::res_alloc_opts::res_alloc_type0:
         dci_cfg.pusch_alloc_type = srsran_resource_alloc_type0;
         break;
@@ -352,7 +407,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   // get_nof_rbgs(uint32_t bwp_nof_prb, uint32_t bwp_start, bool config1_or_2)
   dci_cfg.nof_rb_groups = 0;
   // if(dci_cfg.pusch_alloc_type == srsran_resource_alloc_type0){
-  //   if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().rbg_size_present){
+  //   if(bwp_ul_ded_s_ptr->pusch_cfg.setup().rbg_size_present){
   //     // BWP start prb is set to 0 since this is the only scenario that we see
   //     dci_cfg.nof_rb_groups = get_nof_rbgs(dci_cfg.bwp_ul_active_bw, 0, true); 
   //   }else{
@@ -360,24 +415,24 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   //   }
   // }
 
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present){
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().dmrs_type_present){
+  if(bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present){
+    if(bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().dmrs_type_present){
       dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_2;
     } else{
       dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_1;
     }
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().max_len_present){
+    if(bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().max_len_present){
       dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_2; 
     }else{
       dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_1; 
     }
-  }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_b_present){
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_b.setup().dmrs_type_present){
+  }else if (bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_b_present){
+    if(bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_b.setup().dmrs_type_present){
       dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_2;
     } else{
       dci_cfg.pusch_dmrs_type = srsran_dmrs_sch_type_1;
     }
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_b.setup().max_len_present){
+    if(bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_b.setup().max_len_present){
       dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_2; 
     }else{
       dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_1; 
@@ -406,27 +461,27 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   dci_cfg.dynamic_dual_harq_ack_codebook = false;
 
   dci_cfg.nof_dl_bwp             = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.dl_bwp_to_add_mod_list.size();
-  dci_cfg.nof_dl_time_res        = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
+  dci_cfg.nof_dl_time_res        = bwp_dl_ded_s_ptr->pdsch_cfg.setup().
                                    pdsch_time_domain_alloc_list_present ? 
-                                   master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
+                                   bwp_dl_ded_s_ptr->pdsch_cfg.setup().
                                    pdsch_time_domain_alloc_list.setup().size() : ( sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common_present ? 
                                    sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list.size() : 0
                                    );
-  dci_cfg.nof_aperiodic_zp       = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
+  dci_cfg.nof_aperiodic_zp       = bwp_dl_ded_s_ptr->pdsch_cfg.setup().
                                    aperiodic_zp_csi_rs_res_sets_to_add_mod_list.size();
-  dci_cfg.pdsch_nof_cbg          = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
+  dci_cfg.pdsch_nof_cbg          = bwp_dl_ded_s_ptr->pdsch_cfg.setup().
                                    max_nrof_code_words_sched_by_dci_present ? 
-                                   master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
+                                   bwp_dl_ded_s_ptr->pdsch_cfg.setup().
                                    max_nrof_code_words_sched_by_dci : 0;
-  dci_cfg.nof_dl_to_ul_ack       = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pucch_cfg.setup().
+  dci_cfg.nof_dl_to_ul_ack       = bwp_ul_ded_s_ptr->pucch_cfg.setup().
                                    dl_data_to_ul_ack.size();
-  dci_cfg.pdsch_inter_prb_to_prb = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().
+  dci_cfg.pdsch_inter_prb_to_prb = bwp_dl_ded_s_ptr->pdsch_cfg.setup().
                                    vrb_to_prb_interleaver_present;
-  dci_cfg.pdsch_rm_pattern1      = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().rate_match_pattern_group1.size();
-  dci_cfg.pdsch_rm_pattern2      = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().rate_match_pattern_group2.size();
+  dci_cfg.pdsch_rm_pattern1      = bwp_dl_ded_s_ptr->pdsch_cfg.setup().rate_match_pattern_group1.size();
+  dci_cfg.pdsch_rm_pattern2      = bwp_dl_ded_s_ptr->pdsch_cfg.setup().rate_match_pattern_group2.size();
   dci_cfg.pdsch_2cw = false; // set to false initially and if maxofcodewordscheduledbydci is 2, set to true.
-  if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().max_nrof_code_words_sched_by_dci_present){
-    if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().max_nrof_code_words_sched_by_dci == 
+  if (bwp_dl_ded_s_ptr->pdsch_cfg.setup().max_nrof_code_words_sched_by_dci_present){
+    if (bwp_dl_ded_s_ptr->pdsch_cfg.setup().max_nrof_code_words_sched_by_dci == 
         asn1::rrc_nr::pdsch_cfg_s::max_nrof_code_words_sched_by_dci_opts::n2){
       dci_cfg.pdsch_2cw = true;
     }
@@ -434,19 +489,19 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
 
   // Only consider one serving cell
   dci_cfg.multiple_scell = false; 
-  dci_cfg.pdsch_tci = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdcch_cfg.setup().ctrl_res_set_to_add_mod_list[0].
+  dci_cfg.pdsch_tci = bwp_dl_ded_s_ptr->pdcch_cfg.setup().ctrl_res_set_to_add_mod_list[0].
                       tci_present_in_dci_present ? true : false; 
   dci_cfg.pdsch_cbg_flush = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().
                             code_block_group_tx_present ? true : false; 
 
   dci_cfg.pdsch_dynamic_bundling = false; 
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().prb_bundling_type.type() == 
+  if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().prb_bundling_type.type() == 
     asn1::rrc_nr::pdsch_cfg_s::prb_bundling_type_c_::types_opts::dynamic_bundling){
     dci_cfg.pdsch_dynamic_bundling = true;
     ERROR("PRB dynamic bundling not implemented, which can cause being unable to find DCIs. We are working on it.");
   }
 
-  switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().res_alloc){
+  switch(bwp_dl_ded_s_ptr->pdsch_cfg.setup().res_alloc){
     case asn1::rrc_nr::pdsch_cfg_s::res_alloc_opts::res_alloc_type0:
       dci_cfg.pdsch_alloc_type = srsran_resource_alloc_type0;
       break;
@@ -463,24 +518,24 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   }
   std::cout << "pdsch resource alloc: " << dci_cfg.pdsch_alloc_type << std::endl;
 
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present){
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().dmrs_type_present){
+  if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present){
+    if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().dmrs_type_present){
       dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_2;
     } else{
       dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_1;
     }
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().max_len_present){
+    if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().max_len_present){
       dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_2; 
     }else{
       dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_1; 
     }
-  }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_b_present){
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_b.setup().dmrs_type_present){
+  }else if (bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_b_present){
+    if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_b.setup().dmrs_type_present){
       dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_2;
     } else{
       dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_1;
     }
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_b.setup().max_len_present){
+    if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_b.setup().max_len_present){
       dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_2; 
     }else{
       dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_1; 
@@ -492,9 +547,9 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
 
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
   pusch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present){
-    pdsch_hl_cfg.dmrs_typeA.present = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present;
-    switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().dmrs_add_position){
+  if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present){
+    pdsch_hl_cfg.dmrs_typeA.present = bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present;
+    switch(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().dmrs_add_position){
       case asn1::rrc_nr::dmrs_dl_cfg_s::dmrs_add_position_opts::pos0:
         pdsch_hl_cfg.dmrs_typeA.additional_pos = srsran_dmrs_sch_add_pos_0;
         break;
@@ -509,9 +564,9 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     }
   }
 
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present){
-    pusch_hl_cfg.dmrs_typeA.present = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present;
-    switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().dmrs_add_position){
+  if(bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present){
+    pusch_hl_cfg.dmrs_typeA.present = bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a_present;
+    switch(bwp_ul_ded_s_ptr->pusch_cfg.setup().dmrs_ul_for_pusch_map_type_a.setup().dmrs_add_position){
       case asn1::rrc_nr::dmrs_ul_cfg_s::dmrs_add_position_opts::pos0:
         pusch_hl_cfg.dmrs_typeA.additional_pos = srsran_dmrs_sch_add_pos_0;
         break;
@@ -529,13 +584,13 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   pdsch_hl_cfg.alloc = dci_cfg.pdsch_alloc_type;
   pusch_hl_cfg.alloc = dci_cfg.pusch_alloc_type;
 
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup().size() > 0){
-    for (uint32_t pdsch_time_id = 0; pdsch_time_id < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup().size(); pdsch_time_id++){
-      if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].k0_present){
-        pdsch_hl_cfg.common_time_ra[pdsch_time_id].k = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].k0;
+  if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup().size() > 0){
+    for (uint32_t pdsch_time_id = 0; pdsch_time_id < bwp_dl_ded_s_ptr->pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup().size(); pdsch_time_id++){
+      if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].k0_present){
+        pdsch_hl_cfg.common_time_ra[pdsch_time_id].k = bwp_dl_ded_s_ptr->pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].k0;
       }
-      pdsch_hl_cfg.common_time_ra[pdsch_time_id].sliv = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].start_symbol_and_len;
-      switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].map_type){
+      pdsch_hl_cfg.common_time_ra[pdsch_time_id].sliv = bwp_dl_ded_s_ptr->pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].start_symbol_and_len;
+      switch(bwp_dl_ded_s_ptr->pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup()[pdsch_time_id].map_type){
         case asn1::rrc_nr::pdsch_time_domain_res_alloc_s::map_type_e_::type_a:
           pdsch_hl_cfg.common_time_ra[pdsch_time_id].mapping_type = srsran_sch_mapping_type_A;
           break;
@@ -548,7 +603,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
           break;
       }
     }
-    pdsch_hl_cfg.nof_common_time_ra = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup().size();
+    pdsch_hl_cfg.nof_common_time_ra = bwp_dl_ded_s_ptr->pdsch_cfg.setup().pdsch_time_domain_alloc_list.setup().size();
   }else{
     // use SIB 1 config
     for (uint32_t pdsch_time_id = 0; pdsch_time_id < sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list.size(); pdsch_time_id++){
@@ -572,13 +627,13 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     pdsch_hl_cfg.nof_common_time_ra = sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list.size();
   }
   
-  if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup().size() > 0){
-    for (uint32_t pusch_time_id = 0; pusch_time_id < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup().size(); pusch_time_id++){
-      if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].k2_present){
-        pusch_hl_cfg.common_time_ra[pusch_time_id].k = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].k2;
+  if(bwp_ul_ded_s_ptr->pusch_cfg.setup().pusch_time_domain_alloc_list.setup().size() > 0){
+    for (uint32_t pusch_time_id = 0; pusch_time_id < bwp_ul_ded_s_ptr->pusch_cfg.setup().pusch_time_domain_alloc_list.setup().size(); pusch_time_id++){
+      if(bwp_ul_ded_s_ptr->pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].k2_present){
+        pusch_hl_cfg.common_time_ra[pusch_time_id].k = bwp_ul_ded_s_ptr->pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].k2;
       }
-      pusch_hl_cfg.common_time_ra[pusch_time_id].sliv = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].start_symbol_and_len;
-      switch(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].map_type){
+      pusch_hl_cfg.common_time_ra[pusch_time_id].sliv = bwp_ul_ded_s_ptr->pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].start_symbol_and_len;
+      switch(bwp_ul_ded_s_ptr->pusch_cfg.setup().pusch_time_domain_alloc_list.setup()[pusch_time_id].map_type){
         case asn1::rrc_nr::pusch_time_domain_res_alloc_s::map_type_e_::type_a:
           pusch_hl_cfg.common_time_ra[pusch_time_id].mapping_type = srsran_sch_mapping_type_A;
           break;
@@ -591,7 +646,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
           break;
       }
     }
-    pusch_hl_cfg.nof_common_time_ra = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp.pusch_cfg.setup().pusch_time_domain_alloc_list.setup().size();
+    pusch_hl_cfg.nof_common_time_ra = bwp_ul_ded_s_ptr->pusch_cfg.setup().pusch_time_domain_alloc_list.setup().size();
   }else{
     // use SIB 1 config
     for (uint32_t pusch_time_id = 0; pusch_time_id < sib1.serving_cell_cfg_common.ul_cfg_common.init_ul_bwp.pusch_cfg_common.setup().pusch_time_domain_alloc_list.size(); pusch_time_id++){
@@ -636,10 +691,10 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
 
   dci_cfg.nof_rb_groups = 0;
   if(dci_cfg.pdsch_alloc_type == srsran_resource_alloc_type0){
-    if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().rbg_size == asn1::rrc_nr::pdsch_cfg_s::rbg_size_opts::cfg1){
+    if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().rbg_size == asn1::rrc_nr::pdsch_cfg_s::rbg_size_opts::cfg1){
       // BWP start prb is set to 0 since this is the only scenario that we see
       dci_cfg.nof_rb_groups = get_nof_rbgs(dci_cfg.bwp_dl_active_bw, 0, true); 
-    }else if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp.pdsch_cfg.setup().rbg_size == asn1::rrc_nr::pdsch_cfg_s::rbg_size_opts::cfg2){
+    }else if (bwp_dl_ded_s_ptr->pdsch_cfg.setup().rbg_size == asn1::rrc_nr::pdsch_cfg_s::rbg_size_opts::cfg2){
       dci_cfg.nof_rb_groups = get_nof_rbgs(dci_cfg.bwp_dl_active_bw, 0, false);
     }
   }
@@ -673,12 +728,12 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
     return SRSRAN_SUCCESS;
   }
 
-  uint32_t n_rntis = (uint32_t) ceil((float) task_scheduler_nrscope->nof_known_rntis / (float) task_scheduler_nrscope->nof_threads);
-  uint32_t rnti_s = dci_decoder_id * n_rntis;
-  uint32_t rnti_e = dci_decoder_id * n_rntis + n_rntis;
+  uint32_t n_rntis = (uint32_t) ceil((float) task_scheduler_nrscope->nof_known_rntis / (float) task_scheduler_nrscope->nof_rnti_worker_groups);
+  uint32_t rnti_s = rnti_worker_group_id * n_rntis;
+  uint32_t rnti_e = rnti_worker_group_id * n_rntis + n_rntis;
 
   if(rnti_s >= task_scheduler_nrscope->nof_known_rntis){
-    std::cout << "DCI decoder " << dci_decoder_id << " exits because it's excessive.." << std::endl;
+    std::cout << "DCI decoder " << dci_decoder_id << "|" << rnti_worker_group_id << " exits because it's excessive.." << std::endl;
     return SRSRAN_SUCCESS;
   }
 
@@ -687,7 +742,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
     n_rntis = rnti_e - rnti_s;
   }
 
-  // std::cout << "DCI decoder " << dci_decoder_id << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
+  std::cout << "DCI decoder " << dci_decoder_id << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
 
   DCIFeedback new_result;
   task_scheduler_nrscope->sharded_results[dci_decoder_id] = new_result;

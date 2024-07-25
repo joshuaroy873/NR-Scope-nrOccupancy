@@ -58,6 +58,8 @@ class Radio{
     HarqTracker harq_tracker;
 
     uint32_t nof_threads;
+    uint32_t nof_rnti_worker_groups;
+    uint8_t nof_bwps;
     std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
 
     std::string log_name;

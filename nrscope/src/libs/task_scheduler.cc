@@ -115,68 +115,69 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
 }
 
 int TaskSchedulerNRScope::merge_results(){
+  
+  for (uint8_t b = 0; b < nof_bwps; b++) {
+    DCIFeedback new_result;
+    results[b] = new_result;
+    results[b].dl_grants.resize(nof_known_rntis);
+    results[b].ul_grants.resize(nof_known_rntis);
+    results[b].spare_dl_prbs.resize(nof_known_rntis);
+    results[b].spare_dl_tbs.resize(nof_known_rntis);
+    results[b].spare_dl_bits.resize(nof_known_rntis);
+    results[b].spare_ul_prbs.resize(nof_known_rntis);
+    results[b].spare_ul_tbs.resize(nof_known_rntis);
+    results[b].spare_ul_bits.resize(nof_known_rntis);
+    results[b].dl_dcis.resize(nof_known_rntis);
+    results[b].ul_dcis.resize(nof_known_rntis);
 
-  DCIFeedback new_result;
-  result = new_result;
-  result.dl_grants.resize(nof_known_rntis);
-  result.ul_grants.resize(nof_known_rntis);
-  result.spare_dl_prbs.resize(nof_known_rntis);
-  result.spare_dl_tbs.resize(nof_known_rntis);
-  result.spare_dl_bits.resize(nof_known_rntis);
-  result.spare_ul_prbs.resize(nof_known_rntis);
-  result.spare_ul_tbs.resize(nof_known_rntis);
-  result.spare_ul_bits.resize(nof_known_rntis);
-  result.dl_dcis.resize(nof_known_rntis);
-  result.ul_dcis.resize(nof_known_rntis);
+    uint32_t rnti_s = 0;
+    uint32_t rnti_e = 0;
+    for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
 
-  uint32_t rnti_s = 0;
-  uint32_t rnti_e = 0;
-  for(uint32_t i = 0; i < nof_threads; i++){
-    result.nof_dl_used_prbs += sharded_results[i].nof_dl_used_prbs;
-    result.nof_ul_used_prbs += sharded_results[i].nof_ul_used_prbs;
+      if(rnti_s >= nof_known_rntis){
+        continue;
+      }
+      uint32_t n_rntis = nof_sharded_rntis[i * nof_bwps];
+      rnti_e = rnti_s + n_rntis;
+      if(rnti_e > nof_known_rntis){
+        rnti_e = nof_known_rntis;
+      }
 
-    uint32_t n_rntis = nof_sharded_rntis[i];
-    // std::cout << "n_rnti: " << n_rntis << std::endl; 
-    rnti_e = rnti_s + n_rntis;
-    // std::cout << "rnti_s: " << rnti_s << std::endl;
-    // std::cout << "rnti_e: " << rnti_e << std::endl;
+      uint32_t thread_id = i * nof_bwps + b;
+      results[b].nof_dl_used_prbs += sharded_results[thread_id].nof_dl_used_prbs;
+      results[b].nof_ul_used_prbs += sharded_results[thread_id].nof_ul_used_prbs;
 
-    if(rnti_s >= nof_known_rntis){
-      continue;
+      for(uint32_t k = 0; k < n_rntis; k++) {
+        results[b].dl_dcis[k+rnti_s] = sharded_results[thread_id].dl_dcis[k];
+        results[b].ul_dcis[k+rnti_s] = sharded_results[thread_id].ul_dcis[k];
+        results[b].dl_grants[k+rnti_s] = sharded_results[thread_id].dl_grants[k];
+        results[b].ul_grants[k+rnti_s] = sharded_results[thread_id].ul_grants[k];
+      }
+      rnti_s = rnti_e;
     }
 
-    if(rnti_e > nof_known_rntis){
-      rnti_e = nof_known_rntis;
+    std::cout << "End of nof_threads..." << std::endl;
+
+    // TO-DISCUSS: to obtain even more precise result, here maybe we should total user payload prb in that bwp - used prb
+    results[b].nof_dl_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - results[b].nof_dl_used_prbs;
+    for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
+      results[b].spare_dl_prbs[idx] = results[b].nof_dl_spare_prbs / nof_known_rntis;
+      if(abs(results[b].spare_dl_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
+        results[b].spare_dl_prbs[idx] = 0;
+      }
+      results[b].spare_dl_tbs[idx] = (int) ((float)results[b].spare_dl_prbs[idx] * dl_prb_rate[idx]);
+      results[b].spare_dl_bits[idx] = (int) ((float)results[b].spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
     }
 
-    for(uint32_t j = 0; j < n_rntis; j++){
-      result.dl_dcis[j+rnti_s] = sharded_results[i].dl_dcis[j];
-      result.ul_dcis[j+rnti_s] = sharded_results[i].ul_dcis[j];
-      result.dl_grants[j+rnti_s] = sharded_results[i].dl_grants[j];
-      result.ul_grants[j+rnti_s] = sharded_results[i].ul_grants[j];
+    results[b].nof_ul_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - results[b].nof_ul_used_prbs;
+    for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
+      results[b].spare_ul_prbs[idx] = results[b].nof_ul_spare_prbs / nof_known_rntis;
+      if(abs(results[b].spare_ul_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
+        results[b].spare_ul_prbs[idx] = 0;
+      }
+      results[b].spare_ul_tbs[idx] = (int) ((float)results[b].spare_ul_prbs[idx] * ul_prb_rate[idx]);
+      results[b].spare_ul_bits[idx] = (int) ((float)results[b].spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
     }
-    rnti_s = rnti_e;
-  }
-  std::cout << "End of nof_threads..." << std::endl;
-
-  result.nof_dl_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - result.nof_dl_used_prbs;
-  for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
-    result.spare_dl_prbs[idx] = result.nof_dl_spare_prbs / nof_known_rntis;
-    if(abs(result.spare_dl_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
-      result.spare_dl_prbs[idx] = 0;
-    }
-    result.spare_dl_tbs[idx] = (int) ((float)result.spare_dl_prbs[idx] * dl_prb_rate[idx]);
-    result.spare_dl_bits[idx] = (int) ((float)result.spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
-  }
-
-  result.nof_ul_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - result.nof_ul_used_prbs;
-  for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
-    result.spare_ul_prbs[idx] = result.nof_ul_spare_prbs / nof_known_rntis;
-    if(abs(result.spare_ul_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
-      result.spare_ul_prbs[idx] = 0;
-    }
-    result.spare_ul_tbs[idx] = (int) ((float)result.spare_ul_prbs[idx] * ul_prb_rate[idx]);
-    result.spare_ul_bits[idx] = (int) ((float)result.spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
   }
 
   return SRSRAN_SUCCESS;

@@ -6,7 +6,8 @@ RUN apt-get install -y software-properties-common
 
 RUN add-apt-repository ppa:ettusresearch/uhd
 RUN apt-get update
-RUN apt-get install -y libuhd-dev uhd-host
+RUN apt-get install -y libuhd-dev=4.1.0.5-3
+RUN apt-get install -y uhd-host=4.1.0.5-3
 
 RUN apt-get install -y build-essential cmake libfftw3-dev libmbedtls-dev libboost-program-options-dev libconfig++-dev libsctp-dev
 RUN apt-get install -y git

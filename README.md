@@ -88,11 +88,6 @@ sudo ./nrscan
 
 ## Logs
 
-(July 25, 2024) Implemented monitoring of non-initial BWPs if the additional BWPs are configured through plaintext RRCSetup, regardless of whether the BWP(s)
-are switched by plaintext DCI or encrypted RRCReconfiguration. TO-DO: (blind) detection of BWPs configured by encrypted RRCReconfigurations, homomorphic to CA detection.
-
-(July 17, 2024) Implemented NR SA cell scan utility: run `./nrscan` after build. The found cell information will be logged at `scan.csv`.
-
 (Aug 9, 2023) Solved some problems in synchronization, see how to use external clock to perform the synchronization.
 
 (Aug 11, 2023) DCI 1_0 and PDSCH are decoded for gNB in n41 with `ssb_freq=2523.75 MHz`. SIB 1 payload is verified with  `/srsue/src/stack/rrc_nr/test/ue_rrc_nr_test.cc` and [libasn1](https://github.com/j0lama/libasn).
@@ -126,6 +121,11 @@ are switched by plaintext DCI or encrypted RRCReconfiguration. TO-DO: (blind) de
 (Mar 27, 2024) Fan added support for PDSCH and PUSCH mapping type B for DCI decoding, thank Fan. Found a bug that we didn't use SLIV in SIB 1 or RRC Setup for time domain resource mapping, which previously happens to have the same calculation results (the first row of default mapping type A and SLIV 53 for downlink). Now it's solved. Also debugged the timestamp function.
 
 (Mar 30, 2024) Now the code's `log` and `to_google` functions work with multiple threads (USRPs), we are one step away from real-time carrier aggregation calculation. We can calculate the carrier aggregation information from the written logs now in an off-line manner.
+
+(July 17, 2024) Implemented NR SA cell scan utility: run `./nrscan` after build. The found cell information will be logged at `scan.csv`.
+
+(July 25, 2024) Implemented monitoring of non-initial BWPs if the additional BWPs are configured through plaintext RRCSetup, regardless of whether the BWP(s)
+are switched by plaintext DCI or encrypted RRCReconfiguration. TO-DO: (blind) detection of BWPs configured by encrypted RRCReconfigurations, homomorphic to CA detection.
 
 ## TODOs
 

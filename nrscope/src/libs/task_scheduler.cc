@@ -159,7 +159,7 @@ int TaskSchedulerNRScope::merge_results(){
     std::cout << "End of nof_threads..." << std::endl;
 
     // TO-DISCUSS: to obtain even more precise result, here maybe we should total user payload prb in that bwp - used prb
-    results[b].nof_dl_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - result.nof_dl_used_prbs;
+    results[b].nof_dl_spare_prbs = args_t.base_carrier.nof_prb * (14 - 2) - results[b].nof_dl_used_prbs;
     for(uint32_t idx = 0; idx < nof_known_rntis; idx ++){
       results[b].spare_dl_prbs[idx] = results[b].nof_dl_spare_prbs / nof_known_rntis;
       if(abs(results[b].spare_dl_prbs[idx]) > args_t.base_carrier.nof_prb * (14 - 2)){
@@ -176,7 +176,7 @@ int TaskSchedulerNRScope::merge_results(){
         results[b].spare_ul_prbs[idx] = 0;
       }
       results[b].spare_ul_tbs[idx] = (int) ((float)results[b].spare_ul_prbs[idx] * ul_prb_rate[idx]);
-      results[b].spare_ul_bits[idx] = (int) ((float)resul[b].spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
+      results[b].spare_ul_bits[idx] = (int) ((float)results[b].spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
     }
   }
 

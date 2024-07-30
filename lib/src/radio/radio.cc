@@ -87,6 +87,8 @@ int radio::init(const rf_args_t& args, phy_interface_radio* phy_)
   std::vector<std::string> device_args_list;
   string_parse_list(args.device_args, ';', device_args_list);
 
+  std::cout << "[xuyang debug] args.device_args: " << args.device_args << std::endl;
+
   // Add auto if list is empty
   if (device_args_list.empty()) {
     device_args_list.emplace_back("auto");
@@ -107,6 +109,8 @@ int radio::init(const rf_args_t& args, phy_interface_radio* phy_)
   }
   nof_channels_x_dev = nof_channels / device_args_list.size();
 
+  std::cout << "[xuyang debug] device_args_list.size(): " << device_args_list.size() << std::endl;
+
   // Allocate RF devices
   rf_devices.resize(device_args_list.size());
   rf_info.resize(device_args_list.size());
@@ -117,8 +121,11 @@ int radio::init(const rf_args_t& args, phy_interface_radio* phy_)
 
   printf("triggered 0\n");
 
+  std::cout << "[xuyang debug] args.device_name: " << args.device_name << std::endl;
+
   // Init and start Radios
   if (args.device_name != "file" || device_args_list[0] != "auto") {
+    std::cout << "[xuyang debug] triggered 10" << std::endl;
     // regular RF device
     for (uint32_t device_idx = 0; device_idx < (uint32_t)device_args_list.size(); device_idx++) {
       if (not open_dev(device_idx, args.device_name, device_args_list[device_idx])) {
@@ -127,6 +134,7 @@ int radio::init(const rf_args_t& args, phy_interface_radio* phy_)
       }
     }
   } else {
+    std::cout << "[xuyang debug] triggered 11" << std::endl;
     // file-based RF device abstraction using pre-opened FILE* objects
     if (args.rx_files == nullptr && args.tx_files == nullptr) {
       logger.error("File-based RF device abstraction requested, but no files provided");

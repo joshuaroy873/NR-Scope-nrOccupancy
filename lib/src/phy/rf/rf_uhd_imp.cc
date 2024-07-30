@@ -835,6 +835,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
     }
   }
 
+  printf("triggered 1\n");
+
   handler->nof_rx_channels = nof_channels;
   handler->nof_tx_channels = nof_channels;
 
@@ -845,6 +847,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   if (handler->uhd->set_tx_rate(handler->tx_rate) != UHD_ERROR_NONE) {
     return SRSRAN_ERROR;
   }
+
+  printf("triggered 2\n");
 
   // Reset timestamps
   if (nof_channels > 1 and clock_src != "gpsdo") {
@@ -858,6 +862,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   if (handler->uhd->get_tx_stream(handler->tx_nof_samples) != UHD_ERROR_NONE) {
     return SRSRAN_ERROR;
   }
+
+  printf("triggered 3\n");
 
   // Tune LOs if the default frequency is provided
   bool require_wait_rx_lock = false;
@@ -878,6 +884,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
     }
   }
 
+  printf("triggered 4\n");
+
   // Populate RF device info
   uhd::gain_range_t tx_gain_range;
   uhd::gain_range_t rx_gain_range;
@@ -892,6 +900,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   // Set starting gain to half maximum in case of using AGC
   rf_uhd_set_rx_gain(handler, handler->info.max_rx_gain * 0.7);
 
+  printf("triggered 5\n");
+
 #if HAVE_ASYNC_THREAD
   if (start_async_thread) {
     // Start low priority thread to receive async commands
@@ -904,6 +914,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   if (uhd_set_thread_priority(0, false) != UHD_ERROR_NONE) {
     return SRSRAN_ERROR;
   }
+
+  printf("triggered 6\n");
 
   return SRSRAN_SUCCESS;
 }

@@ -115,6 +115,8 @@ int radio::init(const rf_args_t& args, phy_interface_radio* phy_)
   tx_channel_mapping.set_config(nof_channels_x_dev, nof_antennas);
   rx_channel_mapping.set_config(nof_channels_x_dev, nof_antennas);
 
+  printf("triggered 0\n");
+
   // Init and start Radios
   if (args.device_name != "file" || device_args_list[0] != "auto") {
     // regular RF device

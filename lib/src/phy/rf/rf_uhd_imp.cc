@@ -894,10 +894,16 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   if (handler->uhd->get_gain_range(tx_gain_range, rx_gain_range) != UHD_ERROR_NONE) {
     return SRSRAN_ERROR;
   }
+
+  printf("triggered 4.1\n");
+
   handler->info.min_tx_gain = tx_gain_range.start();
   handler->info.max_tx_gain = tx_gain_range.stop();
+  printf("triggered 4.2\n");
   handler->info.min_rx_gain = rx_gain_range.start();
   handler->info.max_rx_gain = rx_gain_range.stop();
+
+  printf("triggered 4.3\n");
 
   // Set starting gain to half maximum in case of using AGC
   rf_uhd_set_rx_gain(handler, handler->info.max_rx_gain * 0.7);

@@ -353,7 +353,7 @@ int Radio::RadioInitandStart(){
 
       std::cout << "buffer rx data: " << std::endl;
       for (uint32_t i = 0; i < rf_buffer.get_nof_samples(); i++) {
-        std::cout << rf_buffer.get(0)[i] << "; " << std::endl;
+        std::cout << rf_buffer.get(0)[i] << "; ";
       }
       std::cout << std::endl;
 

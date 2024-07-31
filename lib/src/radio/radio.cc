@@ -307,7 +307,7 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
   std::unique_lock<std::mutex> lock(rx_mutex);
   bool                         ret = true;
   rf_buffer_t                  buffer_rx;
-  // std::cout << "Using radio.cc " << buffer.get_nof_samples() << std::endl;
+  std::cout << "Using radio.cc " << buffer.get_nof_samples() << std::endl;
 
   // Extract decimation ratio. As the decimation may take some time to set a new ratio, deactivate the decimation and
   // keep receiving samples to avoid stalling the RX stream
@@ -318,6 +318,8 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
     ratio = decimators[0].ratio;
   }
   // std::cout << "Using radio.cc " << buffer.get_nof_samples() << std::endl;
+
+  std::cout << "[xuyang debug 100] ratio: " << ratio << std::endl;
 
   // Calculate number of samples, considering the decimation ratio
   uint32_t nof_samples = buffer.get_nof_samples() * ratio;
@@ -367,6 +369,7 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
 
   // Perform decimation
   if (ratio > 1) {
+    std::cout << "[xuyang debug 101] ratio: " << ratio << std::endl;
     for (uint32_t ch = 0; ch < nof_channels; ch++) {
       if (buffer.get(ch) and buffer_rx.get(ch)) {
         srsran_resampler_fft_run(&decimators[ch], buffer_rx.get(ch), buffer.get(ch), buffer_rx.get_nof_samples());

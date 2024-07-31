@@ -350,6 +350,14 @@ int Radio::RadioInitandStart(){
       if (not radio->rx_now(rf_buffer, rf_timestamp)) {
         return SRSRAN_ERROR;
       }
+
+      std::cout << "buffer rx data: " << std::endl;
+      for (int i = 0; i < rf_buffer.get_nof_samples(); i++) {
+        std::cout << rf_buffer.get(0)[i] << "; " << std::endl;
+      }
+      std::cout << std::endl;
+
+
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
 
       cs_ret = srsran_searcher.run_slot(rx_buffer, slot_sz);

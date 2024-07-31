@@ -351,11 +351,13 @@ int Radio::RadioInitandStart(){
         return SRSRAN_ERROR;
       }
 
-      std::cout << "buffer rx data: " << std::endl;
-      for (uint32_t i = 0; i < rf_buffer.get_nof_samples(); i++) {
-        std::cout << rf_buffer.get(0)[i] << "; ";
-      }
-      std::cout << std::endl;
+      // std::cout << "buffer rx data: " << std::endl;
+      // for (uint32_t i = 0; i < rf_buffer.get_nof_samples(); i++) {
+      //   std::cout << rf_buffer.get(0)[i] << "; ";
+      // }
+      // std::cout << std::endl;
+
+      srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
 
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);

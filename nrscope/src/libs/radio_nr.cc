@@ -15,7 +15,7 @@ int copy_c_to_cpp_complex_arr(cf_t* src, std::complex<float>* dst, uint32_t sz) 
 int copy_cpp_to_c_complex_arr(std::complex<float>* src, cf_t* dst, uint32_t sz) {
   for (uint32_t i = 0; i < sz; i++) {
     // https://en.cppreference.com/w/cpp/numeric/complex 
-    dst[i] { reinterpret_cast<float*>(dst)[2 * i], reinterpret_cast<float*>(dst)[2 * i + 1] };
+    dst[i] = { reinterpret_cast<float*>(dst)[2 * i], reinterpret_cast<float*>(dst)[2 * i + 1] };
   }
 
   return 0;

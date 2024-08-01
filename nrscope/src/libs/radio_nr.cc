@@ -329,6 +329,7 @@ int Radio::RadioInitandStart(){
 
   // initialize resampling tool
   float r = (float)23040000/(float)33330000;       // resampling rate (output/input)
+  std::cout << "[xuyang debug] r (resampling rate): " << r << std::endl;
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
   msresamp_crcf q = msresamp_crcf_create(r,As);
 

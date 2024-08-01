@@ -405,7 +405,7 @@ int Radio::RadioInitandStart(){
       std::cout << "[xuyang debug] AFTER RESAMPLING: " << std::endl;
       // srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
 
-      for (int c = 0; c < actual_slot_sz; c++) {
+      for (uint32_t c = 0; c < actual_slot_sz; c++) {
         std::cout << temp_y[c];
       }
 

@@ -358,7 +358,7 @@ int Radio::RadioInitandStart(){
       // }
       // std::cout << std::endl;
 
-      srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
+      // srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
 
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
@@ -367,6 +367,7 @@ int Radio::RadioInitandStart(){
       // std::cout << "Slot_sz: " << slot_sz << std::endl;
       if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND ){
         // printf("found cell in this slot\n");
+        srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
         break;
       }
     }

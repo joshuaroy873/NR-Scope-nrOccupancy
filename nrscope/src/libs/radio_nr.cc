@@ -382,7 +382,7 @@ int Radio::RadioInitandStart(){
     std::cout << "[xuyang debug] pre_resampling_slot_sz: " << pre_resampling_slot_sz << std::endl;
     rf_buffer.set(0, pre_resampling_rx_buffer);// + slot_sz);
 
-    for(uint32_t trial=0; trial < 500; trial++){
+    for(uint32_t trial=0; trial < nof_trials; trial++){
       if (trial == 0) {
         srsran_vec_cf_zero(rx_buffer, slot_sz);
         srsran_vec_cf_zero(pre_resampling_rx_buffer, pre_resampling_slot_sz);

@@ -45,8 +45,8 @@ struct rf_args_band_t {
 struct rf_args_t {
   std::string type;
   std::string log_level;
-  double      srate_hz;
-  double      twin_srate_hz; // for twinRX, this is the actual rx srate given to the RF
+  double      srate_hz; // this is the rx srate to usrp
+  double      srsran_srate_hz; // for twinRX, this is the srsran rx srate dsp will be based on
   float       dl_freq;
   float       ul_freq;
   float       freq_offset;

@@ -253,7 +253,7 @@ int Radio::RadioInitandStart(){
   radio = std::move(raido_shared);
 
   // Cell Searcher parameters  
-  args_t.srate_hz = rf_args.srate_hz;
+  args_t.srate_hz = rf_args.srsran_srate_hz;
   rf_args.dl_freq = args_t.base_carrier.dl_center_frequency_hz;
   args_t.rf_device_name = rf_args.device_name;
   args_t.rf_device_args = rf_args.device_args;
@@ -265,8 +265,8 @@ int Radio::RadioInitandStart(){
   args_t.duration_ms = 1000;
 
   // Set sampling rate
-  radio->set_rx_srate(rf_args.twin_srate_hz);
-  std::cout << "twin_srate_hz: " << rf_args.twin_srate_hz << std::endl;
+  radio->set_rx_srate(rf_args.srate_hz);
+  std::cout << "usrp srate_hz: " << rf_args.srate_hz << std::endl;
   // Set DL center frequency
   radio->set_rx_freq(0, (double)rf_args.dl_freq);
   // Set Rx gain
@@ -279,7 +279,7 @@ int Radio::RadioInitandStart(){
   }
 
   // Allocate receive buffer
-  slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
+  slot_sz = (uint32_t)(rf_args.srsran_srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
   rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
   std::cout << "slot_sz: " << slot_sz << std::endl;
   // std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;

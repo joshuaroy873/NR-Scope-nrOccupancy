@@ -442,6 +442,7 @@ int srsran_ssb_set_cfg(srsran_ssb_t* q, const srsran_ssb_cfg_t* cfg)
   // Calculate SSB symbol size and integer frequency offset
   double   freq_offset_hz = cfg->ssb_freq_hz - cfg->center_freq_hz;
   uint32_t symbol_sz      = (uint32_t)round(cfg->srate_hz / q->scs_hz);
+  printf("[xuyang debug] srsran_ssb_set_cfg symbol_sz (freq domain): %u\n", symbol_sz);
   q->f_offset             = (int32_t)round(freq_offset_hz / q->scs_hz);
 
   // Calculate cyclic prefix

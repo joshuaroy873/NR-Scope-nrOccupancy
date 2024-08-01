@@ -396,14 +396,20 @@ int Radio::RadioInitandStart(){
       // from pre_resampling_rx_buffer to rx_buffer
 
       std::cout << "[xuyang debug] BEFORE RESAMPLING: " << std::endl;
-      srsran_vec_fprint_c(stdout, pre_resampling_rx_buffer, slot_sz);
+      srsran_vec_fprint_c(stdout, pre_resampling_rx_buffer, pre_resampling_slot_sz);
       // std::cout << "[xuyang debug] started liquid resampling" << std::endl;
       copy_c_to_cpp_complex_arr(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz);
       msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
       copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
       // std::cout << "[xuyang debug] resampled; actual_slot_sz: " << actual_slot_sz << std::endl;
       std::cout << "[xuyang debug] AFTER RESAMPLING: " << std::endl;
-      srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
+      // srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
+
+      for (int c = 0; c < actual_slot_sz; c++) {
+        std::cout << temp_y[c];
+      }
+
+      std::cout << std::endl;
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
 

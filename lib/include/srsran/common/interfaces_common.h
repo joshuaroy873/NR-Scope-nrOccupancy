@@ -46,6 +46,7 @@ struct rf_args_t {
   std::string type;
   std::string log_level;
   double      srate_hz;
+  double      twin_srate_hz; // for twinRX, this is the actual rx srate given to the RF
   float       dl_freq;
   float       ul_freq;
   float       freq_offset;

@@ -74,10 +74,15 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
         radios[i].rf_args.log_level = rf_args_loglevel;
       }
 
-      if(config_yaml[setting_name]["srate_hz"]){
-        radios[i].rf_args.srate_hz = config_yaml[setting_name]["srate_hz"].as<double>();
+      if(config_yaml[setting_name]["srsran_srate_hz"]){
+        radios[i].rf_args.srate_hz = config_yaml[setting_name]["srsran_srate_hz"].as<double>();
       }
-      std::cout << "    srate_hz: " << radios[i].rf_args.srate_hz / 1e6 << " MHz" << std::endl;
+      std::cout << "    srsran_srate_hz: " << radios[i].rf_args.srate_hz / 1e6 << " MHz" << std::endl;
+
+      if(config_yaml[setting_name]["twin_srate_hz"]){
+        radios[i].rf_args.twin_srate_hz = config_yaml[setting_name]["twin_srate_hz"].as<double>();
+      }
+      std::cout << "    twin_srate_hz: " << radios[i].rf_args.twin_srate_hz / 1e6 << " MHz" << std::endl;
 
 
       if(config_yaml[setting_name]["rx_gain"]){

@@ -265,7 +265,8 @@ int Radio::RadioInitandStart(){
   args_t.duration_ms = 1000;
 
   // Set sampling rate
-  radio->set_rx_srate(rf_args.srate_hz);
+  radio->set_rx_srate(rf_args.twin_srate_hz);
+  std::cout << "twin_srate_hz: " << rf_args.twin_srate_hz << std::endl;
   // Set DL center frequency
   radio->set_rx_freq(0, (double)rf_args.dl_freq);
   // Set Rx gain

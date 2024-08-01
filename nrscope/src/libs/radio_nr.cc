@@ -328,7 +328,7 @@ int Radio::RadioInitandStart(){
   srsran_assert(ss.valid(), "Invalid synchronization raster");
 
   // initialize resampling tool
-  float r = 23040000/33330000;       // resampling rate (output/input)
+  float r = (float)23040000/(float)33330000;       // resampling rate (output/input)
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
   msresamp_crcf q = msresamp_crcf_create(r,As);
 

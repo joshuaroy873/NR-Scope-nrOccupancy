@@ -15,7 +15,7 @@ int copy_c_to_cpp_complex_arr(cf_t* src, std::complex<float>* dst, uint32_t sz) 
 int copy_cpp_to_c_complex_arr(std::complex<float>* src, cf_t* dst, uint32_t sz) {
   for (uint32_t i = 0; i < sz; i++) {
     // https://en.cppreference.com/w/cpp/numeric/complex 
-    dst[i] = { reinterpret_cast<float*>(dst)[2 * i], reinterpret_cast<float*>(dst)[2 * i + 1] };
+    dst[i] = { src[i].real(), src[i].imag() };
   }
 
   return 0;
@@ -403,13 +403,13 @@ int Radio::RadioInitandStart(){
       copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
       // std::cout << "[xuyang debug] resampled; actual_slot_sz: " << actual_slot_sz << std::endl;
       std::cout << "[xuyang debug] AFTER RESAMPLING: " << std::endl;
-      // srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
+      srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
 
-      for (uint32_t c = 0; c < actual_slot_sz; c++) {
-        std::cout << temp_y[c];
-      }
+      // for (uint32_t c = 0; c < actual_slot_sz; c++) {
+      //   std::cout << temp_y[c];
+      // }
 
-      std::cout << std::endl;
+      // std::cout << std::endl;
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
 

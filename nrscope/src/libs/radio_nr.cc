@@ -3,6 +3,24 @@
 
 std::mutex lock_radio_nr;
 
+int copy_c_to_cpp_complex_arr(cf_t* src, std::complex<float>* dst, uint32_t sz) {
+  for (uint32_t i = 0; i < sz; i++) {
+    // indeed copy right? https://en.cppreference.com/w/cpp/numeric/complex/operator%3D
+    dst[i] = src[i];
+  }
+
+  return 0;
+}
+
+int copy_cpp_to_c_complex_arr(std::complex<float>* src, cf_t* dst, uint32_t sz) {
+  for (uint32_t i = 0; i < sz; i++) {
+    // https://en.cppreference.com/w/cpp/numeric/complex 
+    dst[i] { reinterpret_cast<float*>(dst)[2 * i], reinterpret_cast<float*>(dst)[2 * i + 1] };
+  }
+
+  return 0;
+}
+
 Radio::Radio() : 
   logger(srslog::fetch_basic_logger("PHY")), 
   srsran_searcher(logger),
@@ -314,6 +332,9 @@ int Radio::RadioInitandStart(){
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
   msresamp_crcf q = msresamp_crcf_create(r,As);
 
+  std::complex<float> temp_x[SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz];
+  std::complex<float> temp_y[SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz];
+
   while (not ss.end()) {
     // Get SSB center frequency
     cs_args.ssb_freq_hz = ss.get_frequency();
@@ -371,8 +392,11 @@ int Radio::RadioInitandStart(){
 
       // HERE WE DO RESAMPLING: 33330000 to the familiar 23040000
       // from pre_resampling_rx_buffer to rx_buffer
+
       std::cout << "[xuyang debug] started liquid resampling" << std::endl;
-      msresamp_crcf_execute(q, pre_resampling_rx_buffer, pre_resampling_slot_sz, rx_buffer, &actual_slot_sz);
+      copy_c_to_cpp_complex_arr(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz);
+      msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
+      copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
       std::cout << "[xuyang debug] resampled; actual_slot_sz: " << actual_slot_sz << std::endl;
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);

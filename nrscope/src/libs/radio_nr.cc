@@ -1,4 +1,5 @@
 #include "nrscope/hdr/radio_nr.h"
+#include <liquid/liquid.h>
 
 std::mutex lock_radio_nr;
 
@@ -284,6 +285,14 @@ int Radio::RadioInitandStart(){
   std::cout << "slot_sz: " << slot_sz << std::endl;
   // std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
   srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
+  uint32_t actual_slot_sz = 0; // the actual slot size after resampling 
+
+
+  // Allocate pre-resampling receive buffer
+  pre_resampling_slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
+  pre_resampling_rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
+  std::cout << "pre_resampling_slot_sz: " << pre_resampling_slot_sz << std::endl;
+  srsran_vec_zero(pre_resampling_rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
 
   cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
   cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
@@ -299,6 +308,11 @@ int Radio::RadioInitandStart(){
   uint32_t band = bands.get_band_from_dl_freq_Hz_and_scs(args_t.base_carrier.dl_center_frequency_hz, cs_args.ssb_scs);
   srsran::srsran_band_helper::sync_raster_t ss = bands.get_sync_raster(band, cs_args.ssb_scs);
   srsran_assert(ss.valid(), "Invalid synchronization raster");
+
+  // initialize resampling tool
+  float r = 23040000/33330000;       // resampling rate (output/input)
+  float As=60.0f;         // resampling filter stop-band attenuation [dB]
+  msresamp_crcf q = msresamp_crcf_create(r,As);
 
   while (not ss.end()) {
     // Get SSB center frequency
@@ -317,7 +331,7 @@ int Radio::RadioInitandStart(){
       continue;
     }
 
-    srsran_searcher_cfg_t.srate_hz = args_t.srate_hz;
+    srsran_searcher_cfg_t.srate_hz = args_t.srate_hz; // which is indeed the srsran srate
     srsran_searcher_cfg_t.center_freq_hz = cs_args.ssb_freq_hz; //args_t.base_carrier.dl_center_frequency_hz;
     srsran_searcher_cfg_t.ssb_freq_hz = cs_args.ssb_freq_hz;
     srsran_searcher_cfg_t.ssb_scs = args_t.ssb_scs;
@@ -337,8 +351,9 @@ int Radio::RadioInitandStart(){
     radio->set_rx_freq(0, srsran_searcher_cfg_t.ssb_freq_hz);
 
     srsran::rf_buffer_t rf_buffer = {};
-    rf_buffer.set_nof_samples(slot_sz);
-    rf_buffer.set(0, rx_buffer);// + slot_sz);
+    rf_buffer.set_nof_samples(pre_resampling_slot_sz);
+    std::cout << "[xuyang debug] pre_resampling_slot_sz: " << pre_resampling_slot_sz << std::endl;
+    rf_buffer.set(0, pre_resampling_rx_buffer);// + slot_sz);
 
     for(uint32_t trial=0; trial < nof_trials; trial++){
       if (trial == 0) {
@@ -352,14 +367,13 @@ int Radio::RadioInitandStart(){
         return SRSRAN_ERROR;
       }
 
-      // std::cout << "buffer rx data: " << std::endl;
-      // for (uint32_t i = 0; i < rf_buffer.get_nof_samples(); i++) {
-      //   std::cout << rf_buffer.get(0)[i] << "; ";
-      // }
-      // std::cout << std::endl;
-
       // srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
 
+      // HERE WE DO RESAMPLING: 33330000 to the familiar 23040000
+      // from pre_resampling_rx_buffer to rx_buffer
+      std::cout << "[xuyang debug] started liquid resampling" << std::endl;
+      msresamp_crcf_execute(q, pre_resampling_rx_buffer, pre_resampling_slot_sz, rx_buffer, &actual_slot_sz);
+      std::cout << "[xuyang debug] resampled; actual_slot_sz: " << actual_slot_sz << std::endl;
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
 
@@ -392,6 +406,8 @@ int Radio::RadioInitandStart(){
       }
     }
   }
+
+  msresamp_crcf_destroy(q);
   return SRSRAN_SUCCESS;
 }
 

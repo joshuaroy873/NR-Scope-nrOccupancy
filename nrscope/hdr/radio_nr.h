@@ -24,7 +24,9 @@ class Radio{
 
     srsran::rf_buffer_t                           rf_buffer_t;
     cf_t*                                         rx_buffer;
+    cf_t*                                         pre_resampling_rx_buffer;
     uint32_t                                      slot_sz;
+    uint32_t                                      pre_resampling_slot_sz;
     srsran::rf_timestamp_t                        last_rx_time;
 
     cell_searcher_args_t                          args_t;

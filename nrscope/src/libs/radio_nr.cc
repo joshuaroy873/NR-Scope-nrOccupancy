@@ -365,6 +365,11 @@ int Radio::RadioInitandStart(){
       continue;
     }
 
+    // xuyang debug: skip all other nearby measure and just focus on the wanted SSB freq
+    if (offset_hz > 1) {
+      continue;
+    }
+
     std::cout << "[xuyang debug] freq to find ssb: " << cs_args.ssb_freq_hz << std::endl;
 
     srsran_searcher_cfg_t.srate_hz = args_t.srate_hz; // which is indeed the srsran srate

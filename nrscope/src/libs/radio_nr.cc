@@ -360,9 +360,12 @@ int Radio::RadioInitandStart(){
     // the offset is NOT multiple of the subcarrier spacing
     if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or (cs_args.ssb_freq_hz > ssb_center_freq_max_hz) or
         (offset_hz % ssb_scs_hz != 0)) {
+      std::cout << "[xuyang debug] skipped freq: " << cs_args.ssb_freq_hz << std::endl;
       // Skip this frequency
       continue;
     }
+
+    std::cout << "[xuyang debug] freq to find ssb: " << cs_args.ssb_freq_hz << std::endl;
 
     srsran_searcher_cfg_t.srate_hz = args_t.srate_hz; // which is indeed the srsran srate
     srsran_searcher_cfg_t.center_freq_hz = cs_args.ssb_freq_hz; //args_t.base_carrier.dl_center_frequency_hz;

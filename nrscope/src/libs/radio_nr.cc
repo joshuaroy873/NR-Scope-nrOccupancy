@@ -3,10 +3,10 @@
 
 std::mutex lock_radio_nr;
 
-int copy_c_to_cpp_complex_arr(cf_t* src, std::complex<float>* dst, uint32_t sz) {
-  for (uint32_t i = 0; i < sz; i++) {
+int copy_c_to_cpp_complex_arr_and_zero_padding(cf_t* src, std::complex<float>* dst, uint32_t sz1, uint32_t sz2) {
+  for (uint32_t i = 0; i < sz2; i++) {
     // indeed copy right? https://en.cppreference.com/w/cpp/numeric/complex/operator%3D
-    dst[i] = src[i];
+    dst[i] = i < sz1 ? src[i] : 0;
   }
 
   return 0;
@@ -332,9 +332,15 @@ int Radio::RadioInitandStart(){
   std::cout << "[xuyang debug] r (resampling rate): " << r << std::endl;
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
   msresamp_crcf q = msresamp_crcf_create(r,As);
+  float delay = msresamp_crcf_get_delay(q);
+  std::cout << "[xuyang debug] resample delay: " << delay << std::endl;
 
-  std::complex<float> temp_x[SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz];
-  std::complex<float> temp_y[SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz];
+  // add a few zero padding
+  uint32_t temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz + (int)ceilf(delay) + 10;
+  std::complex<float> temp_x[temp_x_sz];
+
+  uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
+  std::complex<float> temp_y[temp_y_sz];
 
   FILE *fp_time_series_pre_resample;
   fp_time_series_pre_resample = fopen("./time_series_pre_resample.txt", "w");
@@ -403,18 +409,12 @@ int Radio::RadioInitandStart(){
       // std::cout << "[xuyang debug] BEFORE RESAMPLING: " << std::endl;
       srsran_vec_fprint2_c(fp_time_series_pre_resample, pre_resampling_rx_buffer, pre_resampling_slot_sz);
       // std::cout << "[xuyang debug] started liquid resampling" << std::endl;
-      copy_c_to_cpp_complex_arr(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz);
+      copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz, temp_x_sz);
       msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
       copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
       // std::cout << "[xuyang debug] resampled; actual_slot_sz: " << actual_slot_sz << std::endl;
       // std::cout << "[xuyang debug] AFTER RESAMPLING: " << std::endl;
-      srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, slot_sz);
-
-      // for (uint32_t c = 0; c < actual_slot_sz; c++) {
-      //   std::cout << temp_y[c];
-      // }
-
-      // std::cout << std::endl;
+      srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, actual_slot_sz);
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
 

@@ -891,7 +891,7 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   // Populate RF device info
   uhd::gain_range_t tx_gain_range;
   uhd::gain_range_t rx_gain_range;
-  if (false) {
+  if (true) {
     if (handler->uhd->get_gain_range(tx_gain_range, rx_gain_range) != UHD_ERROR_NONE) {
       return SRSRAN_ERROR;
     }

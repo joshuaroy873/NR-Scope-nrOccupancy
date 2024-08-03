@@ -859,8 +859,10 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
     return SRSRAN_ERROR;
   }
 
-  if (false) {
-    if (handler->uhd->get_tx_stream(handler->tx_nof_samples) != UHD_ERROR_NONE) {
+  if (true) {
+    uint32_t uhd_err_code = handler->uhd->get_tx_stream(handler->tx_nof_samples);
+    if (uhd_err_code != UHD_ERROR_NONE) {
+      printf("error 3: %u\n", uhd_err_code);
       return SRSRAN_ERROR;
     }
   }

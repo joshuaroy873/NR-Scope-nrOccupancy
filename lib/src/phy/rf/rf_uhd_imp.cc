@@ -892,7 +892,9 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   uhd::gain_range_t tx_gain_range;
   uhd::gain_range_t rx_gain_range;
   if (true) {
-    if (handler->uhd->get_gain_range(tx_gain_range, rx_gain_range) != UHD_ERROR_NONE) {
+    uint32_t uhd_err_code = handler->uhd->get_gain_range(tx_gain_range, rx_gain_range);
+    if (uhd_err_code != UHD_ERROR_NONE) {
+      printf("error 4.1: %u\n", uhd_err_code);
       return SRSRAN_ERROR;
     }
 

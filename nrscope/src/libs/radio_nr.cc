@@ -474,7 +474,8 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
   msresamp_crcf resampler = msresamp_crcf_create(r,As);
   float delay = msresamp_crcf_get_delay(resampler);
 
-  uint32_t pre_resampling_sf_sz = (int)ceilf((float)nsamples/r);
+  // uint32_t pre_resampling_sf_sz = (int)ceilf((float)nsamples/r);
+  uint32_t pre_resampling_sf_sz = (int)((float)nsamples/r);
   std::cout << "[xuyang debug 2] pre_resampling_sf_sz: " << pre_resampling_sf_sz << std::endl;
   // temp buffers for resampling
   uint32_t temp_x_sz = pre_resampling_sf_sz + (int)ceilf(delay) + 10;

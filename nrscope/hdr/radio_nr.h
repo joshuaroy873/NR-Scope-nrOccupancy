@@ -13,6 +13,8 @@
 #include "nrscope/hdr/nrscope_logger.h"
 #include "nrscope/hdr/to_google.h"
 
+#include <liquid/liquid.h>
+
 class Radio{
   public:
     int                                           rf_index;

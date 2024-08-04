@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-f1 = open("nontwin_time_data/time_series4.txt", "r")
+# f1 = open("nontwin_time_data/time_series4.txt", "r")
+f1 = open("twinrx_time_data/time_series_pre_resample_ifnores.txt", "r")
 
 
 
@@ -11,7 +12,7 @@ line_count = 0
 for line in f1:
     line_count += 1
     # continue
-    if line_count != 343:
+    if line_count != 78:
         continue
     
     reformatted = line.replace(" ", "").replace("i", "j")

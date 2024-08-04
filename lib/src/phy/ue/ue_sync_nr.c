@@ -88,6 +88,8 @@ int srsran_ue_sync_nr_set_cfg(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_cf
   q->N_id     = cfg->N_id;
   q->srate_hz = cfg->ssb.srate_hz;
 
+  printf("[xuyang debug] q->srate_hz in srsran_ue_sync_nr_set_cfg: %lf\n", q->srate_hz);
+
   // Calculate new subframe size
   q->sf_sz = (uint32_t)round(1e-3 * q->srate_hz);
 
@@ -235,6 +237,8 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
 
   uint32_t buffer_offset = 0;
   uint32_t nof_samples   = q->sf_sz;
+
+  printf("[xuyang debug] q->sf_sz (nof_samples) in ue_sync_nr_recv: %u\n", nof_samples);
 
   if (q->next_rf_sample_offset > 0) {
     // Discard a number of samples from RF

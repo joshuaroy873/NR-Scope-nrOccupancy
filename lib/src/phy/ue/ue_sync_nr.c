@@ -222,6 +222,7 @@ static int ue_sync_nr_run_track(srsran_ue_sync_nr_t* q, cf_t* buffer)
   // If the PBCH message was NOT decoded, transition to find
   if (!pbch_msg.crc) {
     q->state = SRSRAN_UE_SYNC_NR_STATE_FIND;
+    printf("Transition back to SRSRAN_UE_SYNC_NR_STATE_FIND");
     return SRSRAN_SUCCESS;
   }
 
@@ -242,13 +243,17 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
 
   if (q->next_rf_sample_offset > 0) {
     // Discard a number of samples from RF
+    // so here should be triggered if bb too slow, and skip/missing data hence occurs
+    printf("discard rf samples (next_rf_sample_offset): %u\n", (uint32_t)q->next_rf_sample_offset);
     if (q->recv_callback(q->recv_obj, buffer, (uint32_t)q->next_rf_sample_offset, timestamp) < SRSRAN_SUCCESS) {
       return SRSRAN_ERROR;
     }
   } else {
+    // so here should be triggered if bb too fast 
     // Adjust receive buffer
     buffer_offset = (uint32_t)(-q->next_rf_sample_offset);
     nof_samples   = (uint32_t)(q->sf_sz + q->next_rf_sample_offset);
+    printf("skip fetched (buffer_offset): %u\n", (uint32_t)q->next_rf_sample_offset);
   }
   q->next_rf_sample_offset = 0;
 

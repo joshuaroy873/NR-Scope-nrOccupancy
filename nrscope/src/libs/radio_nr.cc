@@ -597,6 +597,7 @@ int Radio::RadioCapture(){
     if (outcome.in_sync){
       std::cout << "System frame idx: " << outcome.sfn << std::endl;
       std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
+      std::cout << "Sync delay: " << outcome.delay_us << std::endl;
 
       for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
         srsran_slot_cfg_t slot = {0};

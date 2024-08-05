@@ -472,18 +472,18 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
   float As=60.0f;
 
   // msresamp_crcf resampler = msresamp_crcf_create(r,As);
-  float delay = msresamp_crcf_get_delay(resampler);
+  // float delay = msresamp_crcf_get_delay(resampler);
 
   // uint32_t pre_resampling_sf_sz = (int)ceilf((float)nsamples/r);
   uint32_t pre_resampling_sf_sz = (int)((float)nsamples/r);
   // std::cout << "[xuyang debug 2] pre_resampling_sf_sz: " << pre_resampling_sf_sz << std::endl;
   // temp buffers for resampling
-  uint32_t temp_x_sz = pre_resampling_sf_sz + (int)ceilf(delay) + 10;
-  std::complex<float> temp_x[temp_x_sz];
-  uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
-  std::complex<float> temp_y[temp_y_sz];
+  // uint32_t temp_x_sz = pre_resampling_sf_sz + (int)ceilf(delay) + 10;
+  // std::complex<float> temp_x[temp_x_sz];
+  // uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
+  // std::complex<float> temp_y[temp_y_sz];
 
-  uint32_t actual_sf_sz = 0;
+  // uint32_t actual_sf_sz = 0;
 
   // Allocate pre-resampling receive buffer
   cf_t* pre_rs_rx_buffer = srsran_vec_cf_malloc(pre_resampling_sf_sz * 2);

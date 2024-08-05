@@ -58,6 +58,7 @@ typedef struct SRSRAN_API {
   // Receive callback
   void* recv_obj;                               ///< Receive object
   SRSRAN_RECV_CALLBACK_TEMPLATE(recv_callback); ///< Receive callback
+  SRSRAN_RECV_CALLBACK_TEMPLATE(recv_callback2); ///< Receive callback
 } srsran_ue_sync_nr_args_t;
 
 /**
@@ -90,6 +91,7 @@ typedef struct SRSRAN_API {
   float    cfo_alpha;                           ///< Exponential Moving Average (EMA) alpha coefficient for CFO
   void*    recv_obj;                            ///< Receive object
   SRSRAN_RECV_CALLBACK_TEMPLATE(recv_callback); ///< Receive callback
+  SRSRAN_RECV_CALLBACK_TEMPLATE(recv_callback2); ///< Receive callback
 
   // Current configuration
   uint32_t N_id;     ///< Current physical cell identifier

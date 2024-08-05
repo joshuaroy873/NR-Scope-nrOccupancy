@@ -299,7 +299,7 @@ int Radio::RadioInitandStart(){
 
   // Allocate receive buffer
   slot_sz = (uint32_t)(rf_args.srsran_srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
-  rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
+  rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz * 4);
   std::cout << "slot_sz: " << slot_sz << std::endl;
   // std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
   srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
@@ -522,33 +522,38 @@ static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t
   msresamp_crcf_destroy(resampler);
 
   return res;
+}
 
-  
+/**
+ * Here in track state, we need to process really fast, so we will grab the samples and
+ * resample later. Also we will skip those sync check (which seems not exercising its duty correctly either)
+ */
+static int slot_sync_recv_callback_track_state(void* ptr, cf_t** buffer, uint32_t nsamples, srsran_timestamp_t* ts)
+{
+  if (ptr == nullptr) {
+    return SRSRAN_ERROR_INVALID_INPUTS;
+  }
+  srsran::radio* radio = (srsran::radio*)ptr;
 
+  cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
+  buffer_ptr[0]                         = buffer[0];
+  nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
+  srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
-  // if (ptr == nullptr) {
-  //   return SRSRAN_ERROR_INVALID_INPUTS;
-  // }
-  // srsran::radio* radio = (srsran::radio*)ptr;
+  srsran::rf_timestamp_t a;
+  srsran::rf_timestamp_t &rf_timestamp = a;
+  *ts = a.get(0);
 
-  // cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
-  // buffer_ptr[0]                         = buffer[0];
-  // srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
+  bool res = radio->rx_now(rf_buffer, rf_timestamp);
 
-  // srsran::rf_timestamp_t a;
-  // srsran::rf_timestamp_t &rf_timestamp = a;
-  // *ts = a.get(0);
+  FILE *fp_sib1_time_series;
+  fp_sib1_time_series = fopen("./time_sib1_series.txt", "w");
 
-  // bool res = radio->rx_now(rf_buffer, rf_timestamp);
+  srsran_vec_fprint2_c(fp_sib1_time_series, buffer[0], nsamples);
 
-  // FILE *fp_sib1_time_series;
-  // fp_sib1_time_series = fopen("./time_sib1_series.txt", "w");
+  fclose(fp_sib1_time_series);
 
-  // srsran_vec_fprint2_c(fp_sib1_time_series, buffer[0], nsamples);
-
-  // fclose(fp_sib1_time_series);
-
-  // return res;
+  return res;
 }
 
 int Radio::SyncandDownlinkInit(){
@@ -573,6 +578,7 @@ int Radio::SyncandDownlinkInit(){
   ue_sync_nr_args.cfo_alpha       = 0.1;
   ue_sync_nr_args.recv_obj        = radio.get();
   ue_sync_nr_args.recv_callback   = slot_sync_recv_callback_find_state;
+  ue_sync_nr_args.recv_callback2   = slot_sync_recv_callback_track_state;
   if (srsran_ue_sync_nr_init(&ue_sync_nr, &ue_sync_nr_args) < SRSRAN_SUCCESS) {
     std::cout << "Error initiating UE SYNC NR object" << std::endl;
     logger.error("Error initiating UE SYNC NR object");

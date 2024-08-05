@@ -35,6 +35,7 @@ int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_
   // Copy arguments
   q->recv_obj        = args->recv_obj;
   q->recv_callback   = args->recv_callback;
+  q->recv_callback2   = args->recv_callback2;
   q->nof_rx_channels = args->nof_rx_channels == 0 ? 1 : args->nof_rx_channels;
   q->disable_cfo     = args->disable_cfo;
   q->cfo_alpha       = isnormal(args->cfo_alpha) ? args->cfo_alpha : UE_SYNC_NR_DEFAULT_CFO_ALPHA;
@@ -281,7 +282,10 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
   }
 
   // Receive
-  if (q->recv_callback(q->recv_obj, q->tmp_buffer, nof_samples, timestamp) < SRSRAN_SUCCESS) {
+  uint32_t res = q->state == SRSRAN_UE_SYNC_NR_STATE_FIND ?
+   q->recv_callback(q->recv_obj, q->tmp_buffer, nof_samples, timestamp) :
+   q->recv_callback2(q->recv_obj, q->tmp_buffer, nof_samples, timestamp);
+  if (res < SRSRAN_SUCCESS) {
     return SRSRAN_ERROR;
   }
 

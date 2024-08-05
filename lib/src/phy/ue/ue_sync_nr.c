@@ -193,6 +193,8 @@ static int ue_sync_nr_run_find(srsran_ue_sync_nr_t* q, cf_t* buffer)
     return SRSRAN_SUCCESS;
   }
 
+  printf('sync find update ssb\n');
+
   return ue_sync_nr_update_ssb(q, &measurements, &pbch_msg);
 }
 
@@ -215,6 +217,8 @@ static int ue_sync_nr_run_track(srsran_ue_sync_nr_t* q, cf_t* buffer)
     printf("!is_ssb_opportunity triggered\n");
     return SRSRAN_SUCCESS;
   }
+
+  printf("is ssb oppo and update sync\n");
 
   // Measure PSS/SSS and decode PBCH
   if (srsran_ssb_track(&q->ssb, buffer, q->N_id, q->ssb_idx, half_frame, &measurements, &pbch_msg) < SRSRAN_SUCCESS) {

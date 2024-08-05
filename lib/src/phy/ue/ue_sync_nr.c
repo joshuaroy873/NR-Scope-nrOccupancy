@@ -193,7 +193,7 @@ static int ue_sync_nr_run_find(srsran_ue_sync_nr_t* q, cf_t* buffer)
     return SRSRAN_SUCCESS;
   }
 
-  printf('sync find update ssb\n');
+  printf("sync find update ssb\n");
 
   return ue_sync_nr_update_ssb(q, &measurements, &pbch_msg);
 }

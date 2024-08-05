@@ -483,7 +483,7 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
   uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
   std::complex<float> temp_y[temp_y_sz];
 
-  uint32_t actual_slot_sz = 0;
+  uint32_t actual_sf_sz = 0;
 
   // Allocate pre-resampling receive buffer
   cf_t* pre_rs_rx_buffer = srsran_vec_cf_malloc(pre_resampling_sf_sz * 2);
@@ -504,8 +504,9 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
   bool res = radio->rx_now(rf_buffer, rf_timestamp);
 
   copy_c_to_cpp_complex_arr_and_zero_padding(pre_rs_rx_buffer, temp_x, pre_resampling_sf_sz, temp_x_sz);
-  msresamp_crcf_execute(resampler, temp_x, pre_resampling_sf_sz, temp_y, &actual_slot_sz);
-  copy_cpp_to_c_complex_arr(temp_y, buffer[0], actual_slot_sz);
+  msresamp_crcf_execute(resampler, temp_x, pre_resampling_sf_sz, temp_y, &actual_sf_sz);
+  std::cout << "[xuyang debug 2] actual_sf_sz: " << actual_sf_sz << std::endl;
+  copy_cpp_to_c_complex_arr(temp_y, buffer[0], actual_sf_sz);
 
   msresamp_crcf_destroy(resampler);
 

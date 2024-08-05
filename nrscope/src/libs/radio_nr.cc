@@ -546,12 +546,12 @@ static int slot_sync_recv_callback_track_state(void* ptr, cf_t** buffer, uint32_
 
   bool res = radio->rx_now(rf_buffer, rf_timestamp);
 
-  FILE *fp_sib1_time_series;
-  fp_sib1_time_series = fopen("./time_sib1_series.txt", "w");
+  // FILE *fp_sib1_time_series;
+  // fp_sib1_time_series = fopen("./time_sib1_series.txt", "w");
 
-  srsran_vec_fprint2_c(fp_sib1_time_series, buffer[0], nsamples);
+  // srsran_vec_fprint2_c(fp_sib1_time_series, buffer[0], nsamples);
 
-  fclose(fp_sib1_time_series);
+  // fclose(fp_sib1_time_series);
 
   return res;
 }

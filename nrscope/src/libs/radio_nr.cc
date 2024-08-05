@@ -450,9 +450,6 @@ int Radio::RadioInitandStart(){
       std::cout << "N_id: " << cs_ret.ssb_res.N_id << std::endl;
       std::cout << "Decoding MIB..." << std::endl;
 
-      // temp debug
-      return SRSRAN_SUCCESS;
-
       if(task_scheduler_nrscope.decode_mib(&args_t, &cs_ret, &srsran_searcher_cfg_t) < SRSRAN_SUCCESS){
         ERROR("Error init task scheduler");
         return NR_FAILURE;

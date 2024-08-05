@@ -282,7 +282,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
   }
 
   // Receive
-  uint32_t res = q->state == SRSRAN_UE_SYNC_NR_STATE_FIND ?
+  int res = q->state == SRSRAN_UE_SYNC_NR_STATE_FIND ?
    q->recv_callback(q->recv_obj, q->tmp_buffer, nof_samples, timestamp) :
    q->recv_callback2(q->recv_obj, q->tmp_buffer, nof_samples, timestamp);
   if (res < SRSRAN_SUCCESS) {

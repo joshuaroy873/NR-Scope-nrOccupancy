@@ -360,7 +360,7 @@ int Radio::RadioInitandStart(){
     // the offset is NOT multiple of the subcarrier spacing
     if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or (cs_args.ssb_freq_hz > ssb_center_freq_max_hz) or
         (offset_hz % ssb_scs_hz != 0)) {
-      std::cout << "[xuyang debug] skipped freq: " << cs_args.ssb_freq_hz << std::endl;
+      // std::cout << "[xuyang debug] skipped freq: " << cs_args.ssb_freq_hz << std::endl;
       // Skip this frequency
       continue;
     }
@@ -505,7 +505,7 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
 
   copy_c_to_cpp_complex_arr_and_zero_padding(pre_rs_rx_buffer, temp_x, pre_resampling_sf_sz, temp_x_sz);
   msresamp_crcf_execute(resampler, temp_x, pre_resampling_sf_sz, temp_y, &actual_sf_sz);
-  std::cout << "[xuyang debug 2] actual_sf_sz: " << actual_sf_sz << std::endl;
+  // std::cout << "[xuyang debug 2] actual_sf_sz: " << actual_sf_sz << std::endl;
   copy_cpp_to_c_complex_arr(temp_y, buffer[0], actual_sf_sz);
 
   msresamp_crcf_destroy(resampler);

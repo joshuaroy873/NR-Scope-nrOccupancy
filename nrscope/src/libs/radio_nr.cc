@@ -471,19 +471,19 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
   float r = (float)23040000/(float)33333333;
   float As=60.0f;
 
-  // msresamp_crcf resampler = msresamp_crcf_create(r,As);
-  // float delay = msresamp_crcf_get_delay(resampler);
+  msresamp_crcf resampler = msresamp_crcf_create(r,As);
+  float delay = msresamp_crcf_get_delay(resampler);
 
   // uint32_t pre_resampling_sf_sz = (int)ceilf((float)nsamples/r);
   uint32_t pre_resampling_sf_sz = (int)((float)nsamples/r);
   // std::cout << "[xuyang debug 2] pre_resampling_sf_sz: " << pre_resampling_sf_sz << std::endl;
   // temp buffers for resampling
-  // uint32_t temp_x_sz = pre_resampling_sf_sz + (int)ceilf(delay) + 10;
-  // std::complex<float> temp_x[temp_x_sz];
-  // uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
-  // std::complex<float> temp_y[temp_y_sz];
+  uint32_t temp_x_sz = pre_resampling_sf_sz + (int)ceilf(delay) + 10;
+  std::complex<float> temp_x[temp_x_sz];
+  uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
+  std::complex<float> temp_y[temp_y_sz];
 
-  // uint32_t actual_sf_sz = 0;
+  uint32_t actual_sf_sz = 0;
 
   // Allocate pre-resampling receive buffer
   cf_t* pre_rs_rx_buffer = srsran_vec_cf_malloc(pre_resampling_sf_sz * 2);
@@ -503,14 +503,12 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
 
   bool res = radio->rx_now(rf_buffer, rf_timestamp);
 
-  // copy_c_to_cpp_complex_arr_and_zero_padding(pre_rs_rx_buffer, temp_x, pre_resampling_sf_sz, temp_x_sz);
-  // msresamp_crcf_execute(resampler, temp_x, pre_resampling_sf_sz, temp_y, &actual_sf_sz);
+  copy_c_to_cpp_complex_arr_and_zero_padding(pre_rs_rx_buffer, temp_x, pre_resampling_sf_sz, temp_x_sz);
+  msresamp_crcf_execute(resampler, temp_x, pre_resampling_sf_sz, temp_y, &actual_sf_sz);
   // std::cout << "[xuyang debug 2] actual_sf_sz: " << actual_sf_sz << std::endl;
-  // copy_cpp_to_c_complex_arr(temp_y, buffer[0], actual_sf_sz);
+  copy_cpp_to_c_complex_arr(temp_y, buffer[0], actual_sf_sz);
 
-  // copy_cpp_to_c_complex_arr(temp_y, buffer[0], actual_sf_sz);
-
-  // msresamp_crcf_destroy(resampler);
+  msresamp_crcf_destroy(resampler);
 
   return res;
 }

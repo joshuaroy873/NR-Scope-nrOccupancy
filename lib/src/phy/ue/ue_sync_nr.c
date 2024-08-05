@@ -189,6 +189,7 @@ static int ue_sync_nr_run_find(srsran_ue_sync_nr_t* q, cf_t* buffer)
 
   // If the PBCH message was NOT decoded, early return
   if (!pbch_msg.crc) {
+    printf("!pbch_msg.crc triggered; early return\n");
     return SRSRAN_SUCCESS;
   }
 
@@ -211,6 +212,7 @@ static int ue_sync_nr_run_track(srsran_ue_sync_nr_t* q, cf_t* buffer)
   }
 
   if (!is_ssb_opportunity) {
+    printf("!is_ssb_opportunity triggered\n");
     return SRSRAN_SUCCESS;
   }
 
@@ -253,7 +255,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
     // Adjust receive buffer
     buffer_offset = (uint32_t)(-q->next_rf_sample_offset);
     nof_samples   = (uint32_t)(q->sf_sz + q->next_rf_sample_offset);
-    printf("skip fetched (buffer_offset): %u\n", (uint32_t)q->next_rf_sample_offset);
+    printf("skip fetched (buffer_offset, nof_samples): (%u, %u)\n", buffer_offset, nof_samples);
   }
   q->next_rf_sample_offset = 0;
 

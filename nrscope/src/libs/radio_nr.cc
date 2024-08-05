@@ -417,15 +417,20 @@ int Radio::RadioInitandStart(){
 
       // std::cout << "[xuyang debug] BEFORE RESAMPLING: " << std::endl;
       srsran_vec_fprint2_c(fp_time_series_pre_resample, pre_resampling_rx_buffer, pre_resampling_slot_sz);
-      gettimeofday(&t0, NULL);  
+      
       // std::cout << "[xuyang debug] started liquid resampling" << std::endl;
       copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz, temp_x_sz);
+
+      gettimeofday(&t0, NULL);  
+      
       msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
-      copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
 
       gettimeofday(&t1, NULL);  
       // result.processing_time_us = t1.tv_usec - t0.tv_usec;   
       std::cout << "[ssb search] time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
+      copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
+
+      
       // std::cout << "[xuyang debug] resampled; actual_slot_sz: " << actual_slot_sz << std::endl;
       // std::cout << "[xuyang debug] AFTER RESAMPLING: " << std::endl;
       srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, actual_slot_sz);
@@ -444,6 +449,9 @@ int Radio::RadioInitandStart(){
       std::cout << "Cell Found!" << std::endl;
       std::cout << "N_id: " << cs_ret.ssb_res.N_id << std::endl;
       std::cout << "Decoding MIB..." << std::endl;
+
+      // temp debug
+      return SRSRAN_SUCCESS;
 
       if(task_scheduler_nrscope.decode_mib(&args_t, &cs_ret, &srsran_searcher_cfg_t) < SRSRAN_SUCCESS){
         ERROR("Error init task scheduler");

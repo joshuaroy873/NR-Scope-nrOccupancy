@@ -328,7 +328,7 @@ int Radio::RadioInitandStart(){
   srsran_assert(ss.valid(), "Invalid synchronization raster");
 
   // initialize resampling tool
-  float r = (float)23040000/(float)33333333;       // resampling rate (output/input)
+  float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;       // resampling rate (output/input)
   std::cout << "[xuyang debug] r (resampling rate): " << r << std::endl;
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
   msresamp_crcf q = msresamp_crcf_create(r,As);
@@ -474,7 +474,7 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
     return SRSRAN_ERROR_INVALID_INPUTS;
   }
 
-  float r = (float)23040000/(float)33333333;
+  float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;
   float As=60.0f;
 
   msresamp_crcf resampler = msresamp_crcf_create(r,As);

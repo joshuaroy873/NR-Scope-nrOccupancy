@@ -577,7 +577,10 @@ int Radio::RadioCapture(){
   // long int slot_idx_position = 0;
 
   while(true){
-    outcome.timestamp = last_rx_time.get(0);    
+    outcome.timestamp = last_rx_time.get(0);  
+
+    struct timeval t0, t1;
+    gettimeofday(&t0, NULL);    
 
     if (srsran_ue_sync_nr_zerocopy(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
@@ -605,10 +608,6 @@ int Radio::RadioCapture(){
         // // uint32_t a = fread(ue_dl.fft[0].cfg.in_buffer, sizeof(cf_t), ue_dl.fft[0].sf_sz, fp);
         // uint32_t b = fread(&slot.idx, sizeof(uint32_t), 1, fp2);
         // slot_idx_position += 1;
-
-
-        struct timeval t0, t1;
-        gettimeofday(&t0, NULL);  
 
         // 1) Inform the 3 loops to attend to this slot by puting the slot and outcome into a queue
         //     Problem: When the thread try to attend to the data and get the slot index from the queue, 

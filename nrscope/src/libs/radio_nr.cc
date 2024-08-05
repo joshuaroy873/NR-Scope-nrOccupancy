@@ -470,6 +470,7 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
 
   float r = (float)23040000/(float)33333333;
   float As=60.0f;
+
   msresamp_crcf resampler = msresamp_crcf_create(r,As);
   float delay = msresamp_crcf_get_delay(resampler);
 

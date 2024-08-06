@@ -157,7 +157,7 @@ static int ue_sync_nr_update_ssb(srsran_ue_sync_nr_t*                 q,
   q->sfn     = mib.sfn;
 
   // Transition to track only if the measured delay is below 2.4 microseconds
-  if (measurements->delay_us < 2.4f) {
+  if (measurements->delay_us < 2.4f) { // <- should be abs(measurements->delay_us) < 2.4f
     printf("Transition to SRSRAN_UE_SYNC_NR_STATE_TRACK\n");
     printf("measurements->delay_us: %f\n", measurements->delay_us);
     q->state = SRSRAN_UE_SYNC_NR_STATE_TRACK;

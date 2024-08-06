@@ -89,7 +89,7 @@ int srsran_ue_sync_nr_set_cfg(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_cf
   q->N_id     = cfg->N_id;
   q->srate_hz = cfg->ssb.srate_hz;
 
-  printf("[xuyang debug] q->srate_hz in srsran_ue_sync_nr_set_cfg: %lf\n", q->srate_hz);
+  printf("[xuyang debug100] q->srate_hz in srsran_ue_sync_nr_set_cfg: %lf\n", q->srate_hz);
 
   // Calculate new subframe size
   q->sf_sz = (uint32_t)round(1e-3 * q->srate_hz);

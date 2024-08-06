@@ -623,7 +623,8 @@ int Radio::SyncandDownlinkInit(){
     return SRSRAN_ERROR;
   }
   // Be careful of all the frequency setting (SSB/center downlink and etc.)!
-  ssb_cfg.srate_hz       = task_scheduler_nrscope.args_t.srate_hz;
+  // ssb_cfg.srate_hz       = task_scheduler_nrscope.args_t.srate_hz;
+  ssb_cfg.srate_hz       = rf_args.srate_hz;
   ssb_cfg.center_freq_hz = cs_args.ssb_freq_hz;
   ssb_cfg.ssb_freq_hz    = cs_args.ssb_freq_hz;
   ssb_cfg.scs            = cs_args.ssb_scs;
@@ -633,7 +634,7 @@ int Radio::SyncandDownlinkInit(){
 
   sync_cfg.N_id = task_scheduler_nrscope.cs_ret.ssb_res.N_id;
   sync_cfg.ssb = ssb_cfg;
-  sync_cfg.ssb.srate_hz = task_scheduler_nrscope.args_t.srate_hz;
+  sync_cfg.ssb.srate_hz = rf_args.srate_hz;
   if (srsran_ue_sync_nr_set_cfg(&ue_sync_nr, &sync_cfg) < SRSRAN_SUCCESS) {
     printf("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);
     logger.error("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);

@@ -483,8 +483,8 @@ static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
   // nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
-  std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
-  srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples + 10);
+  // std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
+  srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;
   srsran::rf_timestamp_t &rf_timestamp = a;

@@ -27,10 +27,10 @@
 #define UE_SYNC_NR_DEFAULT_CFO_ALPHA 0.1
 pthread_mutex_t lock;
 
-#define RESAMPLE_RATIO = (float)23040000/(float)25000000;
-#define PRE_RESAMPLING_SF_SZ = 25000000 / 1000;
-#define TEMP_X_SZ = PRE_RESAMPLING_SF_SZ + 20;
-#define TEMP_Y_SZ = temp_x_sz * RESAMPLE_RATIO * 2; 
+#define RESAMPLE_RATIO (float)23040000/(float)25000000;
+#define PRE_RESAMPLING_SF_SZ 25000000 / 1000;
+#define TEMP_X_SZ PRE_RESAMPLING_SF_SZ + 20;
+#define TEMP_Y_SZ temp_x_sz * RESAMPLE_RATIO * 2; 
 
 msresamp_crcf resampler = msresamp_crcf_create(RESAMPLE_RATIO, 60.0f);
 cf_t * temp_x = SRSRAN_MEM_ALLOC(cf_t, TEMP_X_SZ);
@@ -338,7 +338,7 @@ int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_
     case SRSRAN_UE_SYNC_NR_STATE_FIND:
       // resample here !
       int actual_sf_sz = 0;
-      msresamp_crcf_execute(resampler, buffer, pre_resampling_sf_sz, temp_y, &actual_sf_sz);
+      msresamp_crcf_execute(resampler, buffer, PRE_RESAMPLING_SF_SZ, temp_y, &actual_sf_sz);
       srsran_vec_cf_copy(buffer, temp_y, actual_sf_sz);  
 
       if (ue_sync_nr_run_find(q, buffer[0]) < SRSRAN_SUCCESS) {

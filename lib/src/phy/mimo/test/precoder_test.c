@@ -29,7 +29,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "srsran/phy/channel/ch_awgn1.h"
+#include "srsran/phy/channel/ch_awgn.h"
 #include "srsran/srsran.h"
 
 #define MSE_THRESHOLD 0.0005

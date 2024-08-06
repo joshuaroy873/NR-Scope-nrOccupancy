@@ -18,7 +18,7 @@ Note: NRScope can be divided into 3 phases:
 * [SSB search phase] Down-resample the raw signal with ratio `r` in the main thread.
 * [Downlink sync phase] *Efficiently* down-resample the raw signal with ratio `r` by saving the data moving around/data structure creation as much as possible etc in the main thread.
 * [Downlink signal capturing] the sib, rach, dci threads compete for down-resample the raw signal with ratio `r` (the first thread will do the work for all). Once done, everyone can use and process as usual. 
-===========
+
 
 Implement on top of srsRAN_4G UE code, decode the DCI and SIB information for 5G SA base station.
 

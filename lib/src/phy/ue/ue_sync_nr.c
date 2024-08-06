@@ -27,14 +27,14 @@
 #define UE_SYNC_NR_DEFAULT_CFO_ALPHA 0.1
 pthread_mutex_t lock;
 
-float resample_ratio = (float)23040000/(float)25000000;
-msresamp_crcf resampler = msresamp_crcf_create(resample_ratio, 60.0f);
-float resampler_delay = msresamp_crcf_get_delay(resampler);
-uint32_t pre_resampling_sf_sz = 25000000 / 1000;
-uint32_t temp_x_sz = pre_resampling_sf_sz + (int)ceilf(resampler_delay) + 10;;
-uint32_t temp_y_sz = (uint32_t)(temp_x_sz * resample_ratio * 2);
-cf_t * temp_x = SRSRAN_MEM_ALLOC(cf_t, temp_x_sz);
-cf_t * temp_y = SRSRAN_MEM_ALLOC(cf_t, temp_x_sz);
+#define RESAMPLE_RATIO = (float)23040000/(float)25000000;
+#define PRE_RESAMPLING_SF_SZ = 25000000 / 1000;
+#define TEMP_X_SZ = PRE_RESAMPLING_SF_SZ + 20;
+#define TEMP_Y_SZ = temp_x_sz * RESAMPLE_RATIO * 2; 
+
+msresamp_crcf resampler = msresamp_crcf_create(RESAMPLE_RATIO, 60.0f);
+cf_t * temp_x = SRSRAN_MEM_ALLOC(cf_t, TEMP_X_SZ);
+cf_t * temp_y = SRSRAN_MEM_ALLOC(cf_t, TEMP_Y_SZ);
 
 int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_t* args)
 {

@@ -658,7 +658,7 @@ int Radio::RadioCapture(){
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);    
 
-    if (srsran_ue_sync_nr_zerocopy_twinrx(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, rk) < SRSRAN_SUCCESS) {
+    if (srsran_ue_sync_nr_zerocopy_twinrx(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, &rk) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
       logger.error("SYNC: error in zerocopy");
       return false;

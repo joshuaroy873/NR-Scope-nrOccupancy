@@ -22,10 +22,19 @@
 #include "srsran/phy/ue/ue_sync_nr.h"
 #include "srsran/phy/utils/vector.h"
 
+#include <liquid/liquid.h>
+
 #define UE_SYNC_NR_DEFAULT_CFO_ALPHA 0.1
 pthread_mutex_t lock;
 
-static int haha = 0;
+static float resample_ratio = (float)23040000/(float)25000000;
+static msresamp_crcf resampler = msresamp_crcf_create(resample_ratio, 60.0f);
+static float resampler_delay = msresamp_crcf_get_delay(resampler);
+static uint32_t pre_resampling_sf_sz = 25000000 / 1000;
+static uint32_t temp_x_sz = pre_resampling_sf_sz + (int)ceilf(resampler_delay) + 10;;
+static uint32_t temp_y_sz = (uint32_t)(temp_x_sz * resample_ratio * 2);
+static cf_t * temp_x = SRSRAN_MEM_ALLOC(cf_t, temp_x_sz);
+static cf_t * temp_y = SRSRAN_MEM_ALLOC(cf_t, temp_x_sz);
 
 int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_t* args)
 {
@@ -321,15 +330,17 @@ int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_
     return SRSRAN_ERROR;
   }
 
-  haha++;
-  printf("haha: %d\n", haha);
-
   // Run FSM
   switch (q->state) {
     case SRSRAN_UE_SYNC_NR_STATE_IDLE:
       // Do nothing
       break;
     case SRSRAN_UE_SYNC_NR_STATE_FIND:
+      // resample here !
+      int actual_sf_sz = 0;
+      msresamp_crcf_execute(resampler, buffer, pre_resampling_sf_sz, temp_y, &actual_sf_sz);
+      srsran_vec_cf_copy(buffer, temp_y, actual_sf_sz);  
+
       if (ue_sync_nr_run_find(q, buffer[0]) < SRSRAN_SUCCESS) {
         ERROR("Error running find");
         return SRSRAN_ERROR;

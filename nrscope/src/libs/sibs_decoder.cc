@@ -107,6 +107,7 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   uint32_t actual_sf_sz = 0;
   copy_c_to_cpp_complex_arr_and_zero_padding_sibs(raw_buffer, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_slot_sz, task_scheduler_nrscope->temp_x_sz);
   msresamp_crcf_execute(task_scheduler_nrscope->resampler, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_slot_sz, task_scheduler_nrscope->temp_y, &actual_sf_sz);
+  std::cout << "decode sib1 resampled: " << actual_sf_sz << std::endl;
   copy_cpp_to_c_complex_arr_sibs(task_scheduler_nrscope->temp_y, raw_buffer, actual_sf_sz);
 
   if(!task_scheduler_nrscope->sib1_inited){
@@ -157,7 +158,7 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   if (nof_found_dci < 1) {
     printf("SIBDecoder -- No DCI found :'(\n");
     gettimeofday(&t1, NULL);  
-    std::cout << "[sib1 decode] time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
+    // std::cout << "[sib1 decode] time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
     return SRSRAN_ERROR;
   }
 

@@ -260,7 +260,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
     // Adjust receive buffer
     buffer_offset = (uint32_t)(-q->next_rf_sample_offset);
     nof_samples   = (uint32_t)(q->sf_sz + q->next_rf_sample_offset);
-    printf("skip fetched (buffer_offset, nof_samples): (%u, %u)\n", buffer_offset, nof_samples);
+    // printf("skip fetched (buffer_offset, nof_samples): (%u, %u)\n", buffer_offset, nof_samples);
   }
   q->next_rf_sample_offset = 0;
 

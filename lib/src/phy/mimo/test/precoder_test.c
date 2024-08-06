@@ -29,7 +29,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "srsran/phy/channel/ch_awgn.h"
+#include "srsran/phy/channel/ch_awgn1.h"
 #include "srsran/srsran.h"
 
 #define MSE_THRESHOLD 0.0005
@@ -160,13 +160,13 @@ void populate_channel(srsran_tx_scheme_t type, cf_t* h[SRSRAN_MAX_PORTS][SRSRAN_
   }
 }
 
-static void awgn(cf_t** y, uint32_t n, float snr)
+static void awgn1(cf_t** y, uint32_t n, float snr)
 {
   int   i;
   float var = srsran_convert_dB_to_power(-snr) * scaling * scaling;
 
   for (i = 0; i < nof_rx_ports; i++) {
-    srsran_ch_awgn_c(y[i], y[i], var, n);
+    srsran_ch_awgn1_c(y[i], y[i], var, n);
   }
 }
 
@@ -286,7 +286,7 @@ int main(int argc, char** argv)
     }
   }
 
-  awgn(r, (uint32_t)nof_re, snr_db);
+  awgn1(r, (uint32_t)nof_re, snr_db);
 
   /* If CDD or Spatial muliplex choose decoder */
   if (strncmp(decoder_type_name, "zf", 16) == 0) {

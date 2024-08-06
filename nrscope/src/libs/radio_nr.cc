@@ -475,66 +475,16 @@ int Radio::RadioInitandStart(){
 
 static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t nsamples, srsran_timestamp_t* ts)
 {
-  // if (ptr == nullptr) {
-  // return SRSRAN_ERROR_INVALID_INPUTS;
-  // }
-  // srsran::radio* radio = (srsran::radio*)ptr;
-
-  // cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
-  // buffer_ptr[0]                         = buffer[0];
-  // nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
-  // std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
-  // srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
-
-  // srsran::rf_timestamp_t a;
-  // srsran::rf_timestamp_t &rf_timestamp = a;
-  // *ts = a.get(0);
-
-  // bool res = radio->rx_now(rf_buffer, rf_timestamp);
-
-  // // FILE *fp_sib1_time_series;
-  // // fp_sib1_time_series = fopen("./time_sib1_series.txt", "w");
-
-  // // srsran_vec_fprint2_c(fp_sib1_time_series, buffer[0], nsamples);
-
-  // // fclose(fp_sib1_time_series);
-
-  // return res;
-
-  //-------------------------- NO RESAMPLE ABOVE VS RESAMPLE BELOW (TIME COMSUMING) --------------------------
-
   if (ptr == nullptr) {
-    return SRSRAN_ERROR_INVALID_INPUTS;
+  return SRSRAN_ERROR_INVALID_INPUTS;
   }
-
-  float r = (float)23040000/(float)25000000;
-  float As=60.0f;
-
-  msresamp_crcf resampler = msresamp_crcf_create(r,As);
-  float delay = msresamp_crcf_get_delay(resampler);
-
-  // uint32_t pre_resampling_sf_sz = (int)ceilf((float)nsamples/r);
-  uint32_t pre_resampling_sf_sz = (int)((float)nsamples/r);
-  // std::cout << "[xuyang debug 2] pre_resampling_sf_sz: " << pre_resampling_sf_sz << std::endl;
-  // temp buffers for resampling
-  uint32_t temp_x_sz = pre_resampling_sf_sz + (int)ceilf(delay) + 10;
-  std::complex<float> temp_x[temp_x_sz];
-  uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
-  std::complex<float> temp_y[temp_y_sz];
-
-  uint32_t actual_sf_sz = 0;
-
-  // Allocate pre-resampling receive buffer
-  cf_t* pre_rs_rx_buffer = srsran_vec_cf_malloc(pre_resampling_sf_sz * 2);
-  srsran_vec_zero(pre_rs_rx_buffer, pre_resampling_sf_sz * 2);
-
   srsran::radio* radio = (srsran::radio*)ptr;
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
-  // buffer_ptr[0]                         = buffer[0];
-  buffer_ptr[0]                         = pre_rs_rx_buffer;
-  // srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
-  srsran::rf_buffer_t rf_buffer(buffer_ptr, pre_resampling_sf_sz);
+  buffer_ptr[0]                         = buffer[0];
+  nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
+  std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
+  srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;
   srsran::rf_timestamp_t &rf_timestamp = a;
@@ -542,14 +492,64 @@ static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t
 
   bool res = radio->rx_now(rf_buffer, rf_timestamp);
 
-  copy_c_to_cpp_complex_arr_and_zero_padding(pre_rs_rx_buffer, temp_x, pre_resampling_sf_sz, temp_x_sz);
-  msresamp_crcf_execute(resampler, temp_x, pre_resampling_sf_sz, temp_y, &actual_sf_sz);
-  // std::cout << "[xuyang debug 2] actual_sf_sz: " << actual_sf_sz << std::endl;
-  copy_cpp_to_c_complex_arr(temp_y, buffer[0], actual_sf_sz);
+  // FILE *fp_sib1_time_series;
+  // fp_sib1_time_series = fopen("./time_sib1_series.txt", "w");
 
-  msresamp_crcf_destroy(resampler);
+  // srsran_vec_fprint2_c(fp_sib1_time_series, buffer[0], nsamples);
+
+  // fclose(fp_sib1_time_series);
 
   return res;
+
+  //-------------------------- NO RESAMPLE ABOVE VS RESAMPLE BELOW (TIME COMSUMING) --------------------------
+
+  // if (ptr == nullptr) {
+  //   return SRSRAN_ERROR_INVALID_INPUTS;
+  // }
+
+  // float r = (float)23040000/(float)25000000;
+  // float As=60.0f;
+
+  // msresamp_crcf resampler = msresamp_crcf_create(r,As);
+  // float delay = msresamp_crcf_get_delay(resampler);
+
+  // // uint32_t pre_resampling_sf_sz = (int)ceilf((float)nsamples/r);
+  // uint32_t pre_resampling_sf_sz = (int)((float)nsamples/r);
+  // // std::cout << "[xuyang debug 2] pre_resampling_sf_sz: " << pre_resampling_sf_sz << std::endl;
+  // // temp buffers for resampling
+  // uint32_t temp_x_sz = pre_resampling_sf_sz + (int)ceilf(delay) + 10;
+  // std::complex<float> temp_x[temp_x_sz];
+  // uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
+  // std::complex<float> temp_y[temp_y_sz];
+
+  // uint32_t actual_sf_sz = 0;
+
+  // // Allocate pre-resampling receive buffer
+  // cf_t* pre_rs_rx_buffer = srsran_vec_cf_malloc(pre_resampling_sf_sz * 2);
+  // srsran_vec_zero(pre_rs_rx_buffer, pre_resampling_sf_sz * 2);
+
+  // srsran::radio* radio = (srsran::radio*)ptr;
+
+  // cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
+  // // buffer_ptr[0]                         = buffer[0];
+  // buffer_ptr[0]                         = pre_rs_rx_buffer;
+  // // srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
+  // srsran::rf_buffer_t rf_buffer(buffer_ptr, pre_resampling_sf_sz);
+
+  // srsran::rf_timestamp_t a;
+  // srsran::rf_timestamp_t &rf_timestamp = a;
+  // *ts = a.get(0);
+
+  // bool res = radio->rx_now(rf_buffer, rf_timestamp);
+
+  // copy_c_to_cpp_complex_arr_and_zero_padding(pre_rs_rx_buffer, temp_x, pre_resampling_sf_sz, temp_x_sz);
+  // msresamp_crcf_execute(resampler, temp_x, pre_resampling_sf_sz, temp_y, &actual_sf_sz);
+  // // std::cout << "[xuyang debug 2] actual_sf_sz: " << actual_sf_sz << std::endl;
+  // copy_cpp_to_c_complex_arr(temp_y, buffer[0], actual_sf_sz);
+
+  // msresamp_crcf_destroy(resampler);
+
+  // return res;
 }
 
 /**

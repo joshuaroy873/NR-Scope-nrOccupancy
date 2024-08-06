@@ -81,6 +81,8 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
 
 int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
                                                 TaskSchedulerNRScope* task_scheduler_nrscope){
+  struct timeval t0, t1;
+  gettimeofday(&t0, NULL);  
   if(!task_scheduler_nrscope->sib1_inited){
     std::cout << "SIB decoder not initialized..." << std::endl;
     return SRSASN_SUCCESS;
@@ -128,6 +130,8 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   // }
   if (nof_found_dci < 1) {
     printf("SIBDecoder -- No DCI found :'(\n");
+    gettimeofday(&t1, NULL);  
+    std::cout << "[sib1 decode] time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
     return SRSRAN_ERROR;
   }
 

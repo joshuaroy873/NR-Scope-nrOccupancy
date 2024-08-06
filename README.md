@@ -1,6 +1,25 @@
-NG-Scope-5G
+NG-Scope-5G (for X310 TwinRX)
 ===========
 
+Compared with the \*BX daughterboard which has a 184.32MHz clock rate, TwinRX daughterboard has a 200MHz clock rate. Previous srsRAN processing
+is based on the "conventional" 184.32MHz. In other words, the sampling rates of \*BX and sampling rates of TwinRX can only be integer divisions
+of 184.32MHz and 200MHz respectively. 
+
+Therefore, the high-level idea is we need to either (1) down-resample signals from 200MHz integer division to 184.32MHz integer division, or (2) change
+many places of the srsRAN signal processing to work on 200MHz. We choose (1) as (2) might be cumbersome. 
+
+Note: NRScope can be divided into 3 phases:
+
+(1) SSB search phase (not requiring downlink sync) --> (2) Downlink sync (temporary and very time-critical) --> (3) Downlink signal capturing (downlink synced and time-critical)
+
+Modifications done for TwinRX:
+
+* Create two sampling config parameters: `srsran_srate` and `srate`. `srsran_srate` is what the srsRAN signal processing saw, which should be in the 184.32MHz family. `srate` is what fed to the USRP RF, which should be in the 200MHz family. Therefore, the down-resampling ratio will be `r = srsran_srate/srate`.
+* [SSB search phase] Down-resample the raw signal with ratio `r` in the main thread.
+* [Downlink sync phase] *Efficiently* down-resample the raw signal with ratio `r` by saving the data moving around/data structure creation as much as possible etc in the main thread.
+* [Downlink signal capturing] the sib, rach, dci threads compete for down-resample the raw signal with ratio `r` (the first thread will do the work for all). Once done, everyone can use and process as usual. 
+
+===========
 Implement on top of srsRAN_4G UE code, decode the DCI and SIB information for 5G SA base station.
 
 ## Requirements

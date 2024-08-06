@@ -482,7 +482,7 @@ static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
-  nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
+  // nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
   // std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
@@ -599,7 +599,8 @@ int Radio::SyncandDownlinkInit(){
   rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * slot_sz * 2);
   // it appears the srsRAN is build on 15kHz scs, we need to use the srate and 
   // scs to calculate the correct subframe size 
-  arg_scs.srate = task_scheduler_nrscope.args_t.srate_hz;
+  // arg_scs.srate = task_scheduler_nrscope.args_t.srate_hz;
+  arg_scs.srate = rf_args.srate_hz;
   arg_scs.scs = task_scheduler_nrscope.cell.mib.scs_common;
 
   arg_scs.coreset_offset_scs = (cs_args.ssb_freq_hz - task_scheduler_nrscope.coreset0_args_t.coreset0_center_freq_hz) / task_scheduler_nrscope.cell.abs_pdcch_scs;// + 12;

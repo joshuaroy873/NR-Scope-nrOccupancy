@@ -476,14 +476,14 @@ int Radio::RadioInitandStart(){
 static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t nsamples, srsran_timestamp_t* ts)
 {
   if (ptr == nullptr) {
-    return SRSRAN_ERROR_INVALID_INPUTS;
+  return SRSRAN_ERROR_INVALID_INPUTS;
   }
   srsran::radio* radio = (srsran::radio*)ptr;
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
-  // nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
-  // std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
+  nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
+  std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;
@@ -574,8 +574,8 @@ static int slot_sync_recv_callback_track_state(void* ptr, cf_t** buffer, uint32_
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
-  // nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
-  std::cout << "[xuyang debug 31] nsamples: " << nsamples << std::endl;
+  nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
+  std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;
@@ -599,8 +599,7 @@ int Radio::SyncandDownlinkInit(){
   rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * slot_sz * 2);
   // it appears the srsRAN is build on 15kHz scs, we need to use the srate and 
   // scs to calculate the correct subframe size 
-  // arg_scs.srate = task_scheduler_nrscope.args_t.srate_hz;
-  arg_scs.srate = rf_args.srate_hz;
+  arg_scs.srate = task_scheduler_nrscope.args_t.srate_hz;
   arg_scs.scs = task_scheduler_nrscope.cell.mib.scs_common;
 
   arg_scs.coreset_offset_scs = (cs_args.ssb_freq_hz - task_scheduler_nrscope.coreset0_args_t.coreset0_center_freq_hz) / task_scheduler_nrscope.cell.abs_pdcch_scs;// + 12;
@@ -624,8 +623,7 @@ int Radio::SyncandDownlinkInit(){
     return SRSRAN_ERROR;
   }
   // Be careful of all the frequency setting (SSB/center downlink and etc.)!
-  // ssb_cfg.srate_hz       = task_scheduler_nrscope.args_t.srate_hz;
-  ssb_cfg.srate_hz       = rf_args.srate_hz;
+  ssb_cfg.srate_hz       = task_scheduler_nrscope.args_t.srate_hz;
   ssb_cfg.center_freq_hz = cs_args.ssb_freq_hz;
   ssb_cfg.ssb_freq_hz    = cs_args.ssb_freq_hz;
   ssb_cfg.scs            = cs_args.ssb_scs;
@@ -635,7 +633,7 @@ int Radio::SyncandDownlinkInit(){
 
   sync_cfg.N_id = task_scheduler_nrscope.cs_ret.ssb_res.N_id;
   sync_cfg.ssb = ssb_cfg;
-  sync_cfg.ssb.srate_hz = rf_args.srate_hz;
+  sync_cfg.ssb.srate_hz = task_scheduler_nrscope.args_t.srate_hz;
   if (srsran_ue_sync_nr_set_cfg(&ue_sync_nr, &sync_cfg) < SRSRAN_SUCCESS) {
     printf("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);
     logger.error("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);

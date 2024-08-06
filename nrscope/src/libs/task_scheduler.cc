@@ -111,6 +111,18 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
   cs_ret = *cs_ret_;
   memcpy(&srsran_searcher_cfg_t, srsran_searcher_cfg_t_, sizeof(srsue::nr::cell_search::cfg_t));
   // std::cout << "After memcpy" << std::endl;
+
+  // initiate resampler here
+  resample_ratio = (float)23040000/(float)25000000;
+  float As=60.0f;
+  resampler = msresamp_crcf_create(resample_ratio,As);
+  resampler_delay = msresamp_crcf_get_delay(resampler);
+  pre_resampling_slot_sz = 25000000 / 2000; // don't hardcode it; change later
+  temp_x_sz = pre_resampling_slot_sz + (int)ceilf(resampler_delay) + 10;
+  temp_y_sz = (uint32_t)(temp_x_sz * resample_ratio * 2);
+  temp_x = SRSRAN_MEM_ALLOC(std::complex<float>, temp_x_sz);
+  temp_y = SRSRAN_MEM_ALLOC(std::complex<float>, temp_y_sz);
+
   return SRSRAN_SUCCESS;
 }
 

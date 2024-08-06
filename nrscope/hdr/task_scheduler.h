@@ -1,6 +1,8 @@
 #ifndef TASK_SCHEDULER_H
 #define TASK_SCHEDULER_H
 
+#include <liquid/liquid.h>
+
 /* A class that stores some intermediate results and schedules the SIB, RACH and DCI loops. */
 
 #include "nrscope/hdr/nrscope_def.h"
@@ -71,6 +73,16 @@ class TaskSchedulerNRScope{
 
     // per bwp DCI decoding result for current TTI
     std::vector <DCIFeedback> results;
+
+    // resampler tools
+    float resample_ratio;
+    msresamp_crcf resampler;
+    float resampler_delay;
+    uint32_t temp_x_sz;
+    uint32_t temp_y_sz;
+    std::complex<float> * temp_x;
+    std::complex<float> * temp_y;
+    uint32_t pre_resampling_slot_sz;
 };
 
 

@@ -641,7 +641,7 @@ int Radio::RadioCapture(){
         srsran_slot_cfg_t slot = {0};
         slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
         // Move rx_buffer
-        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);  
+        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*pre_resampling_slot_sz, pre_resampling_slot_sz);  
         
 
         // fseek(fp, file_position * sizeof(cf_t), SEEK_SET);
@@ -708,7 +708,7 @@ int Radio::RadioCapture(){
         // To save computing resources for dci decoders: assume SIB1 info should be static
         std::thread sibs_thread;
         if (!task_scheduler_nrscope.sib1_found) {
-          sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
+          sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
         }
         std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
 

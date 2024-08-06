@@ -1,5 +1,23 @@
 #include "nrscope/hdr/sibs_decoder.h"
 
+int copy_c_to_cpp_complex_arr_and_zero_padding(cf_t* src, std::complex<float>* dst, uint32_t sz1, uint32_t sz2) {
+  for (uint32_t i = 0; i < sz2; i++) {
+    // indeed copy right? https://en.cppreference.com/w/cpp/numeric/complex/operator%3D
+    dst[i] = i < sz1 ? src[i] : 0;
+  }
+
+  return 0;
+}
+
+int copy_cpp_to_c_complex_arr(std::complex<float>* src, cf_t* dst, uint32_t sz) {
+  for (uint32_t i = 0; i < sz; i++) {
+    // https://en.cppreference.com/w/cpp/numeric/complex 
+    dst[i] = { src[i].real(), src[i].imag() };
+  }
+
+  return 0;
+}
+
 SIBsDecoder::SIBsDecoder(){
   data_pdcch = srsran_vec_u8_malloc(SRSRAN_SLOT_MAX_NOF_BITS_NR);
   if (data_pdcch == NULL) {
@@ -80,9 +98,17 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
 }
 
 int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
-                                                TaskSchedulerNRScope* task_scheduler_nrscope){
+                                                TaskSchedulerNRScope* task_scheduler_nrscope,
+                                                cf_t * raw_buffer){
   struct timeval t0, t1;
   gettimeofday(&t0, NULL);  
+
+  // resampling
+  uint32_t actual_sf_sz = 0;
+  copy_c_to_cpp_complex_arr_and_zero_padding(raw_buffer, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_slot_sz, task_scheduler_nrscope->temp_x_sz);
+  msresamp_crcf_execute(task_scheduler_nrscope->resampler, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_slot_sz, task_scheduler_nrscope->temp_y, &actual_sf_sz);
+  copy_cpp_to_c_complex_arr(task_scheduler_nrscope->temp_y, raw_buffer, actual_sf_sz);
+
   if(!task_scheduler_nrscope->sib1_inited){
     std::cout << "SIB decoder not initialized..." << std::endl;
     return SRSASN_SUCCESS;

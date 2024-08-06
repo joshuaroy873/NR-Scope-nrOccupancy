@@ -1559,7 +1559,7 @@ int srsran_ssb_find(srsran_ssb_t*                  q,
     return SRSRAN_ERROR_INVALID_INPUTS;
   }
 
-  printf("sync ssb sf_sz is %u\n", q->sf_sz);
+  // printf("sync ssb sf_sz is %u\n", q->sf_sz);
 
   if (!q->args.enable_search) {
     ERROR("SSB is not configured for search");

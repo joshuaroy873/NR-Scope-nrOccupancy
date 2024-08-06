@@ -25,6 +25,8 @@
 #define UE_SYNC_NR_DEFAULT_CFO_ALPHA 0.1
 pthread_mutex_t lock;
 
+static int haha = 0;
+
 int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_t* args)
 {
   // Check inputs
@@ -318,6 +320,9 @@ int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_
     ERROR("Error receiving baseband");
     return SRSRAN_ERROR;
   }
+
+  haha++;
+  printf("haha: %d\n", haha);
 
   // Run FSM
   switch (q->state) {

@@ -166,7 +166,7 @@ static void awgn1(cf_t** y, uint32_t n, float snr)
   float var = srsran_convert_dB_to_power(-snr) * scaling * scaling;
 
   for (i = 0; i < nof_rx_ports; i++) {
-    srsran_ch_awgn1_c(y[i], y[i], var, n);
+    srsran_ch_awgn_c(y[i], y[i], var, n);
   }
 }
 

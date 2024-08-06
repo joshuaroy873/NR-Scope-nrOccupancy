@@ -28,7 +28,6 @@
 #include "srsran/phy/utils/vector.h"
 #include <getopt.h>
 #include <stdlib.h>
-#include <liquid/liquid.h>
 
 // NR parameters
 static uint32_t                    pci                 = 500; // Physical Cell Identifier

@@ -3,6 +3,8 @@
 
 std::mutex lock_radio_nr;
 
+std::mutex resampler_lock;
+
 int copy_c_to_cpp_complex_arr_and_zero_padding(cf_t* src, std::complex<float>* dst, uint32_t sz1, uint32_t sz2) {
   for (uint32_t i = 0; i < sz2; i++) {
     // indeed copy right? https://en.cppreference.com/w/cpp/numeric/complex/operator%3D
@@ -652,11 +654,15 @@ int Radio::RadioCapture(){
   resampler_kit rk;
   prepare_resampler(&rk);
 
+  bool someone_already_resampled;
+
   while(true){
     outcome.timestamp = last_rx_time.get(0);  
 
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);    
+
+    someone_already_resampled = false;
 
     if (srsran_ue_sync_nr_zerocopy_twinrx(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, &rk) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
@@ -740,14 +746,14 @@ int Radio::RadioCapture(){
         // To save computing resources for dci decoders: assume SIB1 info should be static
         std::thread sibs_thread;
         if (!task_scheduler_nrscope.sib1_found) {
-          sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
+          sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope, rx_buffer, &resampler_lock, &someone_already_resampled};
         }
-        std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
+        std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer, &resampler_lock, &someone_already_resampled};
 
         std::vector <std::thread> dci_threads;
         if(task_scheduler_nrscope.dci_inited){
           for (uint32_t i = 0; i < nof_threads; i++){
-            dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope);
+            dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope, rx_buffer, &resampler_lock, &someone_already_resampled);
           }
         }
 

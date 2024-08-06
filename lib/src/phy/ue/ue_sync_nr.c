@@ -190,7 +190,7 @@ static int ue_sync_nr_run_find(srsran_ue_sync_nr_t* q, cf_t* buffer)
 
   // If the PBCH message was NOT decoded, early return
   if (!pbch_msg.crc) {
-    printf("!pbch_msg.crc triggered; early return\n");
+    // printf("!pbch_msg.crc triggered; early return\n");
     return SRSRAN_SUCCESS;
   }
 

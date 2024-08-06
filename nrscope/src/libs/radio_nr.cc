@@ -649,13 +649,16 @@ int Radio::RadioCapture(){
   // long int file_position = 0;
   // long int slot_idx_position = 0;
 
+  resampler_kit rk;
+  prepare_resampler(&rk);
+
   while(true){
     outcome.timestamp = last_rx_time.get(0);  
 
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);    
 
-    if (srsran_ue_sync_nr_zerocopy(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome) < SRSRAN_SUCCESS) {
+    if (srsran_ue_sync_nr_zerocopy_twinrx(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, rk) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
       logger.error("SYNC: error in zerocopy");
       return false;

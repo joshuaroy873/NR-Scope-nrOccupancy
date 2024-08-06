@@ -32,9 +32,12 @@ pthread_mutex_t lock;
 #define TEMP_X_SZ PRE_RESAMPLING_SF_SZ+20
 #define TEMP_Y_SZ temp_x_sz*RESAMPLE_RATIO*2 
 
-msresamp_crcf resampler = msresamp_crcf_create(RESAMPLE_RATIO, 60.0f);
-cf_t * temp_x = SRSRAN_MEM_ALLOC(cf_t, TEMP_X_SZ);
-cf_t * temp_y = SRSRAN_MEM_ALLOC(cf_t, TEMP_Y_SZ);
+int prepare_resampler(resampler_kit * q) {
+  q->resampler = msresamp_crcf_create(RESAMPLE_RATIO, 60.0f);
+  q->temp_y = SRSRAN_MEM_ALLOC(cf_t, TEMP_Y_SZ);
+
+  return SRSRAN_SUCCESS;
+}
 
 int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_t* args)
 {
@@ -335,11 +338,71 @@ int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_
     case SRSRAN_UE_SYNC_NR_STATE_IDLE:
       // Do nothing
       break;
+    case SRSRAN_UE_SYNC_NR_STATE_FIND:  
+      if (ue_sync_nr_run_find(q, buffer[0]) < SRSRAN_SUCCESS) {
+        ERROR("Error running find");
+        return SRSRAN_ERROR;
+      }
+      break;
+    case SRSRAN_UE_SYNC_NR_STATE_TRACK:
+      if (ue_sync_nr_run_track(q, buffer[0]) < SRSRAN_SUCCESS) {
+        ERROR("Error running track");
+        return SRSRAN_ERROR;
+      }
+      break;
+  }
+
+  // moved to the end of this function, by Haoran
+  // Increment subframe counter
+  // q->sf_idx++;
+
+  // Increment SFN
+  if (q->sf_idx >= SRSRAN_NOF_SF_X_FRAME) {
+    q->sfn    = (q->sfn + 1) % 1024;
+    q->sf_idx = 0;
+  }
+
+  // Fill outcome
+  outcome->in_sync  = (q->state == SRSRAN_UE_SYNC_NR_STATE_TRACK);
+  outcome->sf_idx   = q->sf_idx;
+  outcome->sfn      = q->sfn;
+  outcome->cfo_hz   = q->cfo_hz;
+  outcome->delay_us = q->avg_delay_us;
+
+  // Increment subframe counter
+  q->sf_idx++;
+
+  return SRSRAN_SUCCESS;
+}
+
+int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk)
+{
+  // Check inputs
+  if (q == NULL || buffer == NULL || outcome == NULL) {
+    return SRSRAN_ERROR_INVALID_INPUTS;
+  }
+
+  // Verify callback is valid
+  if (q->recv_callback == NULL) {
+    return SRSRAN_ERROR;
+  }
+
+  // Receive
+  if (ue_sync_nr_recv(q, buffer, &outcome->timestamp) < SRSRAN_SUCCESS) {
+    ERROR("Error receiving baseband");
+    return SRSRAN_ERROR;
+  }
+
+  // Run FSM
+  switch (q->state) {
+    case SRSRAN_UE_SYNC_NR_STATE_IDLE:
+      // Do nothing
+      break;
     case SRSRAN_UE_SYNC_NR_STATE_FIND:
       // resample here !
       int actual_sf_sz = 0;
-      msresamp_crcf_execute(resampler, buffer, PRE_RESAMPLING_SF_SZ, temp_y, &actual_sf_sz);
-      srsran_vec_cf_copy(buffer, temp_y, actual_sf_sz);  
+      msresamp_crcf_execute(rk->resampler, buffer, PRE_RESAMPLING_SF_SZ, rk->temp_y, &actual_sf_sz);
+      srsran_vec_cf_copy(buffer, rk->temp_y, actual_sf_sz);  
 
       if (ue_sync_nr_run_find(q, buffer[0]) < SRSRAN_SUCCESS) {
         ERROR("Error running find");

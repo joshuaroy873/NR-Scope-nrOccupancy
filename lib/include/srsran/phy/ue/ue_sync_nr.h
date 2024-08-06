@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <pthread.h>
+#include <liquid/liquid.h>
 
 #define SRSRAN_RECV_CALLBACK_TEMPLATE(NAME) int (*NAME)(void*, cf_t**, uint32_t, srsran_timestamp_t*)
 
@@ -103,6 +104,11 @@ typedef struct SRSRAN_API {
   float avg_delay_us; ///< Current average delay
 } srsran_ue_sync_nr_t;
 
+typedef struct SRSRAN_API {
+  msresamp_crcf resampler;
+  cf_t * temp_y;
+} resampler_kit;
+
 /**
  * @brief Describes a UE sync NR zerocopy outcome
  */
@@ -114,6 +120,8 @@ typedef struct SRSRAN_API {
   float              cfo_hz;    ///< Current CFO in Hz
   float              delay_us;  ///< Current average delay in microseconds
 } srsran_ue_sync_nr_outcome_t;
+
+SRSRAN_API int prepare_resampler(resampler_kit * q);
 
 /**
  * @brief Initialises a UE sync NR object
@@ -146,6 +154,9 @@ SRSRAN_API int srsran_ue_sync_nr_set_cfg(srsran_ue_sync_nr_t* q, const srsran_ue
  * @return SRSRAN_SUCCESS if no error occurs, SRSRAN_ERROR code otherwise
  */
 SRSRAN_API int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome);
+
+
+SRSRAN_API int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk);
 
 /**
  * @brief Runs the NR UE synchronization object, tries to find and track the configured SSB leaving in buffer the

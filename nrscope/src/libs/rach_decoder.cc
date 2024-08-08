@@ -409,6 +409,8 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     asn1::rrc_nr::dl_ccch_msg_s dlcch_msg;
     // What the first few bytes are? In srsgNB there are 10 extra bytes and for small cell there are 3 extra bytes
     // before the RRCSetup message.
+    std::cout << "decoding rrcsetup bytes_offset: " << bytes_offset << std::endl;
+    bytes_offset = 1;
     asn1::cbit_ref dlcch_bref(pdsch_res.tb[0].payload + bytes_offset, pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
     asn1::SRSASN_CODE err = dlcch_msg.unpack(dlcch_bref);
     if (err != asn1::SRSASN_SUCCESS) {

@@ -83,7 +83,6 @@ class TaskSchedulerNRScope{
     std::complex<float> * temp_x;
     std::complex<float> * temp_y;
     uint32_t pre_resampling_slot_sz;
-    uint32_t pre_resampling_sf_sz;
 };
 
 

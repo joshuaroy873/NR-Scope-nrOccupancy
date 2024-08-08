@@ -229,7 +229,7 @@ static int ue_sync_nr_run_track(srsran_ue_sync_nr_t* q, cf_t* buffer)
   }
 
   if (!is_ssb_opportunity) {
-    // printf("!is_ssb_opportunity triggered\n");
+    printf("!is_ssb_opportunity triggered\n");
     return SRSRAN_SUCCESS;
   }
 
@@ -394,26 +394,23 @@ int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srs
   }
 
   // Run FSM
-  u_int32_t actual_sf_sz = 0;
   switch (q->state) {
     case SRSRAN_UE_SYNC_NR_STATE_IDLE:
       // Do nothing
       break;
     case SRSRAN_UE_SYNC_NR_STATE_FIND:
       // resample 
-      msresamp_crcf_execute(rk->resampler, buffer[0], PRE_RESAMPLING_SF_SZ, buffer[0], &actual_sf_sz);
-      // printf("[xuyang debug] find state actual_sf_sz %u\n", actual_sf_sz);
-      // srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);  
+      u_int32_t actual_sf_sz = 0;
+      msresamp_crcf_execute(rk->resampler, buffer[0], PRE_RESAMPLING_SF_SZ, rk->temp_y, &actual_sf_sz);
+      printf("[xuyang debug] nice actual_sf_sz %u\n", actual_sf_sz);
+      srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);  
+
       if (ue_sync_nr_run_find(q, buffer[0]) < SRSRAN_SUCCESS) {
         ERROR("Error running find");
         return SRSRAN_ERROR;
       }
       break;
     case SRSRAN_UE_SYNC_NR_STATE_TRACK:
-      // resample 
-      // msresamp_crcf_execute(rk->resampler, buffer[0], PRE_RESAMPLING_SF_SZ, buffer[0], &actual_sf_sz);
-      // printf("[xuyang debug] track state actual_sf_sz %u\n", actual_sf_sz);
-      // srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);  
       if (ue_sync_nr_run_track(q, buffer[0]) < SRSRAN_SUCCESS) {
         ERROR("Error running track");
         return SRSRAN_ERROR;

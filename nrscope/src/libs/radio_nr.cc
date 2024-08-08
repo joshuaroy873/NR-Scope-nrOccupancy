@@ -680,9 +680,9 @@ int Radio::RadioCapture(){
     // If in sync, update slot index. The synced data is stored in rf_buffer_t.to_cf_t()[0]
     if (outcome.in_sync){
 
-      if (i % 2 == 1) {
-        continue;
-      }
+      // if (i % 2 == 1) {
+      //   continue;
+      // }
       // std::cout << "System frame idx: " << outcome.sfn << std::endl;
       // std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
       // std::cout << "Sync delay: " << outcome.delay_us << std::endl;
@@ -692,15 +692,32 @@ int Radio::RadioCapture(){
       // msresamp_crcf_execute(task_scheduler_nrscope.resampler, task_scheduler_nrscope.temp_x, task_scheduler_nrscope.pre_resampling_sf_sz, task_scheduler_nrscope.temp_y, &actual_sf_sz);
       // // std::cout << "main thread resampled: " << actual_sf_sz << std::endl;
       // copy_cpp_to_c_complex_arr(task_scheduler_nrscope.temp_y, rx_buffer, actual_sf_sz);      
-      // someone_already_resampled = true;
+      someone_already_resampled = false;
 
       for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
         srsran_slot_cfg_t slot = {0};
         slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
         // Move rx_buffer
-        // srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);  
+        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*pre_resampling_slot_sz, pre_resampling_slot_sz);  
+
+        if (i % 2 == 1) {
+          if (slot_idx == 0) {
+            someone_already_resampled = false;
+          }
+          if (slot_idx == 1) {
+            someone_already_resampled = true;
+          }
+        }
+        else {
+          if (slot_idx == 0) {
+            someone_already_resampled = true;
+          }
+          if (slot_idx == 1) {
+            someone_already_resampled = false;
+          }
+        }
         // save copy
-        rx_buffer = rx_buffer_begin + slot_idx*slot_sz;
+        // rx_buffer = rx_buffer_begin + slot_idx*slot_sz;
 
         // fseek(fp, file_position * sizeof(cf_t), SEEK_SET);
         // // uint32_t a = fread(ue_dl.fft[0].cfg.in_buffer, sizeof(cf_t), ue_dl.fft[0].sf_sz, fp);

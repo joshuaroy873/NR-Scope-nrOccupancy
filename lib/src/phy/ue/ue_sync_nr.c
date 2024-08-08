@@ -229,7 +229,7 @@ static int ue_sync_nr_run_track(srsran_ue_sync_nr_t* q, cf_t* buffer)
   }
 
   if (!is_ssb_opportunity) {
-    printf("!is_ssb_opportunity triggered\n");
+    // printf("!is_ssb_opportunity triggered\n");
     return SRSRAN_SUCCESS;
   }
 

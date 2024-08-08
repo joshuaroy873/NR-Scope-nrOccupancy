@@ -671,6 +671,8 @@ int Radio::RadioCapture(){
       std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
       std::cout << "Sync delay: " << outcome.delay_us << std::endl;
 
+      struct timeval t0, t1;
+      gettimeofday(&t0, NULL);
       
       uint32_t actual_sf_sz = 0;
       copy_c_to_cpp_complex_arr_and_zero_padding(rx_buffer, task_scheduler_nrscope.temp_x, task_scheduler_nrscope.pre_resampling_sf_sz, task_scheduler_nrscope.temp_x_sz);
@@ -696,9 +698,6 @@ int Radio::RadioCapture(){
         // // uint32_t a = fread(ue_dl.fft[0].cfg.in_buffer, sizeof(cf_t), ue_dl.fft[0].sf_sz, fp);
         // uint32_t b = fread(&slot.idx, sizeof(uint32_t), 1, fp2);
         // slot_idx_position += 1;
-
-        struct timeval t0, t1;
-        gettimeofday(&t0, NULL);
 
         // 1) Inform the 3 loops to attend to this slot by puting the slot and outcome into a queue
         //     Problem: When the thread try to attend to the data and get the slot index from the queue, 

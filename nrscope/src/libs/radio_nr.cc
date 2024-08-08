@@ -657,6 +657,8 @@ int Radio::RadioCapture(){
 
   bool someone_already_resampled;
 
+  cf_t * rx_buffer_begin = rx_buffer;
+
   while(true){
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);
@@ -684,9 +686,9 @@ int Radio::RadioCapture(){
         srsran_slot_cfg_t slot = {0};
         slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
         // Move rx_buffer
-        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);  
-        
-        someone_already_resampled = false;
+        // srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*slot_sz, slot_sz);  
+        // save copy
+        rx_buffer = rx_buffer_begin + slot_idx*slot_sz;
 
         // fseek(fp, file_position * sizeof(cf_t), SEEK_SET);
         // // uint32_t a = fread(ue_dl.fft[0].cfg.in_buffer, sizeof(cf_t), ue_dl.fft[0].sf_sz, fp);

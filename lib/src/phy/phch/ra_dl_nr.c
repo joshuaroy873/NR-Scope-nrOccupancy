@@ -59,8 +59,10 @@ static bool check_time_ra_typeB(uint32_t* S, uint32_t* L)
 bool srsran_ra_dl_nr_time_validate(srsran_sch_grant_nr_t* grant)
 {
   if (grant->mapping == srsran_sch_mapping_type_A) {
+    printf("[xuyang debug] trigger 73");
     return check_time_ra_typeA(&grant->S, &grant->L);
   } else {
+    printf("[xuyang debug] trigger 74");
     return check_time_ra_typeB(&grant->S, &grant->L);
   }
 }
@@ -158,10 +160,13 @@ int srsran_ra_dl_nr_time(const srsran_sch_hl_cfg_nr_t*    cfg,
   } else if ((rnti_type == srsran_rnti_type_ra || rnti_type == srsran_rnti_type_tc) &&
              ss_type == srsran_search_space_type_common_1) {
     // Row 3
+    printf("[xuyang] m: %u", m);
     if (cfg->nof_common_time_ra > 0) {
+      printf("[xuyang] trigger 71");
       ra_dl_nr_time_hl(&cfg->common_time_ra[m], grant);
     } else {
       // Note: Only Default A is supported, which corresponds SS/PBCH block and coreset mux pattern 1
+      printf("[xuyang] trigger 72");
       srsran_ra_dl_nr_time_default_A(m, cfg->typeA_pos, grant);
     }
   } else if (rnti_type == srsran_rnti_type_p && ss_type == srsran_search_space_type_common_2) {

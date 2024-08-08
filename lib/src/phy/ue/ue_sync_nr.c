@@ -411,6 +411,11 @@ int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srs
       }
       break;
     case SRSRAN_UE_SYNC_NR_STATE_TRACK:
+      // resample 
+      u_int32_t actual_sf_sz = 0;
+      msresamp_crcf_execute(rk->resampler, buffer[0], PRE_RESAMPLING_SF_SZ, rk->temp_y, &actual_sf_sz);
+      printf("[xuyang debug] nice actual_sf_sz %u\n", actual_sf_sz);
+      srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);  
       if (ue_sync_nr_run_track(q, buffer[0]) < SRSRAN_SUCCESS) {
         ERROR("Error running track");
         return SRSRAN_ERROR;

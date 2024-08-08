@@ -673,12 +673,12 @@ int Radio::RadioCapture(){
       // std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
       // std::cout << "Sync delay: " << outcome.delay_us << std::endl;
 
-      uint32_t actual_sf_sz = 0;
-      copy_c_to_cpp_complex_arr_and_zero_padding(rx_buffer, task_scheduler_nrscope.temp_x, task_scheduler_nrscope.pre_resampling_sf_sz, task_scheduler_nrscope.temp_x_sz);
-      msresamp_crcf_execute(task_scheduler_nrscope.resampler, task_scheduler_nrscope.temp_x, task_scheduler_nrscope.pre_resampling_sf_sz, task_scheduler_nrscope.temp_y, &actual_sf_sz);
-      // std::cout << "main thread resampled: " << actual_sf_sz << std::endl;
-      copy_cpp_to_c_complex_arr(task_scheduler_nrscope.temp_y, rx_buffer, actual_sf_sz);      
-      someone_already_resampled = true;
+      // uint32_t actual_sf_sz = 0;
+      // copy_c_to_cpp_complex_arr_and_zero_padding(rx_buffer, task_scheduler_nrscope.temp_x, task_scheduler_nrscope.pre_resampling_sf_sz, task_scheduler_nrscope.temp_x_sz);
+      // msresamp_crcf_execute(task_scheduler_nrscope.resampler, task_scheduler_nrscope.temp_x, task_scheduler_nrscope.pre_resampling_sf_sz, task_scheduler_nrscope.temp_y, &actual_sf_sz);
+      // // std::cout << "main thread resampled: " << actual_sf_sz << std::endl;
+      // copy_cpp_to_c_complex_arr(task_scheduler_nrscope.temp_y, rx_buffer, actual_sf_sz);      
+      // someone_already_resampled = true;
 
       for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
         srsran_slot_cfg_t slot = {0};

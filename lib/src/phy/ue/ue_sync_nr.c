@@ -394,8 +394,8 @@ int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srs
   }
 
   // Run FSM
+  u_int32_t actual_sf_sz = 0;
   switch (q->state) {
-    u_int32_t actual_sf_sz = 0;
     case SRSRAN_UE_SYNC_NR_STATE_IDLE:
       // Do nothing
       break;

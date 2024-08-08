@@ -658,6 +658,8 @@ int Radio::RadioCapture(){
   bool someone_already_resampled;
 
   while(true){
+    struct timeval t0, t1;
+    gettimeofday(&t0, NULL);
     outcome.timestamp = last_rx_time.get(0);      
 
     if (srsran_ue_sync_nr_zerocopy_twinrx(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, &rk) < SRSRAN_SUCCESS) {
@@ -670,9 +672,6 @@ int Radio::RadioCapture(){
       // std::cout << "System frame idx: " << outcome.sfn << std::endl;
       // std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
       // std::cout << "Sync delay: " << outcome.delay_us << std::endl;
-
-      struct timeval t0, t1;
-      gettimeofday(&t0, NULL);
 
       uint32_t actual_sf_sz = 0;
       copy_c_to_cpp_complex_arr_and_zero_padding(rx_buffer, task_scheduler_nrscope.temp_x, task_scheduler_nrscope.pre_resampling_sf_sz, task_scheduler_nrscope.temp_x_sz);
@@ -827,10 +826,11 @@ int Radio::RadioCapture(){
         }
         task_scheduler_nrscope.update_known_rntis();
       } 
-      gettimeofday(&t1, NULL);  
-      // result.processing_time_us = t1.tv_usec - t0.tv_usec;   
-      std::cout << "time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
+      
     } 
+    gettimeofday(&t1, NULL);  
+    // result.processing_time_us = t1.tv_usec - t0.tv_usec;   
+    std::cout << "time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
   }
   // fclose(fp);
   // fclose(fp2);

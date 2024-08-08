@@ -660,7 +660,7 @@ int Radio::RadioCapture(){
   cf_t * rx_buffer_begin = rx_buffer;
 
   while(true){
-    struct timeval t0, t1;
+    struct timeval t0, t1, t2;
     gettimeofday(&t0, NULL);
     outcome.timestamp = last_rx_time.get(0);      
 
@@ -669,6 +669,11 @@ int Radio::RadioCapture(){
       logger.error("SYNC: error in zerocopy");
       return false;
     }
+
+    gettimeofday(&t2, NULL);  
+    // result.processing_time_us = t1.tv_usec - t0.tv_usec;   
+    std::cout << "sample fetch time_spend: " << (t2.tv_usec - t0.tv_usec) << "(us)" << std::endl;
+
     // If in sync, update slot index. The synced data is stored in rf_buffer_t.to_cf_t()[0]
     if (outcome.in_sync){
       // std::cout << "System frame idx: " << outcome.sfn << std::endl;

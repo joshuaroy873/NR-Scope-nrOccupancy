@@ -659,7 +659,10 @@ int Radio::RadioCapture(){
 
   cf_t * rx_buffer_begin = rx_buffer;
 
+  int i = 0;
+
   while(true){
+    i++;
     struct timeval t0, t1, t2;
     gettimeofday(&t0, NULL);
     outcome.timestamp = last_rx_time.get(0);      
@@ -676,6 +679,10 @@ int Radio::RadioCapture(){
 
     // If in sync, update slot index. The synced data is stored in rf_buffer_t.to_cf_t()[0]
     if (outcome.in_sync){
+
+      if (i % 2 == 1) {
+        continue;
+      }
       // std::cout << "System frame idx: " << outcome.sfn << std::endl;
       // std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
       // std::cout << "Sync delay: " << outcome.delay_us << std::endl;

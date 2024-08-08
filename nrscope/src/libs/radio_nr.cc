@@ -673,10 +673,10 @@ int Radio::RadioCapture(){
 
       
       uint32_t actual_sf_sz = 0;
-      copy_c_to_cpp_complex_arr_and_zero_padding_msg4(rx_buffer, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_sf_sz, task_scheduler_nrscope->temp_x_sz);
-      msresamp_crcf_execute(task_scheduler_nrscope->resampler, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_sf_sz, task_scheduler_nrscope->temp_y, &actual_sf_sz);
+      copy_c_to_cpp_complex_arr_and_zero_padding(rx_buffer, task_scheduler_nrscope.temp_x, task_scheduler_nrscope.pre_resampling_sf_sz, task_scheduler_nrscope.temp_x_sz);
+      msresamp_crcf_execute(task_scheduler_nrscope.resampler, task_scheduler_nrscope.temp_x, task_scheduler_nrscope.pre_resampling_sf_sz, task_scheduler_nrscope.temp_y, &actual_sf_sz);
       std::cout << "main thread resampled: " << actual_sf_sz << std::endl;
-      copy_cpp_to_c_complex_arr_msg4(task_scheduler_nrscope->temp_y, rx_buffer, actual_sf_sz);
+      copy_cpp_to_c_complex_arr(task_scheduler_nrscope.temp_y, rx_buffer, actual_sf_sz);
 
       *someone_already_resampled = true;
       

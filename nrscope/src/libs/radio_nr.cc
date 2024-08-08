@@ -700,22 +700,22 @@ int Radio::RadioCapture(){
         // Move rx_buffer
         srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*pre_resampling_slot_sz, pre_resampling_slot_sz);  
 
-        if (i % 2 == 1) {
-          if (slot_idx == 0) {
-            someone_already_resampled = false;
-          }
-          if (slot_idx == 1) {
-            someone_already_resampled = true;
-          }
-        }
-        else {
-          if (slot_idx == 0) {
-            someone_already_resampled = true;
-          }
-          if (slot_idx == 1) {
-            someone_already_resampled = false;
-          }
-        }
+        // if (i % 2 == 1) {
+        //   if (slot_idx == 0) {
+        //     someone_already_resampled = false;
+        //   }
+        //   if (slot_idx == 1) {
+        //     someone_already_resampled = true;
+        //   }
+        // }
+        // else {
+        //   if (slot_idx == 0) {
+        //     someone_already_resampled = true;
+        //   }
+        //   if (slot_idx == 1) {
+        //     someone_already_resampled = false;
+        //   }
+        // }
         // save copy
         // rx_buffer = rx_buffer_begin + slot_idx*slot_sz;
 

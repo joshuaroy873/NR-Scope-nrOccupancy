@@ -484,7 +484,7 @@ static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
-  nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
+  nsamples = (float)(nsamples)/((float)23040000/(float)33333333);
   std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
@@ -509,7 +509,7 @@ static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t
   //   return SRSRAN_ERROR_INVALID_INPUTS;
   // }
 
-  // float r = (float)23040000/(float)25000000;
+  // float r = (float)23040000/(float)33333333;
   // float As=60.0f;
 
   // msresamp_crcf resampler = msresamp_crcf_create(r,As);
@@ -567,7 +567,7 @@ static int slot_sync_recv_callback_track_state(void* ptr, cf_t** buffer, uint32_
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
-  nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
+  nsamples = (float)(nsamples)/((float)23040000/(float)33333333);
   std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 

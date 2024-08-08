@@ -663,7 +663,7 @@ int Radio::RadioCapture(){
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);    
 
-    someone_already_resampled = false;
+    someone_already_resampled = true;
 
     if (srsran_ue_sync_nr_zerocopy_twinrx(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, &rk) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
@@ -680,7 +680,11 @@ int Radio::RadioCapture(){
         srsran_slot_cfg_t slot = {0};
         slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
         // Move rx_buffer
-        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*pre_resampling_slot_sz, pre_resampling_slot_sz);  
+        srsran_vec_cf_copy(rx_buffer, rx_buffer + slot_idx*pre_resampling_slot_sz, pre_resampling_slot_sz); 
+
+        if (slot_idx == 1){
+          someone_already_resampled = false;
+        } 
         
 
         // fseek(fp, file_position * sizeof(cf_t), SEEK_SET);

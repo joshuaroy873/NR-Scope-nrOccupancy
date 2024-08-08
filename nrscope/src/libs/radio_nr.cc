@@ -826,10 +826,10 @@ int Radio::RadioCapture(){
           }
         }
         task_scheduler_nrscope.update_known_rntis();
-        gettimeofday(&t1, NULL);  
-        // result.processing_time_us = t1.tv_usec - t0.tv_usec;   
-        std::cout << "time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
       } 
+      gettimeofday(&t1, NULL);  
+      // result.processing_time_us = t1.tv_usec - t0.tv_usec;   
+      std::cout << "time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
     } 
   }
   // fclose(fp);

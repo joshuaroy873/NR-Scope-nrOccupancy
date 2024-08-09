@@ -59,10 +59,10 @@ static bool check_time_ra_typeB(uint32_t* S, uint32_t* L)
 bool srsran_ra_dl_nr_time_validate(srsran_sch_grant_nr_t* grant)
 {
   if (grant->mapping == srsran_sch_mapping_type_A) {
-    printf("[xuyang debug] trigger 73");
+    // printf("[xuyang debug] trigger 73");
     return check_time_ra_typeA(&grant->S, &grant->L);
   } else {
-    printf("[xuyang debug] trigger 74");
+    // printf("[xuyang debug] trigger 74");
     return check_time_ra_typeB(&grant->S, &grant->L);
   }
 }

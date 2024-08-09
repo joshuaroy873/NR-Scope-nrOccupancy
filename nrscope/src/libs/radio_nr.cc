@@ -683,7 +683,7 @@ int Radio::FetchAndResample(){
 
     gettimeofday(&t1, NULL);  
     std::cout << "producer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
-    std::cout << "next_produce_at: " << next_produce_at << std::endl;
+    std::cout << "next_produce_at: " << (next_produce_at % 999 + 1) << std::endl;
   }
 
   return SRSRAN_SUCCESS;
@@ -711,9 +711,9 @@ int Radio::DecodeAndProcess(){
     outcome.timestamp = last_rx_time.get(0);  
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);
-    // std::cout << "DecodeAndProcess: " << slot_sz << std::endl;
     // consume a sf data
     for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
+      std::cout << "decode slot " << slot_idx << std::endl;
       srsran_slot_cfg_t slot = {0};
       slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
       // Move rx_buffer
@@ -850,6 +850,7 @@ int Radio::DecodeAndProcess(){
     first_time = false;
     gettimeofday(&t1, NULL);  
     std::cout << "consumer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
+    std::cout << "next_consume_at: " << (next_consume_at % 999 + 1) << std::endl;
   } // true loop
   
   return SRSRAN_SUCCESS;

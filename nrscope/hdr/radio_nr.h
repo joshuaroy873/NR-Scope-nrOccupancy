@@ -68,7 +68,7 @@ class Radio{
     std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
 
     // a better coordination between producer (fetch and resample) and consumer (decode)
-    std::binary_semaphore smph_sf_data_prod_cons{0}
+    std::binary_semaphore smph_sf_data_prod_cons{0};
 
     std::string log_name;
     bool local_log;

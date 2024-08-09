@@ -649,6 +649,8 @@ int Radio::FetchAndResample(){
   // smph_sf_data_prod_cons.release();
   sem_post(&smph_sf_data_prod_cons);
 
+  sem_post(&smph_sf_data_prod_cons);
+
   return SRSRAN_SUCCESS;
 }
 

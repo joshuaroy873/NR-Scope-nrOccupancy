@@ -13,7 +13,7 @@
 #include "nrscope/hdr/nrscope_logger.h"
 #include "nrscope/hdr/to_google.h"
 
-#include <semaphore11>
+#include <semaphore>
 #include <liquid/liquid.h>
 #include <chrono>
 
@@ -70,6 +70,7 @@ class Radio{
 
     // a better coordination between producer (fetch and resample) and consumer (decode)
     // std::binary_semaphore smph_sf_data_prod_cons{0};
+    sem_t mutex;
 
     std::string log_name;
     bool local_log;

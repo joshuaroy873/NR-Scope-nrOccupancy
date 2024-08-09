@@ -593,7 +593,7 @@ static int slot_sync_recv_callback_track_state(void* ptr, cf_t** buffer, uint32_
 
 int Radio::SyncandDownlinkInit(){
   //***** DL args Config Start *****//
-  rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * slot_sz * 2);
+  rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * slot_sz * 2); // only one sf here
   // it appears the srsRAN is build on 15kHz scs, we need to use the srate and 
   // scs to calculate the correct subframe size 
   arg_scs.srate = task_scheduler_nrscope.args_t.srate_hz;

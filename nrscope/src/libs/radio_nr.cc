@@ -648,7 +648,7 @@ int Radio::FetchAndResample(){
   // a new sf data ready; let decoder consume
   // smph_sf_data_prod_cons.release();
   sem_post(&smph_sf_data_prod_cons);
-
+  sem_post(&smph_sf_data_prod_cons);
   sem_post(&smph_sf_data_prod_cons);
 
   return SRSRAN_SUCCESS;

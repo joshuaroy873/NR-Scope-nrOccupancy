@@ -657,6 +657,8 @@ int Radio::RadioCapture(){
 
   bool someone_already_resampled;
 
+  std::cout << "Enter while loop" << std::endl;
+
   while(true){
     outcome.timestamp = last_rx_time.get(0);  
 

@@ -13,6 +13,7 @@
 #include "nrscope/hdr/nrscope_logger.h"
 #include "nrscope/hdr/to_google.h"
 
+#include <semaphore>
 #include <liquid/liquid.h>
 
 class Radio{
@@ -65,6 +66,9 @@ class Radio{
     uint32_t nof_rnti_worker_groups;
     uint8_t nof_bwps;
     std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
+
+    // a better coordination between producer (fetch and resample) and consumer (decode)
+    std::binary_semaphore smph_sf_data_prod_cons{0}
 
     std::string log_name;
     bool local_log;

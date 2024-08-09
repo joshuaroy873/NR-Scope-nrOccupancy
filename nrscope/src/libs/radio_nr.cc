@@ -642,17 +642,26 @@ int Radio::SyncandDownlinkInit(){
 int Radio::FetchAndResample(){
 
   std::cout << "FetchAndResample: " << slot_sz << std::endl;
+  // a new sf data ready; let decoder consume
+  smph_sf_data_prod_cons.release();
+
   return SRSRAN_SUCCESS;
 }
 
 int Radio::DecodeAndProcess(){
 
-  std::cout << "DecodeAndProcess: " << slot_sz << std::endl;
+  while (true) {
+    // consume a sf data
+    smph_sf_data_prod_cons.acquire();
+    std::cout << "DecodeAndProcess: " << slot_sz << std::endl;
+  }
+  
   return SRSRAN_SUCCESS;
 }
 
 int Radio::RadioCapture(){
 
+  std::thread deco_thread {&Radio::FetchAndResample, this};
   std::thread deco_thread {&Radio::DecodeAndProcess, this};
 
   if(!task_scheduler_nrscope.sib1_inited){

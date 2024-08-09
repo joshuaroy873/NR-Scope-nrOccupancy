@@ -13,7 +13,7 @@
 #include "nrscope/hdr/nrscope_logger.h"
 #include "nrscope/hdr/to_google.h"
 
-#include <semaphore>
+#include <semaphore11>
 #include <liquid/liquid.h>
 #include <chrono>
 

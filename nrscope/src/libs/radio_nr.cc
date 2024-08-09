@@ -50,6 +50,8 @@ Radio::Radio() :
   outcome = {};
   ue_sync_nr_args = {};
   sync_cfg = {};
+
+  sem_init(&smph_sf_data_prod_cons, 0, 0); 
 }
 
 Radio::~Radio() {
@@ -645,6 +647,7 @@ int Radio::FetchAndResample(){
   std::cout << "FetchAndResample: " << slot_sz << std::endl;
   // a new sf data ready; let decoder consume
   // smph_sf_data_prod_cons.release();
+  sem_post(&smph_sf_data_prod_cons);
 
   return SRSRAN_SUCCESS;
 }
@@ -653,7 +656,7 @@ int Radio::DecodeAndProcess(){
 
   while (true) {
     // consume a sf data
-    // smph_sf_data_prod_cons.acquire();
+    sem_wait(&smph_sf_data_prod_cons); 
     std::cout << "DecodeAndProcess: " << slot_sz << std::endl;
   }
   

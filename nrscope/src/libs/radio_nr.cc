@@ -653,7 +653,7 @@ int Radio::DecodeAndProcess(){
 
 int Radio::RadioCapture(){
 
-  std::thread rach_thread {&DecodeAndProcess};
+  std::thread rach_thread {&DecodeAndProcess, this};
 
   if(!task_scheduler_nrscope.sib1_inited){
     // std::thread sib_init_thread {&SIBsDecoder::sib_decoder_and_reception_init, &sibs_decoder, arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()};

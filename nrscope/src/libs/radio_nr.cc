@@ -704,6 +704,8 @@ int Radio::DecodeAndProcess(){
   uint32_t sf_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * slot_sz;
   bool someone_already_resampled = true;
 
+  bool first_time = true;
+
   while (true) {
     sem_wait(&smph_sf_data_prod_cons); 
     outcome.timestamp = last_rx_time.get(0);  
@@ -718,7 +720,7 @@ int Radio::DecodeAndProcess(){
       // here wanted data move to the buffer beginning for decoders to process
       // fetch and resample thread will store unprocessed data at 1 to 999 sf index; we copy wanted data to 0 sf idx
       // assumption: no way when we are decoding this sf the fetch thread has go around the whole ring and modify this sf again
-      srsran_vec_cf_copy(rx_buffer, rx_buffer + ((next_consume_at % 999 + 1) * sf_sz) + (slot_idx * slot_sz), slot_sz); 
+      srsran_vec_cf_copy(rx_buffer, rx_buffer + (first_time ? 0 : ((next_consume_at % 999 + 1) * sf_sz)) + (slot_idx * slot_sz), slot_sz); 
 
       if(!task_scheduler_nrscope.rach_inited and task_scheduler_nrscope.sib1_found){
         // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};
@@ -845,6 +847,7 @@ int Radio::DecodeAndProcess(){
     } // slot iteration
 
     next_consume_at++;
+    first_time = false;
     gettimeofday(&t1, NULL);  
     std::cout << "consumer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
   } // true loop

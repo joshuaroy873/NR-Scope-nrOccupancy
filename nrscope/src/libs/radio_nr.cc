@@ -644,7 +644,7 @@ int Radio::FetchAndResample(){
 
   std::cout << "FetchAndResample: " << slot_sz << std::endl;
   // a new sf data ready; let decoder consume
-  smph_sf_data_prod_cons.release();
+  // smph_sf_data_prod_cons.release();
 
   return SRSRAN_SUCCESS;
 }
@@ -653,7 +653,7 @@ int Radio::DecodeAndProcess(){
 
   while (true) {
     // consume a sf data
-    smph_sf_data_prod_cons.acquire();
+    // smph_sf_data_prod_cons.acquire();
     std::cout << "DecodeAndProcess: " << slot_sz << std::endl;
   }
   

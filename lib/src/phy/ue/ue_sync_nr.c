@@ -399,7 +399,7 @@ int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srs
   printf("[xuyang debug] nice actual_sf_sz %u\n", actual_sf_sz);
   srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);
 
-  printf("rx_buffer_address: %p\n", buffer[0]);
+  // printf("rx_buffer_address: %p\n", buffer[0]);
 
   // Run FSM
   switch (q->state) {

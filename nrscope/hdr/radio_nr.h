@@ -130,6 +130,11 @@ class Radio{
     * NR_FAILURE (-1) if something goes wrong.
     */
     int RadioCapture();
+  
+  private:
+    int FetchAndResample();
+
+    int DecodeAndProcess();
 };
 
 

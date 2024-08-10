@@ -646,8 +646,9 @@ int Radio::DecodeAndProcess(){
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);
     // consume a sf data
+    someone_already_resampled = false;
     for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
-      someone_already_resampled = false;
+      
       std::cout << "decode slot " << slot_idx << std::endl;
       srsran_slot_cfg_t slot = {0};
       slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;

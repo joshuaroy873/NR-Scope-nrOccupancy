@@ -490,7 +490,7 @@ static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
   nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
-  std::cout << "[xuyang debug 3] find fetch nsamples: " << nsamples << std::endl;
+  // std::cout << "[xuyang debug 3] find fetch nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;
@@ -573,7 +573,7 @@ static int slot_sync_recv_callback_track_state(void* ptr, cf_t** buffer, uint32_
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
   nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
-  std::cout << "[xuyang debug 3] track fetch nsamples: " << nsamples << std::endl;
+  // std::cout << "[xuyang debug 3] track fetch nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;
@@ -770,7 +770,7 @@ int Radio::DecodeAndProcess(){
 
       // To save computing resources for dci decoders: assume SIB1 info should be static
       std::thread sibs_thread;
-      if (!task_scheduler_nrscope.sib1_found) {
+      if (true || !task_scheduler_nrscope.sib1_found) {
         sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope, rx_buffer, &resampler_lock, &someone_already_resampled};
       }
       std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer, &resampler_lock, &someone_already_resampled};

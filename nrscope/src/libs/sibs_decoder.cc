@@ -121,10 +121,10 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
     return SRSASN_SUCCESS;
   }
 
-  if(task_scheduler_nrscope->sib1_found){
-    std::cout << "SIB 1 found, skipping..." << std::endl;
-    return SRSRAN_SUCCESS;
-  }
+  // if(task_scheduler_nrscope->sib1_found){
+  //   std::cout << "SIB 1 found, skipping..." << std::endl;
+  //   return SRSRAN_SUCCESS;
+  // }
 
   memset(&dci_sibs, 0, sizeof(srsran_dci_dl_nr_t));
 

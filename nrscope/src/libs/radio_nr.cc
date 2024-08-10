@@ -674,8 +674,8 @@ int Radio::FetchAndResample(){
     // If in sync, update slot index. The synced data is stored in rf_buffer_t.to_cf_t()[0]
     if (outcome.in_sync){
       in_sync = true;
-      std::cout << "System frame idx: " << outcome.sfn << std::endl;
-      std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
+      // std::cout << "System frame idx: " << outcome.sfn << std::endl;
+      // std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
       // a new sf data ready; let decoder consume
       next_produce_at++;
       sem_post(&smph_sf_data_prod_cons);
@@ -683,7 +683,7 @@ int Radio::FetchAndResample(){
 
     gettimeofday(&t1, NULL);  
     std::cout << "producer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
-    std::cout << "next_produce_at: " << (next_produce_at % 999 + 1) << std::endl;
+    std::cout << "next_produce_at: " << !outcome.in_sync ? 0 (next_produce_at % 999 + 1) << std::endl;
   }
 
   return SRSRAN_SUCCESS;

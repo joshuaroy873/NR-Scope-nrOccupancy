@@ -683,7 +683,7 @@ int Radio::FetchAndResample(){
 
     gettimeofday(&t1, NULL);  
     std::cout << "producer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
-    std::cout << "next_produce_at: " << !outcome.in_sync ? 0 : (next_produce_at % 999 + 1) << std::endl;
+    std::cout << "next_produce_at: " << (!outcome.in_sync ? 0 : (next_produce_at % 999 + 1)) << std::endl;
   }
 
   return SRSRAN_SUCCESS;

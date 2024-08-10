@@ -662,7 +662,7 @@ int Radio::FetchAndResample(){
     rf_buffer_t = !in_sync ?
     srsran::rf_buffer_t(rx_buffer, sf_sz * 2) :
     srsran::rf_buffer_t(rx_buffer + (sf_sz * (next_produce_at % 999 + 1)), sf_sz * 2); 
-    std::cout << "next_produce_at: " << (!in_sync ? 0 : (next_produce_at % 999 + 1)) << std::endl;
+    std::cout << "current_produce_at: " << (!in_sync ? 0 : (next_produce_at % 999 + 1)) << std::endl;
 
     // note fetching the raw samples will temporarily touch area out of the target sf boundary
     // yet after resampling, all meaningful data will reside the target sf arr area and the original raw extra part 

@@ -489,9 +489,8 @@ static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
-  // std::cout << "[xuyang debug 3] nsamples1: " << nsamples << std::endl;
   nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
-  // std::cout << "[xuyang debug 3] nsamples2: " << nsamples << std::endl;
+  std::cout << "[xuyang debug 3] find fetch nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;
@@ -574,7 +573,7 @@ static int slot_sync_recv_callback_track_state(void* ptr, cf_t** buffer, uint32_
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
   nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
-  // std::cout << "[xuyang debug 3] nsamples: " << nsamples << std::endl;
+  std::cout << "[xuyang debug 3] track fetch nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;

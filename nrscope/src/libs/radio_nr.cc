@@ -683,7 +683,7 @@ int Radio::FetchAndResample(){
 
     gettimeofday(&t1, NULL);  
     std::cout << "producer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
-    std::cout << "next_produce_at: " << !outcome.in_sync ? 0 (next_produce_at % 999 + 1) << std::endl;
+    std::cout << "next_produce_at: " << !outcome.in_sync ? 0 : (next_produce_at % 999 + 1) << std::endl;
   }
 
   return SRSRAN_SUCCESS;
@@ -846,11 +846,11 @@ int Radio::DecodeAndProcess(){
       task_scheduler_nrscope.update_known_rntis();
     } // slot iteration
 
+    std::cout << "consumer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
     next_consume_at++;
     first_time = false;
-    gettimeofday(&t1, NULL);  
-    std::cout << "consumer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
     std::cout << "next_consume_at: " << (next_consume_at % 999 + 1) << std::endl;
+    gettimeofday(&t1, NULL);  
   } // true loop
   
   return SRSRAN_SUCCESS;

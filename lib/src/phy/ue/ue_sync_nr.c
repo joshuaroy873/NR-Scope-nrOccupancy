@@ -377,6 +377,7 @@ int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_
 
 int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk)
 {
+  printf("producer_ptr: %p\n", buffer[0]);
   // Check inputs
   if (q == NULL || buffer == NULL || outcome == NULL) {
     return SRSRAN_ERROR_INVALID_INPUTS;
@@ -399,7 +400,7 @@ int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srs
       // Do nothing
       break;
     case SRSRAN_UE_SYNC_NR_STATE_FIND:
-    
+
       // resample 
       u_int32_t actual_sf_sz = 0;
       msresamp_crcf_execute(rk->resampler, buffer[0], PRE_RESAMPLING_SF_SZ, rk->temp_y, &actual_sf_sz);

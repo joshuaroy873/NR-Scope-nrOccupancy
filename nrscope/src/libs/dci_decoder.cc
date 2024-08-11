@@ -39,7 +39,7 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
   
   memcpy(&base_carrier, &task_scheduler_nrscope->args_t.base_carrier, sizeof(srsran_carrier_nr_t));
 
-  std::cout << "dci_decoder_fft_saved_ptr" << input[0] << std::endl;
+  std::cout << "dci_decoder_fft_saved_ptr: " << input[0] << std::endl;
 
   arg_scs = arg_scs_; 
   cell = task_scheduler_nrscope->cell;

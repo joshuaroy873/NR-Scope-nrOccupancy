@@ -34,6 +34,8 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
                                                 cf_t* input[SRSRAN_MAX_PORTS]){  
   memcpy(&coreset0_t, &task_scheduler_nrscope->coreset0_t, sizeof(srsran_coreset_t));
 
+  std::cout << "sib_decoder_fft_saved_ptr" << input[0] << std::endl;
+
   dci_cfg.bwp_dl_initial_bw   = 275;
   dci_cfg.bwp_ul_initial_bw   = 275;
   dci_cfg.bwp_dl_active_bw    = 275;

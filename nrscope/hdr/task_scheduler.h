@@ -61,7 +61,9 @@ class TaskSchedulerNRScope{
 
     int decode_mib(cell_searcher_args_t* args_t_, 
                    srsue::nr::cell_search::ret_t* cs_ret_,
-                   srsue::nr::cell_search::cfg_t* srsran_searcher_cfg_t);
+                   srsue::nr::cell_search::cfg_t* srsran_searcher_cfg_t,
+                   float resample_ratio_,
+                   uint32_t raw_srate_);
 
     int merge_results();
 

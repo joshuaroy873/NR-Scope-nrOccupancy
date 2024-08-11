@@ -27,15 +27,10 @@
 #define UE_SYNC_NR_DEFAULT_CFO_ALPHA 0.1
 pthread_mutex_t lock;
 
-#define RESAMPLE_RATIO (float)23040000/(float)25000000
-#define PRE_RESAMPLING_SF_SZ 25000000/1000
-#define TEMP_X_SZ PRE_RESAMPLING_SF_SZ+20
-#define TEMP_Y_SZ TEMP_X_SZ*RESAMPLE_RATIO*2 
+int prepare_resampler(resampler_kit * q, float resample_ratio, uint32_t pre_resample_sf_sz) {
 
-int prepare_resampler(resampler_kit * q) {
-  q->resampler = msresamp_crcf_create(RESAMPLE_RATIO, 60.0f);
-  q->temp_y = SRSRAN_MEM_ALLOC(cf_t, TEMP_Y_SZ);
-
+  q->resampler = msresamp_crcf_create(resample_ratio, 60.0f);
+  q->temp_y = SRSRAN_MEM_ALLOC(cf_t, (pre_resample_sf_sz + 20) * resample_ratio * 2);
   return SRSRAN_SUCCESS;
 }
 
@@ -253,7 +248,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
   if (q->next_rf_sample_offset > 0) {
     // Discard a number of samples from RF
     printf("discard rf samples (next_rf_sample_offset): %u\n", (uint32_t)q->next_rf_sample_offset);
-    if (q->recv_callback(q->recv_obj, buffer, (uint32_t)q->next_rf_sample_offset, timestamp) < SRSRAN_SUCCESS) {
+    if (q->recv_callback(q->recv_obj, buffer, (uint32_t)((float)q->next_rf_sample_offset/(float)q->resample_ratio), timestamp) < SRSRAN_SUCCESS) {
       return SRSRAN_ERROR;
     }
   } else {
@@ -281,7 +276,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
   }
 
   // Receive
-  if (q->recv_callback(q->recv_obj, q->tmp_buffer, nof_samples, timestamp) < SRSRAN_SUCCESS) {
+  if (q->recv_callback(q->recv_obj, q->tmp_buffer, (uint32_t)((float)nof_samples/(float)q->resample_ratio), timestamp) < SRSRAN_SUCCESS) {
     return SRSRAN_ERROR;
   }
 
@@ -383,7 +378,7 @@ int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srs
     case SRSRAN_UE_SYNC_NR_STATE_FIND:
       // resample 
       u_int32_t actual_sf_sz = 0;
-      msresamp_crcf_execute(rk->resampler, buffer[0], PRE_RESAMPLING_SF_SZ, rk->temp_y, &actual_sf_sz);
+      msresamp_crcf_execute(rk->resampler, buffer[0], (uint32_t)((float)q->sf_sz/q->resample_ratio), rk->temp_y, &actual_sf_sz);
       srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);
       if (ue_sync_nr_run_find(q, buffer[0]) < SRSRAN_SUCCESS) {
         ERROR("Error running find");

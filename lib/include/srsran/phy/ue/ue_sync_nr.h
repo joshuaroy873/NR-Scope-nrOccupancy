@@ -100,6 +100,8 @@ typedef struct SRSRAN_API {
   // Metrics
   float cfo_hz;       ///< Current CFO in Hz
   float avg_delay_us; ///< Current average delay
+
+  float resample_ratio;
 } srsran_ue_sync_nr_t;
 
 typedef struct SRSRAN_API {
@@ -119,7 +121,7 @@ typedef struct SRSRAN_API {
   float              delay_us;  ///< Current average delay in microseconds
 } srsran_ue_sync_nr_outcome_t;
 
-SRSRAN_API int prepare_resampler(resampler_kit * q);
+SRSRAN_API int prepare_resampler(resampler_kit * q, float resample_ratio, uint32_t pre_resample_sf_sz);
 
 /**
  * @brief Initialises a UE sync NR object

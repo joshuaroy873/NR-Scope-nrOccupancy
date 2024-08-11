@@ -432,7 +432,7 @@ int Radio::RadioInitandStart(){
       std::cout << "N_id: " << cs_ret.ssb_res.N_id << std::endl;
       std::cout << "Decoding MIB..." << std::endl;
 
-      if(task_scheduler_nrscope.decode_mib(&args_t, &cs_ret, &srsran_searcher_cfg_t) < SRSRAN_SUCCESS){
+      if(task_scheduler_nrscope.decode_mib(&args_t, &cs_ret, &srsran_searcher_cfg_t, r, rf_args.srate_hz) < SRSRAN_SUCCESS){
         ERROR("Error init task scheduler");
         return NR_FAILURE;
       }
@@ -464,7 +464,6 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
-  nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
   std::cout << "[xuyang debug 3] find fetch nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
@@ -497,6 +496,8 @@ int Radio::SyncandDownlinkInit(){
   ue_sync_nr_args.cfo_alpha       = 0.1;
   ue_sync_nr_args.recv_obj        = radio.get();
   ue_sync_nr_args.recv_callback   = slot_sync_recv_callback;
+
+  ue_sync_nr.resample_ratio = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;
   if (srsran_ue_sync_nr_init(&ue_sync_nr, &ue_sync_nr_args) < SRSRAN_SUCCESS) {
     std::cout << "Error initiating UE SYNC NR object" << std::endl;
     logger.error("Error initiating UE SYNC NR object");
@@ -526,7 +527,9 @@ int Radio::SyncandDownlinkInit(){
 int Radio::FetchAndResample(){
 
   resampler_kit rk;
-  prepare_resampler(&rk);
+  prepare_resampler(&rk, 
+  (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz, 
+  SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
 
   uint64_t next_produce_at = 0;
 

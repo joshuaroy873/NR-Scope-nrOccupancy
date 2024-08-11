@@ -625,9 +625,12 @@ int Radio::FetchAndResample(){
 
 int Radio::DecodeAndProcess(){
 
+  uint32_t pre_resampling_sf_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * pre_resampling_slot_sz;
+
   if(!task_scheduler_nrscope.sib1_inited){
     // std::thread sib_init_thread {&SIBsDecoder::sib_decoder_and_reception_init, &sibs_decoder, arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()};
-    if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
+    srsran::rf_buffer_t rf_buffer_wrapper = srsran::rf_buffer_t(rx_buffer, pre_resampling_sf_sz);
+    if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_wrapper.to_cf_t()) < SRSASN_SUCCESS){
       ERROR("SIBsDecoder Init Error");
       return NR_FAILURE;
     }
@@ -635,7 +638,6 @@ int Radio::DecodeAndProcess(){
   }
   
   uint64_t next_consume_at = 0;
-  uint32_t pre_resampling_sf_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * pre_resampling_slot_sz;
   bool someone_already_resampled = false;
 
   bool first_time = true;
@@ -661,8 +663,8 @@ int Radio::DecodeAndProcess(){
       if(!task_scheduler_nrscope.rach_inited and task_scheduler_nrscope.sib1_found){
         // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};
         rach_decoder.rach_decoder_init(&task_scheduler_nrscope);
-
-        if(rach_decoder.rach_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
+        srsran::rf_buffer_t rf_buffer_wrapper = srsran::rf_buffer_t(rx_buffer, pre_resampling_sf_sz);
+        if(rach_decoder.rach_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_wrapper.to_cf_t()) < SRSASN_SUCCESS){
           ERROR("RACHDecoder Init Error");
           return NR_FAILURE;
         }
@@ -679,12 +681,12 @@ int Radio::DecodeAndProcess(){
         task_scheduler_nrscope.nof_rnti_worker_groups = nof_rnti_worker_groups;
         task_scheduler_nrscope.nof_bwps = nof_bwps;
         task_scheduler_nrscope.results.resize(nof_bwps);
-
+        srsran::rf_buffer_t rf_buffer_wrapper = srsran::rf_buffer_t(rx_buffer, pre_resampling_sf_sz);
         for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
           // for each rnti worker group, for each bwp, spawn a decoder
           for(uint8_t j = 0; j < nof_bwps; j++){
             DCIDecoder *decoder = new DCIDecoder(100);
-            if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t(), j) < SRSASN_SUCCESS){
+            if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_wrapper.to_cf_t(), j) < SRSASN_SUCCESS){
               ERROR("DCIDecoder Init Error");
               return NR_FAILURE;
             }

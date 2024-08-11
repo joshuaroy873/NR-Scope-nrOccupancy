@@ -49,7 +49,6 @@ int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_
   // Copy arguments
   q->recv_obj        = args->recv_obj;
   q->recv_callback   = args->recv_callback;
-  q->recv_callback2   = args->recv_callback2;
   q->nof_rx_channels = args->nof_rx_channels == 0 ? 1 : args->nof_rx_channels;
   q->disable_cfo     = args->disable_cfo;
   q->cfo_alpha       = isnormal(args->cfo_alpha) ? args->cfo_alpha : UE_SYNC_NR_DEFAULT_CFO_ALPHA;
@@ -102,8 +101,6 @@ int srsran_ue_sync_nr_set_cfg(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_cf
   // Copy parameters
   q->N_id     = cfg->N_id;
   q->srate_hz = cfg->ssb.srate_hz;
-
-  printf("[xuyang debug100] q->srate_hz in srsran_ue_sync_nr_set_cfg: %lf\n", q->srate_hz);
 
   // Calculate new subframe size
   q->sf_sz = (uint32_t)round(1e-3 * q->srate_hz);
@@ -204,11 +201,8 @@ static int ue_sync_nr_run_find(srsran_ue_sync_nr_t* q, cf_t* buffer)
 
   // If the PBCH message was NOT decoded, early return
   if (!pbch_msg.crc) {
-    // printf("!pbch_msg.crc triggered; early return\n");
     return SRSRAN_SUCCESS;
   }
-
-  printf("sync find update ssb\n");
 
   return ue_sync_nr_update_ssb(q, &measurements, &pbch_msg);
 }
@@ -229,11 +223,8 @@ static int ue_sync_nr_run_track(srsran_ue_sync_nr_t* q, cf_t* buffer)
   }
 
   if (!is_ssb_opportunity) {
-    // printf("!is_ssb_opportunity triggered\n");
     return SRSRAN_SUCCESS;
   }
-
-  printf("is ssb oppo and update sync\n");
 
   // Measure PSS/SSS and decode PBCH
   if (srsran_ssb_track(&q->ssb, buffer, q->N_id, q->ssb_idx, half_frame, &measurements, &pbch_msg) < SRSRAN_SUCCESS) {
@@ -243,7 +234,6 @@ static int ue_sync_nr_run_track(srsran_ue_sync_nr_t* q, cf_t* buffer)
   // If the PBCH message was NOT decoded, transition to find
   if (!pbch_msg.crc) {
     q->state = SRSRAN_UE_SYNC_NR_STATE_FIND;
-    printf("Transition back to SRSRAN_UE_SYNC_NR_STATE_FIND");
     return SRSRAN_SUCCESS;
   }
 
@@ -260,21 +250,16 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
   uint32_t buffer_offset = 0;
   uint32_t nof_samples   = q->sf_sz;
 
-  // printf("[xuyang debug 2] q->sf_sz (nof_samples) in ue_sync_nr_recv: %u\n", nof_samples);
-
   if (q->next_rf_sample_offset > 0) {
     // Discard a number of samples from RF
-    // so here should be triggered if bb too slow, and skip/missing data hence occurs
     printf("discard rf samples (next_rf_sample_offset): %u\n", (uint32_t)q->next_rf_sample_offset);
     if (q->recv_callback(q->recv_obj, buffer, (uint32_t)q->next_rf_sample_offset, timestamp) < SRSRAN_SUCCESS) {
       return SRSRAN_ERROR;
     }
   } else {
-    // so here should be triggered if bb too fast 
     // Adjust receive buffer
     buffer_offset = (uint32_t)(-q->next_rf_sample_offset);
     nof_samples   = (uint32_t)(q->sf_sz + q->next_rf_sample_offset);
-    // printf("skip fetched (buffer_offset, nof_samples): (%u, %u)\n", buffer_offset, nof_samples);
   }
   q->next_rf_sample_offset = 0;
 
@@ -296,10 +281,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
   }
 
   // Receive
-  int res = q->state == SRSRAN_UE_SYNC_NR_STATE_FIND ?
-   q->recv_callback(q->recv_obj, q->tmp_buffer, nof_samples, timestamp) :
-   q->recv_callback2(q->recv_obj, q->tmp_buffer, nof_samples, timestamp);
-  if (res < SRSRAN_SUCCESS) {
+  if (q->recv_callback(q->recv_obj, q->tmp_buffer, nof_samples, timestamp) < SRSRAN_SUCCESS) {
     return SRSRAN_ERROR;
   }
 
@@ -377,7 +359,6 @@ int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_
 
 int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk)
 {
-  // printf("producer_ptr: %p\n", buffer[0]);
   // Check inputs
   if (q == NULL || buffer == NULL || outcome == NULL) {
     return SRSRAN_ERROR_INVALID_INPUTS;
@@ -400,13 +381,10 @@ int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srs
       // Do nothing
       break;
     case SRSRAN_UE_SYNC_NR_STATE_FIND:
-
       // resample 
       u_int32_t actual_sf_sz = 0;
       msresamp_crcf_execute(rk->resampler, buffer[0], PRE_RESAMPLING_SF_SZ, rk->temp_y, &actual_sf_sz);
-      // printf("[xuyang debug] nice actual_sf_sz %u\n", actual_sf_sz);
       srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);
-
       if (ue_sync_nr_run_find(q, buffer[0]) < SRSRAN_SUCCESS) {
         ERROR("Error running find");
         return SRSRAN_ERROR;

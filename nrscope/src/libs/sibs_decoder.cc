@@ -34,8 +34,6 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
                                                 cf_t* input[SRSRAN_MAX_PORTS]){  
   memcpy(&coreset0_t, &task_scheduler_nrscope->coreset0_t, sizeof(srsran_coreset_t));
 
-  std::cout << "sib_decoder_fft_saved_ptr: " << input[0] << std::endl;
-
   dci_cfg.bwp_dl_initial_bw   = 275;
   dci_cfg.bwp_ul_initial_bw   = 275;
   dci_cfg.bwp_dl_active_bw    = 275;
@@ -101,9 +99,7 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
 
 int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
                                                 TaskSchedulerNRScope* task_scheduler_nrscope,
-                                                cf_t * raw_buffer, std::mutex * resampler_lock, bool * someone_already_resampled){
-  struct timeval t0, t1;
-  gettimeofday(&t0, NULL);  
+                                                cf_t * raw_buffer, std::mutex * resampler_lock, bool * someone_already_resampled){  
 
   resampler_lock->lock();
   if (!(*someone_already_resampled)) {
@@ -165,8 +161,6 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   // }
   if (nof_found_dci < 1) {
     printf("SIBDecoder -- No DCI found :'(\n");
-    gettimeofday(&t1, NULL);  
-    // std::cout << "[sib1 decode] time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
     return SRSRAN_ERROR;
   }
 

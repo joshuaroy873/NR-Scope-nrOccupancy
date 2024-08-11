@@ -103,7 +103,6 @@ const char* srsran_rf_get_devname(srsran_rf_t* rf)
 
 int srsran_rf_open_devname(srsran_rf_t* rf, const char* devname, char* args, uint32_t nof_channels)
 {
-  printf("[xuyang debug] nof_channels: %u\n", nof_channels);
   rf->thread_gain_run = false;
 
   bool no_rf_devs_detected = true;

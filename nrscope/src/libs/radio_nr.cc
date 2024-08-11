@@ -314,9 +314,7 @@ int Radio::RadioInitandStart(){
   srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
   uint32_t actual_slot_sz = 0; // the actual slot size after resampling 
 
-
   // Allocate pre-resampling receive buffer
-  
   pre_resampling_rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
   std::cout << "pre_resampling_slot_sz: " << pre_resampling_slot_sz << std::endl;
   srsran_vec_zero(pre_resampling_rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
@@ -338,11 +336,9 @@ int Radio::RadioInitandStart(){
 
   // initialize resampling tool
   float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;       // resampling rate (output/input)
-  std::cout << "[xuyang debug] r (resampling rate): " << r << std::endl;
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
   msresamp_crcf q = msresamp_crcf_create(r,As);
   float delay = msresamp_crcf_get_delay(q);
-  std::cout << "[xuyang debug] resample delay: " << delay << std::endl;
 
   // add a few zero padding
   uint32_t temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz + (int)ceilf(delay) + 10;
@@ -351,10 +347,10 @@ int Radio::RadioInitandStart(){
   uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
   std::complex<float> temp_y[temp_y_sz];
 
-  FILE *fp_time_series_pre_resample;
-  fp_time_series_pre_resample = fopen("./time_series_pre_resample.txt", "w");
-  FILE *fp_time_series_post_resample;
-  fp_time_series_post_resample = fopen("./time_series_post_resample.txt", "w");
+  // FILE *fp_time_series_pre_resample;
+  // fp_time_series_pre_resample = fopen("./time_series_pre_resample.txt", "w");
+  // FILE *fp_time_series_post_resample;
+  // fp_time_series_post_resample = fopen("./time_series_post_resample.txt", "w");
 
   while (not ss.end()) {
     // Get SSB center frequency
@@ -369,7 +365,6 @@ int Radio::RadioInitandStart(){
     // the offset is NOT multiple of the subcarrier spacing
     if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or (cs_args.ssb_freq_hz > ssb_center_freq_max_hz) or
         (offset_hz % ssb_scs_hz != 0)) {
-      // std::cout << "[xuyang debug] skipped freq: " << cs_args.ssb_freq_hz << std::endl;
       // Skip this frequency
       continue;
     }
@@ -378,8 +373,6 @@ int Radio::RadioInitandStart(){
     if (offset_hz > 1) {
       continue;
     }
-
-    std::cout << "[xuyang debug] freq to find ssb: " << cs_args.ssb_freq_hz << std::endl;
 
     srsran_searcher_cfg_t.srate_hz = args_t.srate_hz; // which is indeed the srsran srate
     srsran_searcher_cfg_t.center_freq_hz = cs_args.ssb_freq_hz; //args_t.base_carrier.dl_center_frequency_hz;
@@ -402,7 +395,6 @@ int Radio::RadioInitandStart(){
 
     srsran::rf_buffer_t rf_buffer = {};
     rf_buffer.set_nof_samples(pre_resampling_slot_sz);
-    std::cout << "[xuyang debug] pre_resampling_slot_sz: " << pre_resampling_slot_sz << std::endl;
     rf_buffer.set(0, pre_resampling_rx_buffer);// + slot_sz);
 
     for(uint32_t trial=0; trial < nof_trials; trial++){
@@ -418,39 +410,20 @@ int Radio::RadioInitandStart(){
         return SRSRAN_ERROR;
       }
 
-      // srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
-
-      // HERE WE DO RESAMPLING: 33330000 to the familiar 23040000
-      // from pre_resampling_rx_buffer to rx_buffer
       struct timeval t0, t1;
 
-      // std::cout << "[xuyang debug] BEFORE RESAMPLING: " << std::endl;
-      srsran_vec_fprint2_c(fp_time_series_pre_resample, pre_resampling_rx_buffer, pre_resampling_slot_sz);
-      
-      // std::cout << "[xuyang debug] started liquid resampling" << std::endl;
+      // srsran_vec_fprint2_c(fp_time_series_pre_resample, pre_resampling_rx_buffer, pre_resampling_slot_sz);
       copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz, temp_x_sz);
-
-      gettimeofday(&t0, NULL);  
-
       msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
-
-      gettimeofday(&t1, NULL);  
-      // result.processing_time_us = t1.tv_usec - t0.tv_usec;   
-      std::cout << "[ssb search] time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
       copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
-
-      
-      // std::cout << "[xuyang debug] resampled; actual_slot_sz: " << actual_slot_sz << std::endl;
-      // std::cout << "[xuyang debug] AFTER RESAMPLING: " << std::endl;
-      srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, actual_slot_sz);
+      // srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, actual_slot_sz);
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
-
       cs_ret = srsran_searcher.run_slot(rx_buffer, slot_sz);
       // std::cout << "Slot_sz: " << slot_sz << std::endl;
       if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND ){
         // printf("found cell in this slot\n");
-        srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
+        // srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
         break;
       }
     }
@@ -476,13 +449,13 @@ int Radio::RadioInitandStart(){
     }
   }
 
-  fclose(fp_time_series_pre_resample);
-  fclose(fp_time_series_post_resample);
+  // fclose(fp_time_series_pre_resample);
+  // fclose(fp_time_series_post_resample);
   msresamp_crcf_destroy(q);
   return SRSRAN_SUCCESS;
 }
 
-static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t nsamples, srsran_timestamp_t* ts)
+static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, srsran_timestamp_t* ts)
 {
   if (ptr == nullptr) {
   return SRSRAN_ERROR_INVALID_INPUTS;
@@ -493,30 +466,6 @@ static int slot_sync_recv_callback_find_state(void* ptr, cf_t** buffer, uint32_t
   buffer_ptr[0]                         = buffer[0];
   nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
   std::cout << "[xuyang debug 3] find fetch nsamples: " << nsamples << std::endl;
-  srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
-
-  srsran::rf_timestamp_t a;
-  srsran::rf_timestamp_t &rf_timestamp = a;
-  *ts = a.get(0);
-
-  return radio->rx_now(rf_buffer, rf_timestamp);
-}
-
-/**
- * Here in track state, we need to process really fast, so we will grab the samples and
- * resample later. Also we will skip those sync check (which seems not exercising its duty correctly either)
- */
-static int slot_sync_recv_callback_track_state(void* ptr, cf_t** buffer, uint32_t nsamples, srsran_timestamp_t* ts)
-{
-  if (ptr == nullptr) {
-    return SRSRAN_ERROR_INVALID_INPUTS;
-  }
-  srsran::radio* radio = (srsran::radio*)ptr;
-
-  cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
-  buffer_ptr[0]                         = buffer[0];
-  nsamples = (float)(nsamples)/((float)23040000/(float)25000000);
-  // std::cout << "[xuyang debug 3] track fetch nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;
@@ -547,8 +496,7 @@ int Radio::SyncandDownlinkInit(){
   ue_sync_nr_args.pbch_dmrs_thr   = 0.5;
   ue_sync_nr_args.cfo_alpha       = 0.1;
   ue_sync_nr_args.recv_obj        = radio.get();
-  ue_sync_nr_args.recv_callback   = slot_sync_recv_callback_find_state;
-  ue_sync_nr_args.recv_callback2   = slot_sync_recv_callback_track_state;
+  ue_sync_nr_args.recv_callback   = slot_sync_recv_callback;
   if (srsran_ue_sync_nr_init(&ue_sync_nr, &ue_sync_nr_args) < SRSRAN_SUCCESS) {
     std::cout << "Error initiating UE SYNC NR object" << std::endl;
     logger.error("Error initiating UE SYNC NR object");
@@ -592,6 +540,7 @@ int Radio::FetchAndResample(){
 
     // if not sync, we fetch and sync at the rx_buffer start, otherwise we store from 1 to 999 sf index and back in a ring buffer manner
     // i.e., 0 sf index is for sync and moving a sf data there for decoders to process
+    // note at the first round we start like 0, 2, 3... (skip 1 if you do the math)
     rf_buffer_t = !in_sync ?
     srsran::rf_buffer_t(rx_buffer, pre_resampling_sf_sz) :
     srsran::rf_buffer_t(rx_buffer + (pre_resampling_sf_sz * (next_produce_at % 999 + 1)), pre_resampling_sf_sz); 
@@ -624,9 +573,7 @@ int Radio::FetchAndResample(){
 }
 
 int Radio::DecodeAndProcess(){
-
   uint32_t pre_resampling_sf_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * pre_resampling_slot_sz;
-
   if(!task_scheduler_nrscope.sib1_inited){
     // std::thread sib_init_thread {&SIBsDecoder::sib_decoder_and_reception_init, &sibs_decoder, arg_scs, &task_scheduler_nrscope, rf_buffer_t.to_cf_t()};
     srsran::rf_buffer_t rf_buffer_wrapper(rx_buffer, pre_resampling_sf_sz);
@@ -639,7 +586,6 @@ int Radio::DecodeAndProcess(){
   
   uint64_t next_consume_at = 0;
   bool someone_already_resampled = false;
-
   bool first_time = true;
 
   while (true) {

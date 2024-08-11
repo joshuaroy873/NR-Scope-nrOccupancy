@@ -128,8 +128,6 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
                                      cf_t* input[SRSRAN_MAX_PORTS]){
   memcpy(&coreset0_t, &task_scheduler_nrscope->coreset0_t, sizeof(srsran_coreset_t));
 
-  std::cout << "rach_decoder_fft_saved_ptr: " << input[0] << std::endl;
-
   dci_cfg.bwp_dl_initial_bw   = 275;
   dci_cfg.bwp_ul_initial_bw   = 275;
   dci_cfg.bwp_dl_active_bw    = 275;
@@ -411,8 +409,6 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     asn1::rrc_nr::dl_ccch_msg_s dlcch_msg;
     // What the first few bytes are? In srsgNB there are 10 extra bytes and for small cell there are 3 extra bytes
     // before the RRCSetup message.
-    std::cout << "decoding rrcsetup bytes_offset: " << bytes_offset << std::endl;
-    // bytes_offset = 1;
     asn1::cbit_ref dlcch_bref(pdsch_res.tb[0].payload + bytes_offset, pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
     asn1::SRSASN_CODE err = dlcch_msg.unpack(dlcch_bref);
     if (err != asn1::SRSASN_SUCCESS) {

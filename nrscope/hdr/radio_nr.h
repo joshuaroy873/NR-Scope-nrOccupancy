@@ -68,7 +68,7 @@ class Radio{
     uint8_t nof_bwps;
     std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
 
-    // a better coordination between producer (fetch and resample) and consumer (decode)
+    // a better coordination between producer (fetch) and consumer (resample and decode)
     sem_t smph_sf_data_prod_cons;
 
     std::string log_name;
@@ -128,6 +128,7 @@ class Radio{
     int SyncandDownlinkInit();
 
     /**
+    * (TASKS HAVE BEEN DELEGATED TO FetchAndResample AND DecodeAndProcess) 
     * After MIB decoding and synchronization, the USRP grabs 1ms data every time and dispatches the raw radio 
     * samples among SIB, RACH and DCI decoding threads. Also initialize these threads if they are not.
     * 
@@ -137,8 +138,20 @@ class Radio{
     int RadioCapture();
   
   private:
+    /**
+    * sync, track sync, and grab 1ms raw samples from USRP continuously 
+    * 
+    * @return SRSRAN_SUCCESS (0) if the function is stopped or it will run infinitely. 
+    * NR_FAILURE (-1) if something goes wrong.
+    */
     int FetchAndResample();
 
+    /**
+    * resample and decode the signals
+    * 
+    * @return SRSRAN_SUCCESS (0) if the function is stopped or it will run infinitely. 
+    * NR_FAILURE (-1) if something goes wrong.
+    */
     int DecodeAndProcess();
 };
 

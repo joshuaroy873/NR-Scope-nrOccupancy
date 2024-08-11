@@ -59,7 +59,6 @@ typedef struct SRSRAN_API {
   // Receive callback
   void* recv_obj;                               ///< Receive object
   SRSRAN_RECV_CALLBACK_TEMPLATE(recv_callback); ///< Receive callback
-  SRSRAN_RECV_CALLBACK_TEMPLATE(recv_callback2); ///< Receive callback
 } srsran_ue_sync_nr_args_t;
 
 /**
@@ -92,7 +91,6 @@ typedef struct SRSRAN_API {
   float    cfo_alpha;                           ///< Exponential Moving Average (EMA) alpha coefficient for CFO
   void*    recv_obj;                            ///< Receive object
   SRSRAN_RECV_CALLBACK_TEMPLATE(recv_callback); ///< Receive callback
-  SRSRAN_RECV_CALLBACK_TEMPLATE(recv_callback2); ///< Receive callback
 
   // Current configuration
   uint32_t N_id;     ///< Current physical cell identifier
@@ -106,7 +104,7 @@ typedef struct SRSRAN_API {
 
 typedef struct SRSRAN_API {
   msresamp_crcf resampler;
-  cf_t * temp_y;
+  cf_t * temp_y; // resampler will save result to temp_y; then copy temp_y result to place you want
 } resampler_kit;
 
 /**
@@ -155,7 +153,15 @@ SRSRAN_API int srsran_ue_sync_nr_set_cfg(srsran_ue_sync_nr_t* q, const srsran_ue
  */
 SRSRAN_API int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome);
 
-
+/**
+ * @brief Runs the NR UE synchronization object, tries to find and track the configured SSB leaving in buffer the
+ * received baseband subframe
+ * @param q NR UE synchronization object
+ * @param buffer 2D complex buffer
+ * @param outcome zerocopy outcome
+ * @param rk resampler
+ * @return SRSRAN_SUCCESS if no error occurs, SRSRAN_ERROR code otherwise
+ */
 SRSRAN_API int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk);
 
 /**

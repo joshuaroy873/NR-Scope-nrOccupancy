@@ -835,7 +835,6 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
     }
   }
 
-  printf("triggered 1\n");
 
   handler->nof_rx_channels = nof_channels;
   handler->nof_tx_channels = nof_channels;
@@ -845,11 +844,10 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
     return SRSRAN_ERROR;
   }
 
+  // skip TX initialization (bypass error)
   // if (handler->uhd->set_tx_rate(handler->tx_rate) != UHD_ERROR_NONE) {
   //   return SRSRAN_ERROR;
   // }
-
-  printf("triggered 2\n");
 
   // Reset timestamps
   if (nof_channels > 1 and clock_src != "gpsdo") {
@@ -867,8 +865,6 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   //     return SRSRAN_ERROR;
   //   }
   // }
-
-  printf("triggered 3\n");
 
   // Tune LOs if the default frequency is provided
   bool require_wait_rx_lock = false;
@@ -889,8 +885,6 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   //   }
   // }
 
-  printf("triggered 4\n");
-
   // Populate RF device info
   // uhd::gain_range_t tx_gain_range;
   // uhd::gain_range_t rx_gain_range;
@@ -901,23 +895,15 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
     //   return SRSRAN_ERROR;
     // }
 
-    // printf("triggered 4.1\n");
-
     // handler->info.min_tx_gain = tx_gain_range.start();
     // handler->info.max_tx_gain = tx_gain_range.stop();
-    // printf("triggered 4.2\n");
     // handler->info.min_rx_gain = rx_gain_range.start();
     // handler->info.max_rx_gain = rx_gain_range.stop();
-
-    // printf("triggered 4.3\n");
 
     // Set starting gain to half maximum in case of using AGC
     // rf_uhd_set_rx_gain(handler, handler->info.max_rx_gain * 0.7);
     
     rf_uhd_set_rx_gain(handler, 30);
-
-
-    printf("triggered 5\n");
   }
   
 
@@ -933,8 +919,6 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
   if (uhd_set_thread_priority(0, false) != UHD_ERROR_NONE) {
     return SRSRAN_ERROR;
   }
-
-  printf("triggered 6\n");
 
   return SRSRAN_SUCCESS;
 }

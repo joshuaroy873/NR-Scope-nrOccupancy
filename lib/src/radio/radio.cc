@@ -87,8 +87,6 @@ int radio::init(const rf_args_t& args, phy_interface_radio* phy_)
   std::vector<std::string> device_args_list;
   string_parse_list(args.device_args, ';', device_args_list);
 
-  std::cout << "[xuyang debug] args.device_args: " << args.device_args << std::endl;
-
   // Add auto if list is empty
   if (device_args_list.empty()) {
     device_args_list.emplace_back("auto");
@@ -109,8 +107,6 @@ int radio::init(const rf_args_t& args, phy_interface_radio* phy_)
   }
   nof_channels_x_dev = nof_channels / device_args_list.size();
 
-  std::cout << "[xuyang debug] device_args_list.size(): " << device_args_list.size() << std::endl;
-
   // Allocate RF devices
   rf_devices.resize(device_args_list.size());
   rf_info.resize(device_args_list.size());
@@ -119,13 +115,8 @@ int radio::init(const rf_args_t& args, phy_interface_radio* phy_)
   tx_channel_mapping.set_config(nof_channels_x_dev, nof_antennas);
   rx_channel_mapping.set_config(nof_channels_x_dev, nof_antennas);
 
-  printf("triggered 0\n");
-
-  std::cout << "[xuyang debug] args.device_name: " << args.device_name << std::endl;
-
   // Init and start Radios
   if (args.device_name != "file" || device_args_list[0] != "auto") {
-    std::cout << "[xuyang debug] triggered 10" << std::endl;
     // regular RF device
     for (uint32_t device_idx = 0; device_idx < (uint32_t)device_args_list.size(); device_idx++) {
       if (not open_dev(device_idx, args.device_name, device_args_list[device_idx])) {
@@ -134,7 +125,6 @@ int radio::init(const rf_args_t& args, phy_interface_radio* phy_)
       }
     }
   } else {
-    std::cout << "[xuyang debug] triggered 11" << std::endl;
     // file-based RF device abstraction using pre-opened FILE* objects
     if (args.rx_files == nullptr && args.tx_files == nullptr) {
       logger.error("File-based RF device abstraction requested, but no files provided");
@@ -307,7 +297,6 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
   std::unique_lock<std::mutex> lock(rx_mutex);
   bool                         ret = true;
   rf_buffer_t                  buffer_rx;
-  // std::cout << "Using radio.cc; get_nof_samples (in one time-domain slot): " << buffer.get_nof_samples() << std::endl;
 
   // Extract decimation ratio. As the decimation may take some time to set a new ratio, deactivate the decimation and
   // keep receiving samples to avoid stalling the RX stream
@@ -318,8 +307,6 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
     ratio = decimators[0].ratio;
   }
   // std::cout << "Using radio.cc " << buffer.get_nof_samples() << std::endl;
-
-  // std::cout << "[xuyang debug 100] ratio: " << ratio << std::endl;
 
   // Calculate number of samples, considering the decimation ratio
   uint32_t nof_samples = buffer.get_nof_samples() * ratio;
@@ -369,7 +356,6 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
 
   // Perform decimation
   if (ratio > 1) {
-    std::cout << "[xuyang debug 101] ratio: " << ratio << std::endl;
     for (uint32_t ch = 0; ch < nof_channels; ch++) {
       if (buffer.get(ch) and buffer_rx.get(ch)) {
         srsran_resampler_fft_run(&decimators[ch], buffer_rx.get(ch), buffer.get(ch), buffer_rx.get_nof_samples());

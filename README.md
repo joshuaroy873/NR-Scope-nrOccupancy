@@ -11,7 +11,7 @@ Therefore, we need to down-resample signals from 200MHz integer division to 184.
 ### Specifically, modifications done for TwinRX:
 
 * Create two sampling config parameters: `srsran_srate` and `srate`. `srsran_srate` is what the srsRAN signal processing saw, which should be in the 184.32MHz family. `srate` is what fed to the USRP RF, which should be in the 200MHz family. Therefore, the down-resampling ratio will be `r = srsran_srate/srate` (see `config.yaml`).
-* Down-resample the raw signal with ratio `r`, using the [liquid-dsp](https://liquidsdr.org/) library.
+* Down-resample the raw signal with ratio `r`, using the [liquid-dsp](https://liquidsdr.org/) library. Please install following their Github page.
 * As resampling takes non-trivial portion of time (based on our test machine), we optimize the "producer-consumer" coordination pattern in the time-critical baseband processing scenario. There are two versions A and B. See their details respectively below in `twinrx_ver_A` and `twinrx_ver_B`.
 
 

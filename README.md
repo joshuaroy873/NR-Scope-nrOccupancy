@@ -42,5 +42,3 @@ Version B processes agilely just like the main version with non-TwinRX USRP. Obs
 * Sometimes after running for a while overflow still occurs, as resampling is moved to the time-critical producer thread. Investigating if we can assign a dedicated CPU to just the producer thread (I guess by default you can not control whether the CPU will be shared with other processes/threads).
 
 A working example stdout is `stdout_example.txt`. 
-
-Personally I prefer version B. See `twinrx_ver_B`. Only difference is version B moves resampling into producer thread.

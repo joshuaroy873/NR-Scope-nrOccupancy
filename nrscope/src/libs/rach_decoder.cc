@@ -2,24 +2,6 @@
 
 std::mutex lock_rach;
 
-int copy_c_to_cpp_complex_arr_and_zero_padding_msg4(cf_t* src, std::complex<float>* dst, uint32_t sz1, uint32_t sz2) {
-  for (uint32_t i = 0; i < sz2; i++) {
-    // indeed copy right? https://en.cppreference.com/w/cpp/numeric/complex/operator%3D
-    dst[i] = i < sz1 ? src[i] : 0;
-  }
-
-  return 0;
-}
-
-int copy_cpp_to_c_complex_arr_msg4(std::complex<float>* src, cf_t* dst, uint32_t sz) {
-  for (uint32_t i = 0; i < sz; i++) {
-    // https://en.cppreference.com/w/cpp/numeric/complex 
-    dst[i] = { src[i].real(), src[i].imag() };
-  }
-
-  return 0;
-}
-
 RachDecoder::RachDecoder(){
   // rach_dl_ul_info = {false, false, false, false, false};
   sib1 = {};
@@ -279,10 +261,10 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
   if (!(*someone_already_resampled)) {
     // resampling
     uint32_t actual_slot_sz = 0;
-    copy_c_to_cpp_complex_arr_and_zero_padding_msg4(raw_buffer, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_slot_sz, task_scheduler_nrscope->temp_x_sz);
+    TaskSchedulerNRScope::copy_c_to_cpp_complex_arr_and_zero_padding(raw_buffer, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_slot_sz, task_scheduler_nrscope->temp_x_sz);
     msresamp_crcf_execute(task_scheduler_nrscope->resampler, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_slot_sz, task_scheduler_nrscope->temp_y, &actual_slot_sz);
     std::cout << "decode rach resampled: " << actual_slot_sz << std::endl;
-    copy_cpp_to_c_complex_arr_msg4(task_scheduler_nrscope->temp_y, raw_buffer, actual_slot_sz);
+    TaskSchedulerNRScope::copy_cpp_to_c_complex_arr(task_scheduler_nrscope->temp_y, raw_buffer, actual_slot_sz);
 
     *someone_already_resampled = true;
   }

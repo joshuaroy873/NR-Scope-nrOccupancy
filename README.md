@@ -142,6 +142,30 @@ There are some on-going plans for the near future:
 * Down-resample the raw signal with ratio `r`, using the [liquid-dsp](https://liquidsdr.org/) library. Please install following their Github page.
 * As resampling takes non-trivial portion of time (based on our test machine), we optimize the "producer-consumer" coordination pattern in the time-critical baseband processing scenario. See more technical details below.
 
+**Therefore, to run with different USRPs you will have the following `config.yaml`(s):**
+
+for CBX:
+
+```
+......
+rf_args: "clock=external,type=x300,sampling_rate=23040000" #"type=x300" #"clock=external"
+rx_gain: 30 # for x310, max rx gain is 31.5, for b210, it's around 80
+srate_hz: 23040000 #11520000 #11520000 #23040000
+srsran_srate_hz: 23040000
+......
+```
+
+for TwinRX (note TwinRX has a significantly higher rx gain limit):
+
+```
+......
+rf_args: "clock=external,type=x300,master_clock_rate=200000000,sampling_rate=25000000" #"type=x300" #"clock=external"
+rx_gain: 90 # for x310, max rx gain is 31.5, for b210, it's around 80
+srate_hz: 25000000 #11520000 #11520000 #23040000
+srsran_srate_hz: 23040000
+......
+```
+
 ### producer-consumer coordination pattern (TLDR)
 
 Producer is codes fetching samples from USRP. Consumer is codes processing (e.g., fft and decoding). Previously, the pattern (a loop) looks like the following:

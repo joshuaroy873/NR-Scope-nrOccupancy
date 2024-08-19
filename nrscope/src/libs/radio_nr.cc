@@ -404,9 +404,9 @@ int Radio::RadioInitandStart(){
 
       if (resample_needed) {
         // srsran_vec_fprint2_c(fp_time_series_pre_resample, pre_resampling_rx_buffer, pre_resampling_slot_sz);
-        copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz, temp_x_sz);
+        TaskSchedulerNRScope::copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz, temp_x_sz);
         msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
-        copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
+        TaskSchedulerNRScope::copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
         // srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, actual_slot_sz);
       } else {
         // pre_resampling_slot_sz should be the same as slot_sz as resample ratio is 1 in this case

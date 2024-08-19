@@ -164,7 +164,7 @@ SRSRAN_API int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer,
  * @param rk resampler
  * @return SRSRAN_SUCCESS if no error occurs, SRSRAN_ERROR code otherwise
  */
-SRSRAN_API int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk);
+SRSRAN_API int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk, bool resample_needed);
 
 /**
  * @brief Runs the NR UE synchronization object, tries to find and track the configured SSB leaving in buffer the

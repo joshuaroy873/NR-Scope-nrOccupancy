@@ -292,6 +292,14 @@ int Radio::RadioInitandStart(){
   // Set sampling rate
   radio->set_rx_srate(rf_args.srate_hz);
   std::cout << "usrp srate_hz: " << rf_args.srate_hz << std::endl;
+
+  if (fabs(rf_args.srsran_srate_hz - rf_args.srate_hz) < 0.1) {
+    resample_needed = false;
+  } else {
+    resample_needed = true;
+  }
+  std::cout << "resample_needed: " << resample_needed << std::endl;
+
   // Set DL center frequency
   radio->set_rx_freq(0, (double)rf_args.dl_freq);
   // Set Rx gain
@@ -412,11 +420,16 @@ int Radio::RadioInitandStart(){
 
       struct timeval t0, t1;
 
-      // srsran_vec_fprint2_c(fp_time_series_pre_resample, pre_resampling_rx_buffer, pre_resampling_slot_sz);
-      copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz, temp_x_sz);
-      msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
-      copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
-      // srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, actual_slot_sz);
+      if (resample_needed) {
+        // srsran_vec_fprint2_c(fp_time_series_pre_resample, pre_resampling_rx_buffer, pre_resampling_slot_sz);
+        copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz, temp_x_sz);
+        msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
+        copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
+        // srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, actual_slot_sz);
+      } else {
+        // pre_resampling_slot_sz should be the same as slot_sz as resample ratio is 1 in this case
+        srsran_vec_cf_copy(rx_buffer, pre_resampling_rx_buffer, pre_resampling_slot_sz);
+      }
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
       cs_ret = srsran_searcher.run_slot(rx_buffer, slot_sz);
@@ -553,7 +566,7 @@ int Radio::FetchAndResample(){
     // note fetching the raw samples will temporarily touch area out of the target sf boundary
     // yet after resampling, all meaningful data will reside the target sf arr area and the original raw extra part 
     // beyond the boundary doesn't matter
-    if (srsran_ue_sync_nr_zerocopy_twinrx(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, &rk) < SRSRAN_SUCCESS) {
+    if (srsran_ue_sync_nr_zerocopy_twinrx(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, &rk, resample_needed) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
       logger.error("SYNC: error in zerocopy");
       return false;
@@ -599,7 +612,7 @@ int Radio::DecodeAndProcess(){
     gettimeofday(&t0, NULL);
     // consume a sf data
     for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
-      someone_already_resampled = true;
+      someone_already_resampled = true; // already resampled (if resample needed) in the producer thread; thus skip resample in consumer
       srsran_slot_cfg_t slot = {0};
       slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
       // Move rx_buffer

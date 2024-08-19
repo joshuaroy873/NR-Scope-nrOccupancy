@@ -352,7 +352,7 @@ int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_
   return SRSRAN_SUCCESS;
 }
 
-int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk)
+int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk, bool resample_needed)
 {
   // Check inputs
   if (q == NULL || buffer == NULL || outcome == NULL) {
@@ -370,11 +370,13 @@ int srsran_ue_sync_nr_zerocopy_twinrx(srsran_ue_sync_nr_t* q, cf_t** buffer, srs
     return SRSRAN_ERROR;
   }
 
-  // resample 
-      u_int32_t actual_sf_sz = 0;
-      msresamp_crcf_execute(rk->resampler, buffer[0], (uint32_t)((float)q->sf_sz/q->resample_ratio), rk->temp_y, &actual_sf_sz);
-      printf("resampled sf size: %u\n", actual_sf_sz);
-      srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);
+  // resample
+  if (resample_needed) {
+    u_int32_t actual_sf_sz = 0;
+    msresamp_crcf_execute(rk->resampler, buffer[0], (uint32_t)((float)q->sf_sz/q->resample_ratio), rk->temp_y, &actual_sf_sz);
+    printf("resampled sf size: %u\n", actual_sf_sz);
+    srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);
+  }
 
   // Run FSM
   switch (q->state) {

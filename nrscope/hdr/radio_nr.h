@@ -71,6 +71,8 @@ class Radio{
     // a better coordination between producer (fetch) and consumer (resample and decode)
     sem_t smph_sf_data_prod_cons;
 
+    bool resample_needed;
+
     std::string log_name;
     bool local_log;
 

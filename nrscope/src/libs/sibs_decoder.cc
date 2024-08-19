@@ -1,5 +1,5 @@
 #include "nrscope/hdr/sibs_decoder.h"
-#include "nrscope/hdr/radio_nr.cc"
+#include "nrscope/src/libs/radio_nr.cc"
 
 // int copy_c_to_cpp_complex_arr_and_zero_padding_sibs(cf_t* src, std::complex<float>* dst, uint32_t sz1, uint32_t sz2) {
 //   for (uint32_t i = 0; i < sz2; i++) {

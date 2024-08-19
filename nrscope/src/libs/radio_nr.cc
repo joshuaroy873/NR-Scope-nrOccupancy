@@ -5,7 +5,6 @@
 
 std::mutex lock_radio_nr;
 
-std::mutex resampler_lock;
 
 Radio::Radio() : 
   logger(srslog::fetch_basic_logger("PHY")), 
@@ -327,7 +326,10 @@ int Radio::RadioInitandStart(){
   // initialize resampling tool
   float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;       // resampling rate (output/input)
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
-  msresamp_crcf q = msresamp_crcf_create(r,As);
+  msresamp_crcf q;
+  if (resample_needed) {
+    q = msresamp_crcf_create(r,As);
+  }
   float delay = msresamp_crcf_get_delay(q);
 
   // add a few zero padding
@@ -521,10 +523,12 @@ int Radio::SyncandDownlinkInit(){
 
 int Radio::FetchAndResample(){
 
-  resampler_kit rk;
-  prepare_resampler(&rk, 
-  (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz, 
-  SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
+  if (resample_needed && !rk_initialized) {
+    prepare_resampler(&rk, 
+      (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz, 
+      SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
+    rk_initialized = true;
+  }
 
   uint64_t next_produce_at = 0;
 
@@ -548,7 +552,7 @@ int Radio::FetchAndResample(){
     // note fetching the raw samples will temporarily touch area out of the target sf boundary
     // yet after resampling, all meaningful data will reside the target sf arr area and the original raw extra part 
     // beyond the boundary doesn't matter
-    if (srsran_ue_sync_nr_zerocopy_twinrx(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, &rk, resample_needed) < SRSRAN_SUCCESS) {
+    if (srsran_ue_sync_nr_zerocopy_twinrx_nrscope(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, &rk, resample_needed) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
       logger.error("SYNC: error in zerocopy");
       return false;
@@ -583,7 +587,6 @@ int Radio::DecodeAndProcess(){
   }
   
   uint64_t next_consume_at = 0;
-  bool someone_already_resampled = false;
   bool first_time = true;
 
   while (true) {
@@ -594,7 +597,6 @@ int Radio::DecodeAndProcess(){
     gettimeofday(&t0, NULL);
     // consume a sf data
     for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
-      someone_already_resampled = true; // already resampled (if resample needed) in the producer thread; thus skip resample in consumer
       srsran_slot_cfg_t slot = {0};
       slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
       // Move rx_buffer
@@ -653,14 +655,14 @@ int Radio::DecodeAndProcess(){
       // To save computing resources for dci decoders: assume SIB1 info should be static
       std::thread sibs_thread;
       if (!task_scheduler_nrscope.sib1_found) {
-        sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope, rx_buffer, &resampler_lock, &someone_already_resampled};
+        sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
       }
-      std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer, &resampler_lock, &someone_already_resampled};
+      std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
 
       std::vector <std::thread> dci_threads;
       if(task_scheduler_nrscope.dci_inited){
         for (uint32_t i = 0; i < nof_threads; i++){
-          dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope, rx_buffer, &resampler_lock, &someone_already_resampled);
+          dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope, rx_buffer);
         }
       }
 

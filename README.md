@@ -138,9 +138,29 @@ There are some on-going plans for the near future:
 
 ## Resampling included for more USRPs
 
-* Create two sampling config parameters: `srsran_srate` and `srate`. `srsran_srate` is what the srsRAN signal processing saw, which should be in the 184.32MHz family. `srate` is what fed to the USRP RF, which should be in the 200MHz family. Therefore, the down-resampling ratio will be `r = srsran_srate/srate` (see `config.yaml`).
-* Down-resample the raw signal with ratio `r`, using the [liquid-dsp](https://liquidsdr.org/) library. Please install following their Github page.
+* Create two sampling config parameters: `srsran_srate` and `srate`. `srsran_srate` is what the srsRAN signal processing saw, which should be in the 184.32MHz family (srsRAN process assumed). `srate` is what fed to the USRP RF, which should be compatible with your USRP hardware. Therefore, the resampling ratio will be `r = srsran_srate/srate` (see `config.yaml`).
+* Down-resample the raw signal with ratio `r`, using the [liquid-dsp](https://liquidsdr.org/) library. Please install following steps below (from their Github page).
 * As resampling takes non-trivial portion of time (based on our test machine), we optimize the "producer-consumer" coordination pattern in the time-critical baseband processing scenario. See more technical details below.
+
+### Install liquid-dsp (assume Debian)
+
+```
+sudo apt-get install automake autoconf
+
+# download source codes
+git clone git://github.com/jgaeddert/liquid-dsp.git
+
+# go to the repo
+
+# Building and installing the main library
+./bootstrap.sh
+./configure
+make
+sudo make install
+sudo ldconfig
+# to double check, libs should appear at /usr/local/lib and header liquid.h should appear at /usr/local/include/liquid/
+```
+
 
 **Therefore, to run with different USRPs you will have the following `config.yaml`(s):**
 

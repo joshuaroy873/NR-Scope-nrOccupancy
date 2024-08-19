@@ -67,7 +67,7 @@ class SIBsDecoder{
     */
     int decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
                                         TaskSchedulerNRScope* task_scheduler_nrscope,
-                                        cf_t * raw_buffer, std::mutex * resampler_lock, bool * someone_already_resampled);
+                                        cf_t * raw_buffer);
 
     // /**
     // * A function that represents the SIB thread for a producer-consumer threading design,

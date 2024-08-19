@@ -81,20 +81,7 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
 
 int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
                                                 TaskSchedulerNRScope* task_scheduler_nrscope,
-                                                cf_t * raw_buffer, std::mutex * resampler_lock, bool * someone_already_resampled){  
-
-  resampler_lock->lock();
-  if (!(*someone_already_resampled)) {
-    // resampling
-    uint32_t actual_slot_sz = 0;
-    TaskSchedulerNRScope::copy_c_to_cpp_complex_arr_and_zero_padding(raw_buffer, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_slot_sz, task_scheduler_nrscope->temp_x_sz);
-    msresamp_crcf_execute(task_scheduler_nrscope->resampler, task_scheduler_nrscope->temp_x, task_scheduler_nrscope->pre_resampling_slot_sz, task_scheduler_nrscope->temp_y, &actual_slot_sz);
-    std::cout << "decode sib1 resampled: " << actual_slot_sz << std::endl;
-    TaskSchedulerNRScope::copy_cpp_to_c_complex_arr(task_scheduler_nrscope->temp_y, raw_buffer, actual_slot_sz);
-
-    *someone_already_resampled = true;
-  }
-  resampler_lock->unlock();
+                                                cf_t * raw_buffer){
 
   if(!task_scheduler_nrscope->sib1_inited){
     std::cout << "SIB decoder not initialized..." << std::endl;

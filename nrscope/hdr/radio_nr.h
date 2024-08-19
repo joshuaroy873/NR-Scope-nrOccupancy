@@ -72,6 +72,8 @@ class Radio{
     sem_t smph_sf_data_prod_cons;
 
     bool resample_needed;
+    resampler_kit rk;
+    bool rk_initialized = false;
 
     std::string log_name;
     bool local_log;

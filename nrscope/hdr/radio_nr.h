@@ -157,5 +157,22 @@ class Radio{
     int DecodeAndProcess();
 };
 
+int copy_c_to_cpp_complex_arr_and_zero_padding(cf_t* src, std::complex<float>* dst, uint32_t sz1, uint32_t sz2) {
+  for (uint32_t i = 0; i < sz2; i++) {
+    // indeed copy right? https://en.cppreference.com/w/cpp/numeric/complex/operator%3D
+    dst[i] = i < sz1 ? src[i] : 0;
+  }
+
+  return 0;
+}
+
+int copy_cpp_to_c_complex_arr(std::complex<float>* src, cf_t* dst, uint32_t sz) {
+  for (uint32_t i = 0; i < sz; i++) {
+    // https://en.cppreference.com/w/cpp/numeric/complex 
+    dst[i] = { src[i].real(), src[i].imag() };
+  }
+
+  return 0;
+}
 
 #endif

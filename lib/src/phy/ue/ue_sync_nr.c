@@ -33,9 +33,9 @@ int prepare_resampler(resampler_kit * q, float resample_ratio, uint32_t pre_resa
   for (uint8_t i = 0; i < resample_worker_num; ++i) {
     q[i].resampler = msresamp_crcf_create(resample_ratio, 60.0f);
     q[i].temp_y = SRSRAN_MEM_ALLOC(cf_t, (pre_resample_sf_sz + 20) * resample_ratio * 2);
-    return SRSRAN_SUCCESS;
   }
-  
+
+  return SRSRAN_SUCCESS;
 }
 
 int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_t* args)
@@ -397,7 +397,7 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
       args_struct.splitted_nx = splitted_nx;
       args_struct.worker_idx = i;
       args_struct.actual_sf_sz_splitted = actual_sf_szs_splitted + i;
-      pthread_create(tids + i, NULL, &resample_partially_nrscope, (void *)args_struct);
+      pthread_create(tids + i, NULL, &resample_partially_nrscope, (void *)&args_struct);
     }
     // u_int32_t actual_sf_sz = 0;
     // msresamp_crcf_execute(rk->resampler, buffer[0], (uint32_t)((float)q->sf_sz/q->resample_ratio), rk->temp_y, &actual_sf_sz);

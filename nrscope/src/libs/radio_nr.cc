@@ -3,6 +3,9 @@
 #include <semaphore>
 #include <chrono>
 
+#define RING_BUF_SIZE 10000
+#define RING_BUF_MODULUS (RING_BUF_SIZE - 1)
+
 std::mutex lock_radio_nr;
 
 
@@ -296,8 +299,7 @@ int Radio::RadioInitandStart(){
 
   // Allocate receive buffer
   slot_sz = (uint32_t)(rf_args.srsran_srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
-  rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz * 1000); // sf * 1000 = 1-sec-duration buffer
-  // std::cout << "rx_buffer_address: " << rx_buffer << std::endl;
+  rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz * RING_BUF_SIZE);
   std::cout << "slot_sz: " << slot_sz << std::endl;
   // std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
   srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
@@ -542,13 +544,13 @@ int Radio::FetchAndResample(){
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);   
 
-    // if not sync, we fetch and sync at the rx_buffer start, otherwise we store from 1 to 999 sf index and back in a ring buffer manner
+    // if not sync, we fetch and sync at the rx_buffer start, otherwise we store from 1 to RING_BUF_MODULUS sf index and back in a ring buffer manner
     // i.e., 0 sf index is for sync and moving a sf data there for decoders to process
     // note at the first round we start like 0, 2, 3... (skip 1 if you do the math)
     rf_buffer_t = !in_sync ?
     srsran::rf_buffer_t(rx_buffer, pre_resampling_sf_sz) :
-    srsran::rf_buffer_t(rx_buffer + (pre_resampling_sf_sz * (next_produce_at % 999 + 1)), pre_resampling_sf_sz); 
-    std::cout << "current_produce_at: " << (!in_sync ? 0 : (next_produce_at % 999 + 1)) << std::endl;
+    srsran::rf_buffer_t(rx_buffer + (pre_resampling_sf_sz * (next_produce_at % RING_BUF_MODULUS + 1)), pre_resampling_sf_sz); 
+    std::cout << "current_produce_at: " << (!in_sync ? 0 : (next_produce_at % RING_BUF_MODULUS + 1)) << std::endl;
     std::cout << "current_produce_ptr: " << (rf_buffer_t.to_cf_t())[0] << std::endl;
 
     // note fetching the raw samples will temporarily touch area out of the target sf boundary
@@ -593,7 +595,7 @@ int Radio::DecodeAndProcess(){
 
   while (true) {
     sem_wait(&smph_sf_data_prod_cons); 
-    std::cout << "current_consume_at: " << (first_time ? 0 : ((next_consume_at % 999 + 1))) << std::endl;
+    std::cout << "current_consume_at: " << (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1))) << std::endl;
     outcome.timestamp = last_rx_time.get(0);  
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);
@@ -603,10 +605,10 @@ int Radio::DecodeAndProcess(){
       slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
       // Move rx_buffer
       // here wanted data move to the buffer beginning for decoders to process
-      // fetch and resample thread will store unprocessed data at 1 to 999 sf index; we copy wanted data to 0 sf idx
+      // fetch and resample thread will store unprocessed data at 1 to RING_BUF_MODULUS sf index; we copy wanted data to 0 sf idx
       // assumption: no way when we are decoding this sf the fetch thread has go around the whole ring and modify this sf again
-      srsran_vec_cf_copy(rx_buffer, rx_buffer + (first_time ? 0 : ((next_consume_at % 999 + 1) * pre_resampling_sf_sz)) + (slot_idx * slot_sz), slot_sz);
-      std::cout << "decode slot: " << slot_idx << "; current_consume_ptr: " << rx_buffer + (first_time ? 0 : ((next_consume_at % 999 + 1) * pre_resampling_sf_sz)) + (slot_idx * slot_sz) << std::endl; 
+      srsran_vec_cf_copy(rx_buffer, rx_buffer + (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1) * pre_resampling_sf_sz)) + (slot_idx * slot_sz), slot_sz);
+      std::cout << "decode slot: " << slot_idx << "; current_consume_ptr: " << rx_buffer + (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1) * pre_resampling_sf_sz)) + (slot_idx * slot_sz) << std::endl; 
 
       if(!task_scheduler_nrscope.rach_inited and task_scheduler_nrscope.sib1_found){
         // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};

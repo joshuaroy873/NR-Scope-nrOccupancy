@@ -277,10 +277,10 @@ int srsran_symbol_sz_from_srate(double srate_hz, srsran_subcarrier_spacing_t scs
   uint32_t symbol_sz = srate_int_hz / scs_int_hz;
 
   // Verify the symbol size can have an integer cyclic prefix size
-  if ((symbol_sz * 144U) % 2048 != 0 && (symbol_sz * (16U << (uint32_t)scs)) % 2048 != 0) {
-    ERROR("The sampling rate %.2f MHz with subcarrrier spacing %d kHz", srate_hz / 1e6, scs_int_hz / 1000);
-    return SRSRAN_ERROR;
-  }
+  // if ((symbol_sz * 144U) % 2048 != 0 && (symbol_sz * (16U << (uint32_t)scs)) % 2048 != 0) {
+  //   ERROR("The sampling rate %.2f MHz with subcarrrier spacing %d kHz", srate_hz / 1e6, scs_int_hz / 1000);
+  //   return SRSRAN_ERROR;
+  // }
 
   return (int)symbol_sz;
 }

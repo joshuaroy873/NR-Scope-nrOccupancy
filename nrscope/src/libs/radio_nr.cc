@@ -330,7 +330,7 @@ int Radio::RadioInitandStart(){
   if (resample_needed) {
     q = msresamp_crcf_create(r,As);
   }
-  float delay = msresamp_crcf_get_delay(q);
+  float delay = resample_needed ? msresamp_crcf_get_delay(q) : 0;
 
   // add a few zero padding
   uint32_t temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz + (int)ceilf(delay) + 10;
@@ -448,7 +448,9 @@ int Radio::RadioInitandStart(){
 
   // fclose(fp_time_series_pre_resample);
   // fclose(fp_time_series_post_resample);
-  msresamp_crcf_destroy(q);
+  if (resample_needed) {
+    msresamp_crcf_destroy(q);
+  }
   return SRSRAN_SUCCESS;
 }
 

@@ -166,7 +166,7 @@ SRSRAN_API int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer,
 /**
  * @brief Resample only part of the raw signals (thus should be collectively used by multiple threads)
  */
-void *resample_partially_nrscope(resampler_kit *rk, cf_t *in, uint32_t splitted_nx, uint32_t worker_idx, uint32_t * actual_sf_sz_splitted);
+void *resample_partially_nrscope(void * args)
 
 /**
  * @brief Runs the NR UE synchronization object, tries to find and track the configured SSB leaving in buffer the

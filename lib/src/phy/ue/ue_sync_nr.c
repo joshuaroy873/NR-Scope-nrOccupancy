@@ -356,7 +356,13 @@ int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_
   return SRSRAN_SUCCESS;
 }
 
-void resample_partially_nrscope(resampler_kit *rk, cf_t *in, uint32_t splitted_nx, uint32_t worker_idx, uint32_t * actual_sf_sz_splitted) {
+void *resample_partially_nrscope(void * args) {
+  resample_partially_args_nrscope * my_args = (resample_partially_args_nrscope *)args;
+  resampler_kit *rk = my_args->rk;
+  cf_t *in = my_args->in;
+  uint32_t splitted_nx = my_args->splitted_nx;
+  uint32_t worker_idx = my_args->worker_idx;
+  uint32_t * actual_sf_sz_splitted = my_args->actual_sf_sz_splitted;
   msresamp_crcf_execute(rk->resampler, (in + splitted_nx * worker_idx), splitted_nx, rk->temp_y, actual_sf_sz_splitted);
   printf("resampled sf size (splitted) by worker %u: %u\n", worker_idx, *actual_sf_sz_splitted);
 }
@@ -385,15 +391,13 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
     pthread_t * tids = (pthread_t *) malloc(sizeof(pthread_t) * resample_worker_num);
     uint32_t * actual_sf_szs_splitted = (uint32_t *) malloc(sizeof(uint32_t) * resample_worker_num);
     for (uint8_t i = 0; i < resample_worker_num; i++) {
-      pthread_create(
-      tids + i, 
-      NULL, 
-      resample_partially_nrscope, 
-      rk + i,
-      buffer[0],
-      splitted_nx,
-      i,
-      actual_sf_szs_splitted + i);
+      resample_partially_args_nrscope args_struct;
+      args_struct.rk = rk + i;
+      args_struct.in = buffer[0];
+      args_struct.splitted_nx = splitted_nx;
+      args_struct.worker_idx = i;
+      args_struct.actual_sf_sz_splitted = actual_sf_szs_splitted + i;
+      pthread_create(tids + i, NULL, *resample_partially_nrscope, (void *)args_struct);
     }
     // u_int32_t actual_sf_sz = 0;
     // msresamp_crcf_execute(rk->resampler, buffer[0], (uint32_t)((float)q->sf_sz/q->resample_ratio), rk->temp_y, &actual_sf_sz);

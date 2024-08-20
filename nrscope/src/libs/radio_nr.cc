@@ -670,7 +670,7 @@ int Radio::DecodeAndProcess(){
           gettimeofday(&ta, NULL);
           dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope, rx_buffer);
           gettimeofday(&tb, NULL);
-          std::cout << "spawn dci thread time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
+          std::cout << "spawn dci thread time_spend: " << (tb.tv_usec - ta.tv_usec) << "(us)" << std::endl;
         }
       }
 

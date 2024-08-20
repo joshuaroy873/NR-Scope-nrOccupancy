@@ -365,6 +365,8 @@ void *resample_partially_nrscope(void * args) {
   uint32_t * actual_sf_sz_splitted = my_args->actual_sf_sz_splitted;
   msresamp_crcf_execute(rk->resampler, (in + splitted_nx * worker_idx), splitted_nx, rk->temp_y, actual_sf_sz_splitted);
   printf("resampled sf size (splitted) by worker %u: %u\n", worker_idx, *actual_sf_sz_splitted);
+
+  return NULL;
 }
 
 int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk, bool resample_needed, uint32_t resample_worker_num)

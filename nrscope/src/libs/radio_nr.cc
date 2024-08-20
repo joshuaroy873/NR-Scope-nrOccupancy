@@ -528,9 +528,10 @@ int Radio::SyncandDownlinkInit(){
 int Radio::FetchAndResample(){
 
   if (resample_needed && !rk_initialized) {
-    prepare_resampler(&rk, 
+    prepare_resampler(rk, 
       (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz, 
-      SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
+      SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz,
+      RESAMPLE_WORKER_NUM);
     rk_initialized = true;
   }
 
@@ -556,7 +557,7 @@ int Radio::FetchAndResample(){
     // note fetching the raw samples will temporarily touch area out of the target sf boundary
     // yet after resampling, all meaningful data will reside the target sf arr area and the original raw extra part 
     // beyond the boundary doesn't matter
-    if (srsran_ue_sync_nr_zerocopy_twinrx_nrscope(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, &rk, resample_needed) < SRSRAN_SUCCESS) {
+    if (srsran_ue_sync_nr_zerocopy_twinrx_nrscope(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, rk, resample_needed, RESAMPLE_WORKER_NUM) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
       logger.error("SYNC: error in zerocopy");
       return false;

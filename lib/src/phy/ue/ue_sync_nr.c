@@ -23,15 +23,19 @@
 #include "srsran/phy/utils/vector.h"
 
 #include <liquid/liquid.h>
+#include <pthread.h>
 
 #define UE_SYNC_NR_DEFAULT_CFO_ALPHA 0.1
 pthread_mutex_t lock;
 
-int prepare_resampler(resampler_kit * q, float resample_ratio, uint32_t pre_resample_sf_sz) {
+int prepare_resampler(resampler_kit * q, float resample_ratio, uint32_t pre_resample_sf_sz, uint32_t resample_worker_num) {
 
-  q->resampler = msresamp_crcf_create(resample_ratio, 60.0f);
-  q->temp_y = SRSRAN_MEM_ALLOC(cf_t, (pre_resample_sf_sz + 20) * resample_ratio * 2);
-  return SRSRAN_SUCCESS;
+  for (uint8_t i = 0; i < resample_worker_num; ++i) {
+    q[i].resampler = msresamp_crcf_create(resample_ratio, 60.0f);
+    q[i].temp_y = SRSRAN_MEM_ALLOC(cf_t, (pre_resample_sf_sz + 20) * resample_ratio * 2);
+    return SRSRAN_SUCCESS;
+  }
+  
 }
 
 int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_t* args)
@@ -352,7 +356,12 @@ int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_
   return SRSRAN_SUCCESS;
 }
 
-int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk, bool resample_needed)
+void resample_partially_nrscope(resampler_kit *rk, cf_t *in, uint32_t splitted_nx, uint32_t worker_idx, uint32_t * actual_sf_sz_splitted) {
+  msresamp_crcf_execute(rk->resampler, (in + splitted_nx * worker_idx), splitted_nx, rk->temp_y, actual_sf_sz_splitted);
+  printf("resampled sf size (splitted) by worker %u: %u\n", worker_idx, *actual_sf_sz_splitted);
+}
+
+int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk, bool resample_needed, uint32_t resample_worker_num)
 {
   // Check inputs
   if (q == NULL || buffer == NULL || outcome == NULL) {
@@ -372,10 +381,38 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
 
   // resample
   if (resample_needed) {
-    u_int32_t actual_sf_sz = 0;
-    msresamp_crcf_execute(rk->resampler, buffer[0], (uint32_t)((float)q->sf_sz/q->resample_ratio), rk->temp_y, &actual_sf_sz);
-    printf("resampled sf size: %u\n", actual_sf_sz);
-    srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);
+    uint32_t splitted_nx = (uint32_t)((float)q->sf_sz/q->resample_ratio/resample_worker_num);
+    pthread_t * tids = (pthread_t *) malloc(sizeof(pthread_t) * resample_worker_num);
+    uint32_t * actual_sf_szs_splitted = (uint32_t *) malloc(sizeof(uint32_t) * resample_worker_num);
+    for (uint8_t i = 0; i < resample_worker_num; i++) {
+      pthread_create(
+      tids + i, 
+      NULL, 
+      resample_partially_nrscope, 
+      rk + i,
+      buffer[0],
+      splitted_nx,
+      i,
+      actual_sf_szs_splitted + i);
+    }
+    // u_int32_t actual_sf_sz = 0;
+    // msresamp_crcf_execute(rk->resampler, buffer[0], (uint32_t)((float)q->sf_sz/q->resample_ratio), rk->temp_y, &actual_sf_sz);
+    // printf("resampled sf size: %u\n", actual_sf_sz);
+    // srsran_vec_cf_copy(buffer[0], rk->temp_y, actual_sf_sz);
+
+    for (uint8_t i = 0; i < resample_worker_num; i++) {
+      pthread_join(tids[i], NULL);
+    }
+    
+    // sequentially merge back
+    cf_t * buf_split_ptr = buffer[0];
+    for (uint8_t i = 0; i < resample_worker_num; i++) {
+      srsran_vec_cf_copy(buf_split_ptr, rk[i].temp_y, actual_sf_szs_splitted[i]);
+      buf_split_ptr += actual_sf_szs_splitted[i];
+    }
+
+    free(tids);
+    free(actual_sf_szs_splitted);
   }
 
   // Run FSM

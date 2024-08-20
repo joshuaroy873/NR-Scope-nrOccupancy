@@ -121,7 +121,7 @@ typedef struct SRSRAN_API {
   float              delay_us;  ///< Current average delay in microseconds
 } srsran_ue_sync_nr_outcome_t;
 
-SRSRAN_API int prepare_resampler(resampler_kit * q, float resample_ratio, uint32_t pre_resample_sf_sz);
+SRSRAN_API int prepare_resampler(resampler_kit * q, float resample_ratio, uint32_t pre_resample_sf_sz, uint32_t resample_worker_num);
 
 /**
  * @brief Initialises a UE sync NR object
@@ -156,6 +156,11 @@ SRSRAN_API int srsran_ue_sync_nr_set_cfg(srsran_ue_sync_nr_t* q, const srsran_ue
 SRSRAN_API int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome);
 
 /**
+ * @brief Resample only part of the raw signals (thus should be collectively used by multiple threads)
+ */
+void resample_partially_nrscope(resampler_kit *rk, cf_t *in, uint32_t splitted_nx, uint32_t worker_idx, uint32_t * actual_sf_sz_splitted);
+
+/**
  * @brief Runs the NR UE synchronization object, tries to find and track the configured SSB leaving in buffer the
  * received baseband subframe
  * @param q NR UE synchronization object
@@ -164,7 +169,7 @@ SRSRAN_API int srsran_ue_sync_nr_zerocopy(srsran_ue_sync_nr_t* q, cf_t** buffer,
  * @param rk resampler
  * @return SRSRAN_SUCCESS if no error occurs, SRSRAN_ERROR code otherwise
  */
-SRSRAN_API int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk, bool resample_needed);
+SRSRAN_API int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_ue_sync_nr_outcome_t* outcome, resampler_kit * rk, bool resample_needed, uint32_t resample_worker_num);
 
 /**
  * @brief Runs the NR UE synchronization object, tries to find and track the configured SSB leaving in buffer the

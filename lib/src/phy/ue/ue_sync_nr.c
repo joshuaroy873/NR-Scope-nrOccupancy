@@ -402,7 +402,8 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
       args_struct.worker_idx = i;
       args_struct.actual_sf_sz_splitted = actual_sf_szs_splitted + i;
       printf("[parallel resample] i: %u\n", i);
-      pthread_create(&tids[i], NULL, resample_partially_nrscope, (void *)&args_struct);
+      int res = pthread_create(&tids[i], NULL, resample_partially_nrscope, (void *)&args_struct);
+      printf("[parallel resample] pthread_create res: %d\n", res);
     }
     // u_int32_t actual_sf_sz = 0;
     // msresamp_crcf_execute(rk->resampler, buffer[0], (uint32_t)((float)q->sf_sz/q->resample_ratio), rk->temp_y, &actual_sf_sz);

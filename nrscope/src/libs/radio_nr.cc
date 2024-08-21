@@ -667,11 +667,7 @@ int Radio::DecodeAndProcess(){
       std::vector <std::thread> dci_threads;
       if(task_scheduler_nrscope.dci_inited){
         for (uint32_t i = 0; i < nof_threads; i++){
-          struct timeval ta, tb;
-          gettimeofday(&ta, NULL);
           dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope, rx_buffer);
-          gettimeofday(&tb, NULL);
-          std::cout << "spawn dci thread time_spend: " << (tb.tv_usec - ta.tv_usec) << "(us)" << std::endl;
         }
       }
 

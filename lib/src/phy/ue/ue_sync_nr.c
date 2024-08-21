@@ -33,7 +33,7 @@ int prepare_resampler(resampler_kit * q, float resample_ratio, uint32_t pre_resa
   for (uint8_t i = 0; i < resample_worker_num; ++i) {
     q[i].resampler = msresamp_crcf_create(resample_ratio, 60.0f);
     q[i].temp_y = SRSRAN_MEM_ALLOC(cf_t, (pre_resample_sf_sz + 20) * resample_ratio * 2);
-    printf("[parallel resample] q[%u] initialized; &q[i]: %p\n", i, &q[i]);
+    // printf("[parallel resample] q[%u] initialized; &q[i]: %p\n", i, &q[i]);
   }
 
   return SRSRAN_SUCCESS;
@@ -364,9 +364,9 @@ void *resample_partially_nrscope(void * args) {
   uint32_t splitted_nx = my_args->splitted_nx;
   uint32_t worker_idx = my_args->worker_idx;
   uint32_t * actual_sf_sz_splitted = my_args->actual_sf_sz_splitted;
-  printf("[parallel resample] rk: %p, in: %p, splitted_nx: %u, worker_idx: %u, actual_sf_sz_splitted: %p\n", rk, in, splitted_nx, worker_idx, actual_sf_sz_splitted);
+  // printf("[parallel resample] rk: %p, in: %p, splitted_nx: %u, worker_idx: %u, actual_sf_sz_splitted: %p\n", rk, in, splitted_nx, worker_idx, actual_sf_sz_splitted);
   msresamp_crcf_execute(rk->resampler, (in + splitted_nx * worker_idx), splitted_nx, rk->temp_y, actual_sf_sz_splitted);
-  printf("resampled sf size (splitted) by worker %u: %u\n", worker_idx, *actual_sf_sz_splitted);
+  // printf("resampled sf size (splitted) by worker %u: %u\n", worker_idx, *actual_sf_sz_splitted);
 
   return NULL;
 }
@@ -401,9 +401,9 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
       args_structs[i].splitted_nx = splitted_nx;
       args_structs[i].worker_idx = i;
       args_structs[i].actual_sf_sz_splitted = &actual_sf_szs_splitted[i];
-      printf("[parallel resample] i: %u\n", i);
+      // printf("[parallel resample] i: %u\n", i);
       int res = pthread_create(&tids[i], NULL, resample_partially_nrscope, (void *)&(args_structs[i]));
-      printf("[parallel resample] pthread_create res: %d\n", res);
+      // printf("[parallel resample] pthread_create res: %d\n", res);
     }
     // u_int32_t actual_sf_sz = 0;
     // msresamp_crcf_execute(rk->resampler, buffer[0], (uint32_t)((float)q->sf_sz/q->resample_ratio), rk->temp_y, &actual_sf_sz);

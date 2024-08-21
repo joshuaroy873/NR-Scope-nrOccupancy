@@ -394,15 +394,15 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
     uint32_t splitted_nx = (uint32_t)((float)q->sf_sz/q->resample_ratio/resample_worker_num);
     pthread_t * tids = (pthread_t *) malloc(sizeof(pthread_t) * resample_worker_num);
     uint32_t * actual_sf_szs_splitted = (uint32_t *) malloc(sizeof(uint32_t) * resample_worker_num);
+    resample_partially_args_nrscope * args_structs = (resample_partially_args_nrscope *) malloc(sizeof(resample_partially_args_nrscope) * resample_worker_num);;
     for (uint8_t i = 0; i < 2; i++) {
-      resample_partially_args_nrscope args_struct;
-      args_struct.rk = &rk[i];
-      args_struct.in = buffer[0];
-      args_struct.splitted_nx = splitted_nx;
-      args_struct.worker_idx = i;
-      args_struct.actual_sf_sz_splitted = &actual_sf_szs_splitted[i];
+      args_structs[i].rk = &rk[i];
+      args_structs[i].in = buffer[0];
+      args_structs[i].splitted_nx = splitted_nx;
+      args_structs[i].worker_idx = i;
+      args_structs[i].actual_sf_sz_splitted = &actual_sf_szs_splitted[i];
       printf("[parallel resample] i: %u\n", i);
-      int res = pthread_create(&tids[i], NULL, resample_partially_nrscope, (void *)&args_struct);
+      int res = pthread_create(&tids[i], NULL, resample_partially_nrscope, (void *)&(args_structs[i]));
       printf("[parallel resample] pthread_create res: %d\n", res);
     }
     // u_int32_t actual_sf_sz = 0;
@@ -423,6 +423,7 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
 
     free(tids);
     free(actual_sf_szs_splitted);
+    free(args_structs);
   }
 
   // Run FSM

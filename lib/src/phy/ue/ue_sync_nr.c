@@ -395,7 +395,7 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
     pthread_t * tids = (pthread_t *) malloc(sizeof(pthread_t) * resample_worker_num);
     uint32_t * actual_sf_szs_splitted = (uint32_t *) malloc(sizeof(uint32_t) * resample_worker_num);
     resample_partially_args_nrscope * args_structs = (resample_partially_args_nrscope *) malloc(sizeof(resample_partially_args_nrscope) * resample_worker_num);;
-    for (uint8_t i = 0; i < 2; i++) {
+    for (uint8_t i = 0; i < resample_worker_num; i++) {
       args_structs[i].rk = &rk[i];
       args_structs[i].in = buffer[0];
       args_structs[i].splitted_nx = splitted_nx;

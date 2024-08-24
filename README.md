@@ -40,7 +40,7 @@ We need [liquid-dsp](https://github.com/jgaeddert/liquid-dsp) for resampling if 
 # In a different directory
 sudo apt-get install automake autoconf
 # download source codes
-git clone git://github.com/jgaeddert/liquid-dsp.git
+git clone https://github.com/jgaeddert/liquid-dsp.git
 cd liquid-dsp
 # Building and installing the main library
 ./bootstrap.sh

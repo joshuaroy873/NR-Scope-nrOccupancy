@@ -17,7 +17,7 @@
 #include <liquid/liquid.h>
 #include <chrono>
 
-#define RESAMPLE_WORKER_NUM 4
+#define RESAMPLE_WORKER_NUM 2
 
 class Radio{
   public:

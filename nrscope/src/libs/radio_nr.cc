@@ -338,15 +338,22 @@ int Radio::RadioInitandStart(){
     for (uint8_t i = 0; i < RESAMPLE_WORKER_NUM; i++) {
       q[i] = msresamp_crcf_create(r,As);
     }
+
+    // add a few zero padding
+    uint32_t temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz + (int)ceilf(delay) + 10;
+    std::complex<float> * temp_x = (std::complex<float> *)malloc(temp_x_sz * sizeof(std::complex<float>));
+    // std::complex<float> temp_x[temp_x_sz];
+
+    uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
+    std::complex<float> * temp_y[RESAMPLE_WORKER_NUM];
+    for (uint8_t i = 0; i < RESAMPLE_WORKER_NUM; i++) {
+      temp_y[i] = (std::complex<float> *)malloc(temp_y_sz * sizeof(std::complex<float>));
+    }
+    // std::complex<float> temp_y[RESAMPLE_WORKER_NUM][temp_y_sz];
   }
   float delay = resample_needed ? msresamp_crcf_get_delay(q[0]) : 0;
 
-  // add a few zero padding
-  uint32_t temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz + (int)ceilf(delay) + 10;
-  std::complex<float> temp_x[temp_x_sz];
-
-  uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
-  std::complex<float> temp_y[RESAMPLE_WORKER_NUM][temp_y_sz];
+  
 
   // FILE *fp_time_series_pre_resample;
   // fp_time_series_pre_resample = fopen("./time_series_pre_resample.txt", "w");
@@ -478,7 +485,9 @@ int Radio::RadioInitandStart(){
   if (resample_needed) {
     for (uint8_t k = 0; k < RESAMPLE_WORKER_NUM; k++) {
       msresamp_crcf_destroy(q[k]);
+      free(temp_y[k]);
     }
+    free(temp_x);
   }
   return SRSRAN_SUCCESS;
 }

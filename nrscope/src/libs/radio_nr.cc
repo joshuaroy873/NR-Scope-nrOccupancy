@@ -419,7 +419,7 @@ int Radio::RadioInitandStart(){
         uint32_t splitted_nx = pre_resampling_slot_sz / RESAMPLE_WORKER_NUM;
         std::vector <std::thread> ssb_scan_resample_threads;
         for (uint8_t k = 0; k < RESAMPLE_WORKER_NUM; k++) {
-          ssb_scan_resample_threads.emplace_back(resample_partially, q[k], temp_x, temp_y[k], k, splitted_nx, &actual_slot_szs[k]);
+          ssb_scan_resample_threads.emplace_back(&resample_partially, q[k], temp_x, temp_y[k], k, splitted_nx, &actual_slot_szs[k]);
         }
         // msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
 
@@ -476,7 +476,9 @@ int Radio::RadioInitandStart(){
   // fclose(fp_time_series_pre_resample);
   // fclose(fp_time_series_post_resample);
   if (resample_needed) {
-    msresamp_crcf_destroy(q);
+    for (uint8_t k = 0; k < RESAMPLE_WORKER_NUM; k++) {
+      msresamp_crcf_destroy(q[k]);
+    }
   }
   return SRSRAN_SUCCESS;
 }

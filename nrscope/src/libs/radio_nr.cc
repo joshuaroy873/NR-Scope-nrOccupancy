@@ -51,6 +51,11 @@ int Radio::ScanThread(){
   return SRSRAN_SUCCESS;
 }
 
+static int resample_partially(msresamp_crcf * q, std::complex<float> *in, std::complex<float> *temp_out, uint8_t worker_id, uint32_t splitted_nx, uint32_t * actual_size) {
+  msresamp_crcf_execute(*q, (in + splitted_nx * worker_id), splitted_nx, temp_out, actual_size);
+  return 0;
+}
+
 int Radio::ScanInitandStart(){
 
   // Static rf parameters
@@ -303,7 +308,7 @@ int Radio::RadioInitandStart(){
   std::cout << "slot_sz: " << slot_sz << std::endl;
   // std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
   srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
-  uint32_t actual_slot_sz = 0; // the actual slot size after resampling 
+  uint32_t actual_slot_szs[RESAMPLE_WORKER_NUM]; // the actual slot size after resampling 
 
   // Allocate pre-resampling receive buffer
   pre_resampling_rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
@@ -328,18 +333,20 @@ int Radio::RadioInitandStart(){
   // initialize resampling tool
   float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;       // resampling rate (output/input)
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
-  msresamp_crcf q;
+  msresamp_crcf q[RESAMPLE_WORKER_NUM];
   if (resample_needed) {
-    q = msresamp_crcf_create(r,As);
+    for (uint8_t i = 0; i < RESAMPLE_WORKER_NUM; i++) {
+      q[i] = msresamp_crcf_create(r,As);
+    }
   }
-  float delay = resample_needed ? msresamp_crcf_get_delay(q) : 0;
+  float delay = resample_needed ? msresamp_crcf_get_delay(q[0]) : 0;
 
   // add a few zero padding
   uint32_t temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz + (int)ceilf(delay) + 10;
   std::complex<float> temp_x[temp_x_sz];
 
   uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
-  std::complex<float> temp_y[temp_y_sz];
+  std::complex<float> temp_y[RESAMPLE_WORKER_NUM][temp_y_sz];
 
   // FILE *fp_time_series_pre_resample;
   // fp_time_series_pre_resample = fopen("./time_series_pre_resample.txt", "w");
@@ -409,8 +416,26 @@ int Radio::RadioInitandStart(){
       if (resample_needed) {
         // srsran_vec_fprint2_c(fp_time_series_pre_resample, pre_resampling_rx_buffer, pre_resampling_slot_sz);
         TaskSchedulerNRScope::copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz, temp_x_sz);
-        msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
-        TaskSchedulerNRScope::copy_cpp_to_c_complex_arr(temp_y, rx_buffer, actual_slot_sz);
+        uint32_t splitted_nx = pre_resampling_slot_sz / RESAMPLE_WORKER_NUM;
+        std::vector <std::thread> ssb_scan_resample_threads;
+        for (uint8_t k = 0; k < RESAMPLE_WORKER_NUM; k++) {
+          ssb_scan_resample_threads.emplace_back(resample_partially, q[k], temp_x, temp_y[k], k, splitted_nx, &actual_slot_szs[k]);
+        }
+        // msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
+
+        for (uint8_t k = 0; k < RESAMPLE_WORKER_NUM; k++){
+          if(ssb_scan_resample_threads[k].joinable()){
+            ssb_scan_resample_threads[k].join();
+          }
+        }
+
+        // sequentially merge back
+        cf_t * buf_split_ptr = rx_buffer;
+        for (uint8_t k = 0; k < RESAMPLE_WORKER_NUM; k++){
+          TaskSchedulerNRScope::copy_cpp_to_c_complex_arr(temp_y[k], buf_split_ptr, actual_slot_szs[k]);
+          buf_split_ptr += actual_slot_szs[k];
+        }
+
         // srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, actual_slot_sz);
       } else {
         // pre_resampling_slot_sz should be the same as slot_sz as resample ratio is 1 in this case

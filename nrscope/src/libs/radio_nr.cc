@@ -51,7 +51,7 @@ int Radio::ScanThread(){
   return SRSRAN_SUCCESS;
 }
 
-static int resample_partially(msresamp_crcf * q, std::complex<float> *in, std::complex<float> *temp_out, uint8_t worker_id, uint32_t splitted_nx, uint32_t * actual_size) {
+int resample_partially(msresamp_crcf * q, std::complex<float> *in, std::complex<float> *temp_out, uint8_t worker_id, uint32_t splitted_nx, uint32_t * actual_size) {
   msresamp_crcf_execute(*q, (in + splitted_nx * worker_id), splitted_nx, temp_out, actual_size);
   return 0;
 }

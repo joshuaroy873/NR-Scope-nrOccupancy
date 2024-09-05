@@ -389,6 +389,8 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
     return SRSRAN_ERROR;
   }
 
+  struct timeval t0, t1;
+  gettimeofday(&t0, NULL); 
   // resample
   if (resample_needed) {
     uint32_t splitted_nx = (uint32_t)((float)q->sf_sz/q->resample_ratio/resample_worker_num);
@@ -425,6 +427,9 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
     free(actual_sf_szs_splitted);
     free(args_structs);
   }
+
+  gettimeofday(&t1, NULL);  
+  printf("our resample in producer time_spend: %u(us)\n", (t1.tv_usec - t0.tv_usec));
 
   // Run FSM
   switch (q->state) {

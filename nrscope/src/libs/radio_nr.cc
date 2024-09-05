@@ -334,26 +334,27 @@ int Radio::RadioInitandStart(){
   float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;       // resampling rate (output/input)
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
   msresamp_crcf q[RESAMPLE_WORKER_NUM];
+  uint32_t temp_x_sz;
+  uint32_t temp_y_sz;
+  std::complex<float> * temp_x;
+  std::complex<float> * temp_y[RESAMPLE_WORKER_NUM];
   if (resample_needed) {
     for (uint8_t i = 0; i < RESAMPLE_WORKER_NUM; i++) {
       q[i] = msresamp_crcf_create(r,As);
     }
 
+    float delay = resample_needed ? msresamp_crcf_get_delay(q[0]) : 0;
     // add a few zero padding
-    uint32_t temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz + (int)ceilf(delay) + 10;
-    std::complex<float> * temp_x = (std::complex<float> *)malloc(temp_x_sz * sizeof(std::complex<float>));
+    temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz + (int)ceilf(delay) + 10;
+    temp_x = (std::complex<float> *)malloc(temp_x_sz * sizeof(std::complex<float>));
     // std::complex<float> temp_x[temp_x_sz];
 
-    uint32_t temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
-    std::complex<float> * temp_y[RESAMPLE_WORKER_NUM];
+    temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
     for (uint8_t i = 0; i < RESAMPLE_WORKER_NUM; i++) {
       temp_y[i] = (std::complex<float> *)malloc(temp_y_sz * sizeof(std::complex<float>));
     }
     // std::complex<float> temp_y[RESAMPLE_WORKER_NUM][temp_y_sz];
   }
-  float delay = resample_needed ? msresamp_crcf_get_delay(q[0]) : 0;
-
-  
 
   // FILE *fp_time_series_pre_resample;
   // fp_time_series_pre_resample = fopen("./time_series_pre_resample.txt", "w");

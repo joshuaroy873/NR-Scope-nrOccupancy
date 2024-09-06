@@ -350,9 +350,13 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
     }
   }
 
+  struct timeval t1, t2;
+  gettimeofday(&t1, NULL);
   for (uint32_t device_idx = 0; device_idx < (uint32_t)rf_devices.size(); device_idx++) {
     ret &= rx_dev(device_idx, buffer_rx, rxd_time.get_ptr(device_idx));
   }
+  gettimeofday(&t2, NULL);
+  printf("rx_dev in producer time_spend: %lu(us)\n", (t2.tv_usec - t1.tv_usec));
 
   // Perform decimation
   struct timeval ta, tb;

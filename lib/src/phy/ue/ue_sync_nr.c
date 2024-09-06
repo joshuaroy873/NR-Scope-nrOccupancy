@@ -383,11 +383,17 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
     return SRSRAN_ERROR;
   }
 
+  struct timeval ta, tb;
+  gettimeofday(&ta, NULL);
+
   // Receive
   if (ue_sync_nr_recv(q, buffer, &outcome->timestamp) < SRSRAN_SUCCESS) {
     ERROR("Error receiving baseband");
     return SRSRAN_ERROR;
   }
+
+  gettimeofday(&tb, NULL);  
+  printf("receive samples in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
 
   struct timeval t0, t1;
   gettimeofday(&t0, NULL); 

@@ -253,9 +253,13 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
   if (q->next_rf_sample_offset > 0) {
     // Discard a number of samples from RF
     printf("discard rf samples (next_rf_sample_offset): %u\n", (uint32_t)q->next_rf_sample_offset);
+    struct timeval ta, tb;
+    gettimeofday(&ta, NULL);
     if (q->recv_callback(q->recv_obj, buffer, (uint32_t)((float)q->next_rf_sample_offset/(float)q->resample_ratio), timestamp) < SRSRAN_SUCCESS) {
       return SRSRAN_ERROR;
     }
+    gettimeofday(&tb, NULL);  
+    printf("offset compensation receive samples in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
   } else {
     // Adjust receive buffer
     buffer_offset = (uint32_t)(-q->next_rf_sample_offset);
@@ -280,15 +284,23 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
     q->tmp_buffer[chan] = &buffer[chan][buffer_offset];
   }
 
+  struct timeval tq, tp;
+  gettimeofday(&tq, NULL);
   // Receive
   if (q->recv_callback(q->recv_obj, q->tmp_buffer, (uint32_t)((float)nof_samples/(float)q->resample_ratio), timestamp) < SRSRAN_SUCCESS) {
     return SRSRAN_ERROR;
   }
+  gettimeofday(&tp, NULL);  
+  printf("main receive samples in producer time_spend: %lu(us)\n", (tp.tv_usec - tq.tv_usec));
 
   // Compensate CFO
   for (uint32_t chan = 0; chan < q->nof_rx_channels; chan++) {
     if (buffer[chan] != 0 && !q->disable_cfo) {
+      struct timeval tj, tk;
+      gettimeofday(&tj, NULL);
       srsran_vec_apply_cfo(buffer[chan], -q->cfo_hz / q->srate_hz, buffer[chan], (int)q->sf_sz);
+      gettimeofday(&tk, NULL);  
+      printf("CFO compensation in producer time_spend: %lu(us)\n", (tk.tv_usec - tj.tv_usec));
       // printf("q->cfo_hz: %f\n", q->cfo_hz);
       // printf("ue_sync_nr.c q->sf_sz: %u\n", q->sf_sz);
     }

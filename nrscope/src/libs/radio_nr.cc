@@ -509,7 +509,11 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
   srsran::rf_timestamp_t &rf_timestamp = a;
   *ts = a.get(0);
 
+  struct timeval ta, tb;
+  gettimeofday(&ta, NULL);
   return radio->rx_now(rf_buffer, rf_timestamp);
+  gettimeofday(&tb, NULL);
+  printf("rx_now in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
 }
 
 int Radio::SyncandDownlinkInit(){

@@ -609,7 +609,7 @@ int Radio::FetchAndResample(){
       // std::cout << "Subframe idx: " << outcome.sf_idx << std::endl;
       // a new sf data ready; let decoder consume
       next_produce_at++;
-      // sem_post(&smph_sf_data_prod_cons);
+      sem_post(&smph_sf_data_prod_cons);
     } 
 
     gettimeofday(&t1, NULL);  

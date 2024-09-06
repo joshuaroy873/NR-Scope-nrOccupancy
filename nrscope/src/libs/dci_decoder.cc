@@ -764,6 +764,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
   task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id] = n_rntis;
   // std::cout << "task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id]: " << task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id] << std::endl;
 
+  printf("[xuyang debug 9/6] trigger here 1\n");
   // std::cout << "sharded_rntis: ";
   for(uint32_t i = 0; i < n_rntis; i++){
     task_scheduler_nrscope->sharded_rntis[dci_decoder_id][i] = task_scheduler_nrscope->known_rntis[rnti_s + i];
@@ -776,8 +777,12 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
     memset(&dci_dl[idx], 0, sizeof(srsran_dci_dl_nr_t));
     memset(&dci_ul[idx], 0, sizeof(srsran_dci_dl_nr_t));
   }
+
+  printf("[xuyang debug 9/6] trigger here 2\n");
   
   srsran_ue_dl_nr_estimate_fft_nrscope(&ue_dl_dci, slot, arg_scs);
+
+  printf("[xuyang debug 9/6] trigger here 3\n");
 
   int total_dl_dci = 0;
   int total_ul_dci = 0;  

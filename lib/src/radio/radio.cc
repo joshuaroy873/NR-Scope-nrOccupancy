@@ -355,13 +355,18 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
   }
 
   // Perform decimation
+  struct timeval ta, tb;
+  gettimeofday(&ta, NULL);
   if (ratio > 1) {
+    printf("built-in decimation; ratio: %u\n", ratio);
     for (uint32_t ch = 0; ch < nof_channels; ch++) {
       if (buffer.get(ch) and buffer_rx.get(ch)) {
         srsran_resampler_fft_run(&decimators[ch], buffer_rx.get(ch), buffer.get(ch), buffer_rx.get_nof_samples());
       }
     }
   }
+  gettimeofday(&tb, NULL);
+  printf("built-in decimation in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
 
   return ret;
 }

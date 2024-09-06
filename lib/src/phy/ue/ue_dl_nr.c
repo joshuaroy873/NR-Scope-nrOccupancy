@@ -347,10 +347,15 @@ void srsran_ue_dl_nr_estimate_fft_nrscope(srsran_ue_dl_nr_t* q,
     return;
   }
 
+  printf("[xuyang debug 9/6] trigger here 2.1\n");
+
   // OFDM demodulation, basically do the fft
   for (uint32_t i = 0; i < q->nof_rx_antennas; i++) {
     srsran_ofdm_rx_sf_nrscope(&q->fft[i], (int)arg_scs.scs, arg_scs.coreset_offset_scs);
   }
+
+  printf("[xuyang debug 9/6] trigger here 2.2\n");
+
   // Estimate PDCCH channel for every configured CORESET
   for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_CORESET; i++) {
     if (q->cfg.coreset_present[i]) {
@@ -358,6 +363,8 @@ void srsran_ue_dl_nr_estimate_fft_nrscope(srsran_ue_dl_nr_t* q,
       srsran_dmrs_pdcch_estimate_nrscope(&q->dmrs_pdcch[i], slot_cfg, q->sf_symbols[0]);
     }
   }
+
+  printf("[xuyang debug 9/6] trigger here 2.3\n");
 }
 
 static int ue_dl_nr_find_dci_ncce(srsran_ue_dl_nr_t*     q,

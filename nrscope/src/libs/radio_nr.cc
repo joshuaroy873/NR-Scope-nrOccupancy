@@ -718,7 +718,7 @@ int Radio::DecodeAndProcess(){
       }
 
       std::thread rach_thread;
-      if (!task_scheduler_nrscope->rach_found) {
+      if (!task_scheduler_nrscope.rach_found) {
         rach_thread = std::thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
       }
 

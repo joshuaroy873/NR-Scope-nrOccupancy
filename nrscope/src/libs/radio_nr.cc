@@ -716,7 +716,11 @@ int Radio::DecodeAndProcess(){
       if (!task_scheduler_nrscope.sib1_found) {
         sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
       }
-      std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
+
+      std::thread rach_thread;
+      if (!task_scheduler_nrscope->rach_found) {
+        rach_thread = std::thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
+      }
 
       std::vector <std::thread> dci_threads;
       if(task_scheduler_nrscope.dci_inited){

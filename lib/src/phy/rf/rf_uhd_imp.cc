@@ -1302,7 +1302,7 @@ int rf_uhd_recv_with_time_multi(void*    h,
   uhd::time_spec_t             timespec;
   uhd::rx_metadata_t           md;
 
-  printf("rf_uhd_recv_with_time_multi in rf_uhd_imp.cc triggered\n");
+  // printf("rf_uhd_recv_with_time_multi in rf_uhd_imp.cc triggered\n");
 
   // Check Rx stream has been created
   if (not handler->uhd->is_rx_ready()) {
@@ -1341,7 +1341,7 @@ int rf_uhd_recv_with_time_multi(void*    h,
       return SRSRAN_ERROR;
     }
     gettimeofday(&tb, NULL);
-    printf("handler->uhd->receive in producer time_spend: %lu(us); num_rx_samples: %lu; rxd_samples: %lu\n", (tb.tv_usec - ta.tv_usec), num_rx_samples, rxd_samples);
+    // printf("handler->uhd->receive in producer time_spend: %lu(us); num_rx_samples: %lu; rxd_samples: %lu\n", (tb.tv_usec - ta.tv_usec), num_rx_samples, rxd_samples);
 
     // Save timespec for first block
     if (rxd_samples_total == 0) {

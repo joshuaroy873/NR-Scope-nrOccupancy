@@ -259,7 +259,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
       return SRSRAN_ERROR;
     }
     gettimeofday(&tb, NULL);  
-    printf("offset compensation receive samples in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
+    // printf("offset compensation receive samples in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
   } else {
     // Adjust receive buffer
     buffer_offset = (uint32_t)(-q->next_rf_sample_offset);
@@ -291,7 +291,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
     return SRSRAN_ERROR;
   }
   gettimeofday(&tp, NULL);  
-  printf("main receive samples in producer time_spend: %lu(us)\n", (tp.tv_usec - tq.tv_usec));
+  // printf("main receive samples in producer time_spend: %lu(us)\n", (tp.tv_usec - tq.tv_usec));
 
   // Compensate CFO
   for (uint32_t chan = 0; chan < q->nof_rx_channels; chan++) {
@@ -300,7 +300,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
       gettimeofday(&tj, NULL);
       srsran_vec_apply_cfo(buffer[chan], -q->cfo_hz / q->srate_hz, buffer[chan], (int)q->sf_sz);
       gettimeofday(&tk, NULL);  
-      printf("CFO compensation in producer time_spend: %lu(us)\n", (tk.tv_usec - tj.tv_usec));
+      // printf("CFO compensation in producer time_spend: %lu(us)\n", (tk.tv_usec - tj.tv_usec));
       // printf("q->cfo_hz: %f\n", q->cfo_hz);
       // printf("ue_sync_nr.c q->sf_sz: %u\n", q->sf_sz);
     }
@@ -405,7 +405,7 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
   }
 
   gettimeofday(&tb, NULL);  
-  printf("receive samples in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
+  // printf("receive samples in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
 
   struct timeval t0, t1;
   gettimeofday(&t0, NULL); 
@@ -447,7 +447,7 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
   }
 
   gettimeofday(&t1, NULL);  
-  printf("our resample in producer time_spend: %lu(us)\n", (t1.tv_usec - t0.tv_usec));
+  // printf("our resample in producer time_spend: %lu(us)\n", (t1.tv_usec - t0.tv_usec));
 
   // Run FSM
   switch (q->state) {

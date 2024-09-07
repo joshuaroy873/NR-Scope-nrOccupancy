@@ -49,6 +49,7 @@ static int ue_dl_nr_alloc_prb(srsran_ue_dl_nr_t* q, uint32_t new_nof_prb)
       }
 
       q->sf_symbols[i] = srsran_vec_cf_malloc(SRSRAN_SLOT_LEN_RE_NR(q->max_prb));
+      printf("[xuyang debug 9/7] SRSRAN_SLOT_LEN_RE_NR(q->max_prb): %u\n", SRSRAN_SLOT_LEN_RE_NR(q->max_prb));
       if (q->sf_symbols[i] == NULL) {
         ERROR("Malloc");
         return SRSRAN_ERROR;

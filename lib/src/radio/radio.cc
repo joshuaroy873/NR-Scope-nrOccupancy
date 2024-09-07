@@ -415,8 +415,13 @@ bool radio::rx_dev(const uint32_t& device_idx, const rf_buffer_interface& buffer
   rx_offset_n.at(device_idx) = nof_samples_offset - ((int)nof_samples - (int)buffer.get_nof_samples());
 
   printf("[overflow debug] 2 nof_samples: %u\n", nof_samples);
+
+  struct timeval ta, tb;
+  gettimeofday(&ta, NULL);
   int ret =
       srsran_rf_recv_with_time_multi(&rf_devices[device_idx], radio_buffers, nof_samples, true, full_secs, frac_secs);
+  gettimeofday(&tb, NULL);
+  printf("rx_now in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
 
   // If the number of received samples filled the buffer, there is nothing else to do
   if (buffer.get_nof_samples() <= nof_samples) {

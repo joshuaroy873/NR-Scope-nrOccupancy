@@ -1218,11 +1218,12 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
   printf("[xuyang debug 9/6] trigger here fft 2\n");
   // printf("fft-output:");
   // srsran_vec_fprint_c(stdout, tmp, (symbol_sz) * 7);
-  printf("[xuyang debug 9/6] tcoreset_offset_scs: %d\n", coreset_offset_scs);
+  printf("[xuyang debug 9/6] coreset_offset_scs: %d\n", coreset_offset_scs);
   uint32_t re_count = 0;
   for (int i = 0; i < q->nof_symbols; i++) {
     // Apply frequency domain window offset
     if (q->window_offset_n) {
+      printf("[xuyang debug 9/6] trigger here fft 3; i: %d\n", i);
       srsran_vec_prod_ccc(tmp, q->window_offset_buffer, tmp, symbol_sz);
 
       // if(scs_idx == 0 && i > 6) {
@@ -1231,16 +1232,15 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
       // printf("q->window_offset_buffer:");
       // srsran_vec_fprint_c(stdout, q->window_offset_buffer, symbol_sz);
     }
-
-    printf("[xuyang debug 9/6] trigger here fft 3; i: %d\n", i);
+    
 
     // Perform FFT shift
     // the position of CORESET 0's center is not on current radio's center frequency
     // coreset_offset_scs = (ssb_center_freq - coreset_center_freq) / scs, all in hz
     memcpy(output, tmp + symbol_sz - (nof_re / 2 + coreset_offset_scs), sizeof(cf_t) * (nof_re / 2 + coreset_offset_scs));
-    printf("[xuyang debug 9/6] trigger here fft 4; i: %d\n", i);
+    // printf("[xuyang debug 9/6] trigger here fft 4; i: %d\n", i);
     memcpy(output + (nof_re / 2 + coreset_offset_scs), &tmp[dc], sizeof(cf_t) * (nof_re / 2 - coreset_offset_scs));
-    printf("[xuyang debug 9/6] trigger here fft 5; i: %d\n", i);
+    // printf("[xuyang debug 9/6] trigger here fft 5; i: %d\n", i);
     // memcpy(output, tmp + symbol_sz - nof_re / 2, sizeof(cf_t) * nof_re / 2);
     // memcpy(output + nof_re / 2, &tmp[dc], sizeof(cf_t) * nof_re / 2);
 

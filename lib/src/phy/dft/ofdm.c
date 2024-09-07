@@ -1213,9 +1213,9 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
 
   // printf("fft-input:");
   // srsran_vec_fprint_c(stdout, q->cfg.in_buffer, 11520);
-
+  printf("[xuyang debug 9/6] trigger here fft 1\n");
   srsran_dft_run_guru_c(&q->fft_plan_sf[slot_in_sf]);
-
+  printf("[xuyang debug 9/6] trigger here fft 2\n");
   // printf("fft-output:");
   // srsran_vec_fprint_c(stdout, tmp, (symbol_sz) * 7);
 
@@ -1232,7 +1232,6 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
       // srsran_vec_fprint_c(stdout, q->window_offset_buffer, symbol_sz);
     }
 
-    printf("[xuyang debug 9/6] trigger here fft 1\n");
     // Perform FFT shift
     // the position of CORESET 0's center is not on current radio's center frequency
     // coreset_offset_scs = (ssb_center_freq - coreset_center_freq) / scs, all in hz
@@ -1241,7 +1240,6 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
     // memcpy(output, tmp + symbol_sz - nof_re / 2, sizeof(cf_t) * nof_re / 2);
     // memcpy(output + nof_re / 2, &tmp[dc], sizeof(cf_t) * nof_re / 2);
 
-    printf("[xuyang debug 9/6] trigger here fft 2\n");
     // if(i == 2 || i == 7 || i == 11){
     //   printf("fft-output symbol %d:", i);
     //   srsran_vec_fprint_c(stdout, output, symbol_sz);
@@ -1266,7 +1264,6 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
       srsran_vec_sc_prod_cfc(output, norm, output, nof_re);
     }
 
-    printf("[xuyang debug 9/6] trigger here fft 3\n");
     // printf("re_idx %u, output: ", re_count);
     // srsran_vec_fprint_c(stdout, output, nof_re);
 

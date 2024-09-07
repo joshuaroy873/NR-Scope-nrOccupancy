@@ -1200,16 +1200,16 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
   uint32_t nof_symbols = q->nof_symbols;
   uint32_t nof_re = q->nof_re;
   cf_t* output = q->cfg.out_buffer + slot_in_sf * nof_re * nof_symbols;  // time-freq domain: subcarrier x symbol
-  // printf("nof_symbols: %d\n", nof_symbols);
-  // printf("nof_re: %d\n", nof_re);
-  // printf("slot_in_sf * nof_re * nof_symbols: %d\n", slot_in_sf * q->slot_sz);
+  printf("nof_symbols: %d\n", nof_symbols);
+  printf("nof_re: %d\n", nof_re);
+  printf("slot_in_sf * nof_re * nof_symbols: %d\n", slot_in_sf * q->slot_sz);
 
   uint32_t symbol_sz = q->cfg.symbol_sz;
   float norm = 1.0f / sqrtf(q->fft_plan.size);
   cf_t* tmp = q->tmp; // where the dft results store
   uint32_t dc = (q->fft_plan.dc) ? 1 : 0;
-  // printf("symbol_sz: %d\n", symbol_sz);
-  // printf("nof_re: %d\n", nof_re);
+  printf("symbol_sz: %d\n", symbol_sz);
+  printf("nof_re: %d\n", nof_re);
 
   // printf("fft-input:");
   // srsran_vec_fprint_c(stdout, q->cfg.in_buffer, 11520);
@@ -1232,6 +1232,7 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
       // srsran_vec_fprint_c(stdout, q->window_offset_buffer, symbol_sz);
     }
 
+    printf("[xuyang debug 9/6] trigger here fft 1\n");
     // Perform FFT shift
     // the position of CORESET 0's center is not on current radio's center frequency
     // coreset_offset_scs = (ssb_center_freq - coreset_center_freq) / scs, all in hz
@@ -1240,6 +1241,7 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
     // memcpy(output, tmp + symbol_sz - nof_re / 2, sizeof(cf_t) * nof_re / 2);
     // memcpy(output + nof_re / 2, &tmp[dc], sizeof(cf_t) * nof_re / 2);
 
+    printf("[xuyang debug 9/6] trigger here fft 2\n");
     // if(i == 2 || i == 7 || i == 11){
     //   printf("fft-output symbol %d:", i);
     //   srsran_vec_fprint_c(stdout, output, symbol_sz);
@@ -1263,6 +1265,8 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
     } else if (q->fft_plan.norm) {
       srsran_vec_sc_prod_cfc(output, norm, output, nof_re);
     }
+
+    printf("[xuyang debug 9/6] trigger here fft 3\n");
     // printf("re_idx %u, output: ", re_count);
     // srsran_vec_fprint_c(stdout, output, nof_re);
 

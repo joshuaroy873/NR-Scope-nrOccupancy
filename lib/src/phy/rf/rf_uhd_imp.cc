@@ -1341,7 +1341,7 @@ int rf_uhd_recv_with_time_multi(void*    h,
       return SRSRAN_ERROR;
     }
     gettimeofday(&tb, NULL);
-    printf("handler->uhd->receive in producer time_spend: %lu(us); rxd_samples: %lu\n", (tb.tv_usec - ta.tv_usec), rxd_samples);
+    printf("handler->uhd->receive in producer time_spend: %lu(us); num_rx_samples: %lu; rxd_samples: %lu\n", (tb.tv_usec - ta.tv_usec), num_rx_samples, rxd_samples);
 
     // Save timespec for first block
     if (rxd_samples_total == 0) {

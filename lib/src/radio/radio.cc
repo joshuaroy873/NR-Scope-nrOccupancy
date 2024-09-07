@@ -399,6 +399,8 @@ bool radio::rx_dev(const uint32_t& device_idx, const rf_buffer_interface& buffer
   // Apply Rx offset into the number of samples and reset value
   int      nof_samples_offset = rx_offset_n.at(device_idx);
   uint32_t nof_samples        = buffer.get_nof_samples();
+  printf("[overflow debug] 1 nof_samples: %u\n", nof_samples);
+  printf("[overflow debug] 1 nof_samples_offset: %u\n", nof_samples_offset);
 
   // Number of samples adjust from device time offset
   if (nof_samples_offset < 0 and (uint32_t)(-nof_samples_offset) > nof_samples) {
@@ -412,6 +414,7 @@ bool radio::rx_dev(const uint32_t& device_idx, const rf_buffer_interface& buffer
   // Subtract number of offset samples
   rx_offset_n.at(device_idx) = nof_samples_offset - ((int)nof_samples - (int)buffer.get_nof_samples());
 
+  printf("[overflow debug] 2 nof_samples: %u\n", nof_samples);
   int ret =
       srsran_rf_recv_with_time_multi(&rf_devices[device_idx], radio_buffers, nof_samples, true, full_secs, frac_secs);
 

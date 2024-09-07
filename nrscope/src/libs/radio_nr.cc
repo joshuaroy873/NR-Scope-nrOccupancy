@@ -361,6 +361,15 @@ int Radio::RadioInitandStart(){
   // FILE *fp_time_series_post_resample;
   // fp_time_series_post_resample = fopen("./time_series_post_resample.txt", "w");
 
+  // try earlier
+  if (resample_needed && !rk_initialized) {
+    prepare_resampler(rk, 
+      (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz, 
+      SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz,
+      RESAMPLE_WORKER_NUM);
+    rk_initialized = true;
+  }
+
   while (not ss.end()) {
     // Get SSB center frequency
     cs_args.ssb_freq_hz = ss.get_frequency();
@@ -569,13 +578,13 @@ int Radio::SyncandDownlinkInit(){
 
 int Radio::FetchAndResample(){
 
-  if (resample_needed && !rk_initialized) {
-    prepare_resampler(rk, 
-      (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz, 
-      SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz,
-      RESAMPLE_WORKER_NUM);
-    rk_initialized = true;
-  }
+  // if (resample_needed && !rk_initialized) {
+  //   prepare_resampler(rk, 
+  //     (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz, 
+  //     SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz,
+  //     RESAMPLE_WORKER_NUM);
+  //   rk_initialized = true;
+  // }
 
   uint64_t next_produce_at = 0;
 

@@ -1338,6 +1338,7 @@ void srsran_ofdm_rx_sf_nrscope(srsran_ofdm_t* q, int scs_idx, int coreset_offset
   if (isnormal(q->cfg.freq_shift_f)) {
     // printf("shift buffer update\n");
     srsran_vec_prod_ccc(q->cfg.in_buffer, q->shift_buffer, q->cfg.in_buffer, q->sf_sz); // skipped for dl rx
+    printf("[xuyang debug 9/6] trigger here 2.11\n");
   }
 
   // we don't need to do the condition
@@ -1345,11 +1346,13 @@ void srsran_ofdm_rx_sf_nrscope(srsran_ofdm_t* q, int scs_idx, int coreset_offset
     case 0:
       for (uint32_t n = 0; n < 2; n++) {
         ofdm_rx_slot_nrscope_15khz(q, n, coreset_offset_scs, scs_idx);
+        printf("[xuyang debug 9/6] trigger here 2.12\n");
       }
       break;
     case 1:
       for (uint32_t n = 0; n < 1; n++) {
         ofdm_rx_slot_nrscope_30khz(q, n, coreset_offset_scs, scs_idx);
+        printf("[xuyang debug 9/6] trigger here 2.12\n");
       }
       break;
     case 2:

@@ -1281,6 +1281,8 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
     output += nof_re;
     re_count += nof_re;
   }
+
+  printf("[xuyang debug 9/6] trigger here fft 3\n");
 #endif
   // printf("original symbols:");
   // srsran_vec_fprint_c(stdout, &q->cfg.out_buffer[nof_re * 2], nof_re);

@@ -747,6 +747,7 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
   std::cout << "DCI decoder " << dci_decoder_id << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
 
   DCIFeedback new_result;
+  printf("[xuyang debug 9/6] dci trigger here 03\n");
   task_scheduler_nrscope->sharded_results[dci_decoder_id] = new_result;
 
   printf("[xuyang debug 9/6] dci trigger here 0\n");

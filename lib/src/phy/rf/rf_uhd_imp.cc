@@ -1302,6 +1302,8 @@ int rf_uhd_recv_with_time_multi(void*    h,
   uhd::time_spec_t             timespec;
   uhd::rx_metadata_t           md;
 
+  printf("rf_uhd_recv_with_time_multi in rf_uhd_imp.cc triggered\n");
+
   // Check Rx stream has been created
   if (not handler->uhd->is_rx_ready()) {
     // Ignores reception, the stream will start as soon as the Rx sampling rate is set

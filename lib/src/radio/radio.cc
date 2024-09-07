@@ -421,7 +421,7 @@ bool radio::rx_dev(const uint32_t& device_idx, const rf_buffer_interface& buffer
   int ret =
       srsran_rf_recv_with_time_multi(&rf_devices[device_idx], radio_buffers, nof_samples, true, full_secs, frac_secs);
   gettimeofday(&tb, NULL);
-  printf("rx_now in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
+  printf("srsran_rf_recv_with_time_multi in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
 
   // If the number of received samples filled the buffer, there is nothing else to do
   if (buffer.get_nof_samples() <= nof_samples) {

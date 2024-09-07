@@ -749,6 +749,8 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
   DCIFeedback new_result;
   task_scheduler_nrscope->sharded_results[dci_decoder_id] = new_result;
 
+  printf("[xuyang debug 9/6] dci trigger here 0\n");
+
   task_scheduler_nrscope->sharded_results[dci_decoder_id].dl_grants.resize(n_rntis);
   task_scheduler_nrscope->sharded_results[dci_decoder_id].ul_grants.resize(n_rntis);
   task_scheduler_nrscope->sharded_results[dci_decoder_id].spare_dl_prbs.resize(n_rntis);
@@ -760,8 +762,10 @@ int DCIDecoder::decode_and_parse_dci_from_slot(srsran_slot_cfg_t* slot,
   task_scheduler_nrscope->sharded_results[dci_decoder_id].dl_dcis.resize(n_rntis);
   task_scheduler_nrscope->sharded_results[dci_decoder_id].ul_dcis.resize(n_rntis);
 
+  printf("[xuyang debug 9/6] dci trigger here 01\n");
   task_scheduler_nrscope->sharded_rntis[dci_decoder_id].resize(n_rntis);
   task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id] = n_rntis;
+  printf("[xuyang debug 9/6] dci trigger here 02\n");
   // std::cout << "task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id]: " << task_scheduler_nrscope->nof_sharded_rntis[dci_decoder_id] << std::endl;
 
   printf("[xuyang debug 9/6] trigger here 1\n");

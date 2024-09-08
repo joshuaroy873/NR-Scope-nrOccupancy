@@ -700,10 +700,12 @@ int DCIDecoder::dci_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg
     }
   }
 
+  printf("[xuyang debug 9/7] srsran_ue_dl_nr_init_nrscope\n");
   if (srsran_ue_dl_nr_init_nrscope(&ue_dl_dci, input, &ue_dl_args, arg_scs)) {
     ERROR("Error UE DL");
     return SRSRAN_ERROR;
   }
+  printf("[xuyang debug 9/7] srsran_ue_dl_nr_set_carrier_nrscope\n");
   if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl_dci, &base_carrier, arg_scs)) {
     ERROR("Error setting SCH NR carrier");
     return SRSRAN_ERROR;

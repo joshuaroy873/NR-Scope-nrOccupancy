@@ -49,7 +49,6 @@ static int ue_dl_nr_alloc_prb(srsran_ue_dl_nr_t* q, uint32_t new_nof_prb)
       }
 
       q->sf_symbols[i] = srsran_vec_cf_malloc(SRSRAN_SLOT_LEN_RE_NR(q->max_prb));
-      printf("[xuyang debug 9/7] SRSRAN_SLOT_LEN_RE_NR(q->max_prb): %u\n", SRSRAN_SLOT_LEN_RE_NR(q->max_prb));
       if (q->sf_symbols[i] == NULL) {
         ERROR("Malloc");
         return SRSRAN_ERROR;
@@ -163,7 +162,6 @@ int srsran_ue_dl_nr_init_nrscope(srsran_ue_dl_nr_t* q, cf_t* input[SRSRAN_MAX_PO
 
   srsran_ofdm_cfg_t fft_cfg = {};
   fft_cfg.nof_prb           = args->nof_max_prb;
-  printf("[xuyang debug] 9/7 fft_cfg.nof_prb: %u\n", fft_cfg.nof_prb);
   fft_cfg.symbol_sz         = srsran_symbol_sz_from_srate(arg_scs.srate, arg_scs.scs);
   fft_cfg.keep_dc           = true;
   fft_cfg.rx_window_offset  = UE_DL_NR_FFT_WINDOW_OFFSET;
@@ -349,14 +347,10 @@ void srsran_ue_dl_nr_estimate_fft_nrscope(srsran_ue_dl_nr_t* q,
     return;
   }
 
-  printf("[xuyang debug 9/6] trigger here 2.1\n");
-
   // OFDM demodulation, basically do the fft
   for (uint32_t i = 0; i < q->nof_rx_antennas; i++) {
     srsran_ofdm_rx_sf_nrscope(&q->fft[i], (int)arg_scs.scs, arg_scs.coreset_offset_scs);
   }
-
-  printf("[xuyang debug 9/6] trigger here 2.2\n");
 
   // Estimate PDCCH channel for every configured CORESET
   for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_CORESET; i++) {
@@ -365,8 +359,6 @@ void srsran_ue_dl_nr_estimate_fft_nrscope(srsran_ue_dl_nr_t* q,
       srsran_dmrs_pdcch_estimate_nrscope(&q->dmrs_pdcch[i], slot_cfg, q->sf_symbols[0]);
     }
   }
-
-  printf("[xuyang debug 9/6] trigger here 2.3\n");
 }
 
 static int ue_dl_nr_find_dci_ncce(srsran_ue_dl_nr_t*     q,

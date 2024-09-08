@@ -361,7 +361,7 @@ int Radio::RadioInitandStart(){
   // FILE *fp_time_series_post_resample;
   // fp_time_series_post_resample = fopen("./time_series_post_resample.txt", "w");
 
-  // try earlier
+  // initialize loop-phase resamplers early
   if (resample_needed && !rk_initialized) {
     prepare_resampler(rk, 
       (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz, 
@@ -578,14 +578,6 @@ int Radio::SyncandDownlinkInit(){
 
 int Radio::FetchAndResample(){
 
-  // if (resample_needed && !rk_initialized) {
-  //   prepare_resampler(rk, 
-  //     (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz, 
-  //     SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz,
-  //     RESAMPLE_WORKER_NUM);
-  //   rk_initialized = true;
-  // }
-
   uint64_t next_produce_at = 0;
 
   bool in_sync = false; 
@@ -717,10 +709,7 @@ int Radio::DecodeAndProcess(){
         sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
       }
 
-      std::thread rach_thread;
-      if (!task_scheduler_nrscope.rach_found) {
-        rach_thread = std::thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
-      }
+      std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
 
       std::vector <std::thread> dci_threads;
       if(task_scheduler_nrscope.dci_inited){

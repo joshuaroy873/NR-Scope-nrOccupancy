@@ -1302,8 +1302,6 @@ int rf_uhd_recv_with_time_multi(void*    h,
   uhd::time_spec_t             timespec;
   uhd::rx_metadata_t           md;
 
-  // printf("rf_uhd_recv_with_time_multi in rf_uhd_imp.cc triggered\n");
-
   // Check Rx stream has been created
   if (not handler->uhd->is_rx_ready()) {
     // Ignores reception, the stream will start as soon as the Rx sampling rate is set
@@ -1334,14 +1332,10 @@ int rf_uhd_recv_with_time_multi(void*    h,
       }
     }
 
-    struct timeval ta, tb;
-    gettimeofday(&ta, NULL);
     if (handler->uhd->receive(buffs_ptr, num_rx_samples, md, 1.0, false, rxd_samples) != UHD_ERROR_NONE) {
       log_rx_error(handler);
       return SRSRAN_ERROR;
     }
-    gettimeofday(&tb, NULL);
-    // printf("handler->uhd->receive in producer time_spend: %lu(us); num_rx_samples: %lu; rxd_samples: %lu\n", (tb.tv_usec - ta.tv_usec), num_rx_samples, rxd_samples);
 
     // Save timespec for first block
     if (rxd_samples_total == 0) {

@@ -350,27 +350,18 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
     }
   }
 
-  struct timeval t1, t2;
-  gettimeofday(&t1, NULL);
   for (uint32_t device_idx = 0; device_idx < (uint32_t)rf_devices.size(); device_idx++) {
     ret &= rx_dev(device_idx, buffer_rx, rxd_time.get_ptr(device_idx));
   }
-  gettimeofday(&t2, NULL);
-  // printf("rx_dev in producer time_spend: %lu(us)\n", (t2.tv_usec - t1.tv_usec));
 
   // Perform decimation
-  struct timeval ta, tb;
-  gettimeofday(&ta, NULL);
   if (ratio > 1) {
-    printf("built-in decimation; ratio: %u\n", ratio);
     for (uint32_t ch = 0; ch < nof_channels; ch++) {
       if (buffer.get(ch) and buffer_rx.get(ch)) {
         srsran_resampler_fft_run(&decimators[ch], buffer_rx.get(ch), buffer.get(ch), buffer_rx.get_nof_samples());
       }
     }
   }
-  gettimeofday(&tb, NULL);
-  // printf("built-in decimation in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
 
   return ret;
 }
@@ -399,8 +390,6 @@ bool radio::rx_dev(const uint32_t& device_idx, const rf_buffer_interface& buffer
   // Apply Rx offset into the number of samples and reset value
   int      nof_samples_offset = rx_offset_n.at(device_idx);
   uint32_t nof_samples        = buffer.get_nof_samples();
-  // printf("[overflow debug] 1 nof_samples: %u\n", nof_samples);
-  // printf("[overflow debug] 1 nof_samples_offset: %u\n", nof_samples_offset);
 
   // Number of samples adjust from device time offset
   if (nof_samples_offset < 0 and (uint32_t)(-nof_samples_offset) > nof_samples) {
@@ -414,14 +403,8 @@ bool radio::rx_dev(const uint32_t& device_idx, const rf_buffer_interface& buffer
   // Subtract number of offset samples
   rx_offset_n.at(device_idx) = nof_samples_offset - ((int)nof_samples - (int)buffer.get_nof_samples());
 
-  // printf("[overflow debug] 2 nof_samples: %u\n", nof_samples);
-
-  struct timeval ta, tb;
-  gettimeofday(&ta, NULL);
   int ret =
       srsran_rf_recv_with_time_multi(&rf_devices[device_idx], radio_buffers, nof_samples, true, full_secs, frac_secs);
-  gettimeofday(&tb, NULL);
-  // printf("srsran_rf_recv_with_time_multi in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
 
   // If the number of received samples filled the buffer, there is nothing else to do
   if (buffer.get_nof_samples() <= nof_samples) {

@@ -351,7 +351,6 @@ void srsran_ue_dl_nr_estimate_fft_nrscope(srsran_ue_dl_nr_t* q,
   for (uint32_t i = 0; i < q->nof_rx_antennas; i++) {
     srsran_ofdm_rx_sf_nrscope(&q->fft[i], (int)arg_scs.scs, arg_scs.coreset_offset_scs);
   }
-
   // Estimate PDCCH channel for every configured CORESET
   for (uint32_t i = 0; i < SRSRAN_UE_DL_NR_MAX_NOF_CORESET; i++) {
     if (q->cfg.coreset_present[i]) {

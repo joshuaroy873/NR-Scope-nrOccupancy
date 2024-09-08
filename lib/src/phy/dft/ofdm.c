@@ -1237,9 +1237,7 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
       memcpy(output, tmp + symbol_sz - (nof_re / 2 + coreset_offset_scs), sizeof(cf_t) * nof_re);
     } else {
       memcpy(output, tmp + symbol_sz - (nof_re / 2 + coreset_offset_scs), sizeof(cf_t) * (nof_re / 2 + coreset_offset_scs));
-      // printf("[xuyang debug 9/6] trigger here fft 4; i: %d\n", i);
       memcpy(output + (nof_re / 2 + coreset_offset_scs), &tmp[dc], sizeof(cf_t) * (nof_re / 2 - coreset_offset_scs));
-      // printf("[xuyang debug 9/6] trigger here fft 5; i: %d\n", i);
     }
     
     // memcpy(output, tmp + symbol_sz - nof_re / 2, sizeof(cf_t) * nof_re / 2);
@@ -1268,7 +1266,6 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
     } else if (q->fft_plan.norm) {
       srsran_vec_sc_prod_cfc(output, norm, output, nof_re);
     }
-
     // printf("re_idx %u, output: ", re_count);
     // srsran_vec_fprint_c(stdout, output, nof_re);
 
@@ -1287,7 +1284,6 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
     re_count += nof_re;
   }
 
-  printf("[xuyang debug 9/6] trigger here fft 3\n");
 #endif
   // printf("original symbols:");
   // srsran_vec_fprint_c(stdout, &q->cfg.out_buffer[nof_re * 2], nof_re);

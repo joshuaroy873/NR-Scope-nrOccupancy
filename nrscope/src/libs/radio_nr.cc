@@ -518,12 +518,7 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
   srsran::rf_timestamp_t &rf_timestamp = a;
   *ts = a.get(0);
 
-  struct timeval ta, tb;
-  gettimeofday(&ta, NULL);
-  bool res = radio->rx_now(rf_buffer, rf_timestamp);
-  gettimeofday(&tb, NULL);
-  printf("rx_now in producer time_spend: %lu(us)\n", (tb.tv_usec - ta.tv_usec));
-  return res;
+  return radio->rx_now(rf_buffer, rf_timestamp);
 }
 
 int Radio::SyncandDownlinkInit(){
@@ -708,7 +703,6 @@ int Radio::DecodeAndProcess(){
       if (!task_scheduler_nrscope.sib1_found) {
         sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
       }
-
       std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope, rx_buffer};
 
       std::vector <std::thread> dci_threads;

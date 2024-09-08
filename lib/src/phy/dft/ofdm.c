@@ -1224,6 +1224,9 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
   // srsran_vec_fprint_c(stdout, tmp, (symbol_sz) * 7);
   printf("[xuyang debug 9/6] coreset_offset_scs: %d\n", coreset_offset_scs);
   printf("[xuyang debug 9/6] (nof_re / 2 - coreset_offset_scs): %d\n", (nof_re / 2 - coreset_offset_scs));
+  printf("[xuyang debug 9/6] sizeof(output): %lu\n", sizeof(output));
+  printf("[xuyang debug 9/6] sizeof(tmp): %lu\n", sizeof(tmp));
+  printf("[xuyang debug 9/6] sizeof(tmp): %lu\n", sizeof(cf_t));
   uint32_t re_count = 0;
   for (int i = 0; i < q->nof_symbols; i++) {
     // Apply frequency domain window offset

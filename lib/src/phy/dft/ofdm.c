@@ -326,7 +326,7 @@ static int ofdm_init_nr_nrscope_30khz(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, 
 
   // Reallocate temporal buffer only if the new number of resource blocks is bigger than initial
   if (q->cfg.nof_prb > q->max_prb) {
-    printf("[xuyang debug 9/7] q->cfg.nof_prb > q->max_prb triggered\n");
+    printf("[xuyang debug 9/7] q->cfg.nof_prb: %u > q->max_prb %u triggered\n", q->cfg.nof_prb, q->max_prb);
     // Free before reallocating if allocated
     if (q->tmp) {
       free(q->tmp);

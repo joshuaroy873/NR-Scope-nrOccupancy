@@ -177,6 +177,8 @@ Therefore, we have the variant pattern B:
     (thread 2) start --> S signal down --> consumer (subframe processing) --> back to start
 ```
 
+(September 8, 2024) Enabled 40MHz cell monitoring. PCIe connection between USRP and computer is needed.
+
 ## TODOs
 
 There are some on-going plans for the near future:

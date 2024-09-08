@@ -1213,12 +1213,9 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
 
   // printf("fft-input:");
   // srsran_vec_fprint_c(stdout, q->cfg.in_buffer, 11520);
-
   srsran_dft_run_guru_c(&q->fft_plan_sf[slot_in_sf]);
-
   // printf("fft-output:");
   // srsran_vec_fprint_c(stdout, tmp, (symbol_sz) * 7);
-
   uint32_t re_count = 0;
   for (int i = 0; i < q->nof_symbols; i++) {
     // Apply frequency domain window offset
@@ -1232,11 +1229,17 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
       // srsran_vec_fprint_c(stdout, q->window_offset_buffer, symbol_sz);
     }
 
+
     // Perform FFT shift
     // the position of CORESET 0's center is not on current radio's center frequency
     // coreset_offset_scs = (ssb_center_freq - coreset_center_freq) / scs, all in hz
-    memcpy(output, tmp + symbol_sz - (nof_re / 2 + coreset_offset_scs), sizeof(cf_t) * (nof_re / 2 + coreset_offset_scs));
-    memcpy(output + (nof_re / 2 + coreset_offset_scs), &tmp[dc], sizeof(cf_t) * (nof_re / 2 - coreset_offset_scs));
+    if ((nof_re / 2 + coreset_offset_scs) > nof_re) {
+      memcpy(output, tmp + symbol_sz - (nof_re / 2 + coreset_offset_scs), sizeof(cf_t) * nof_re);
+    } else {
+      memcpy(output, tmp + symbol_sz - (nof_re / 2 + coreset_offset_scs), sizeof(cf_t) * (nof_re / 2 + coreset_offset_scs));
+      memcpy(output + (nof_re / 2 + coreset_offset_scs), &tmp[dc], sizeof(cf_t) * (nof_re / 2 - coreset_offset_scs));
+    }
+    
     // memcpy(output, tmp + symbol_sz - nof_re / 2, sizeof(cf_t) * nof_re / 2);
     // memcpy(output + nof_re / 2, &tmp[dc], sizeof(cf_t) * nof_re / 2);
 
@@ -1280,6 +1283,7 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
     output += nof_re;
     re_count += nof_re;
   }
+
 #endif
   // printf("original symbols:");
   // srsran_vec_fprint_c(stdout, &q->cfg.out_buffer[nof_re * 2], nof_re);

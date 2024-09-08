@@ -264,11 +264,13 @@ static int ofdm_init_nr_nrscope_30khz(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, 
   }
 
   if (q->max_prb > 0) {
+    printf("[xuyang debug 9/8] trigger if q->max_prb > 0 IF part\n");
     // The object was already initialised, update only resizing params
     q->cfg.cp        = cfg->cp;
     q->cfg.nof_prb   = cfg->nof_prb;
     q->cfg.symbol_sz = cfg->symbol_sz;
   } else {
+    printf("[xuyang debug 9/8] trigger if q->max_prb > 0 ELSE part\n");
     // Otherwise copy all parameters
     q->cfg = *cfg;
 

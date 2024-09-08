@@ -163,6 +163,7 @@ int srsran_ue_dl_nr_init_nrscope(srsran_ue_dl_nr_t* q, cf_t* input[SRSRAN_MAX_PO
 
   srsran_ofdm_cfg_t fft_cfg = {};
   fft_cfg.nof_prb           = args->nof_max_prb;
+  printf("[xuyang debug] 9/7 fft_cfg.nof_prb: %u\n", fft_cfg.nof_prb);
   fft_cfg.symbol_sz         = srsran_symbol_sz_from_srate(arg_scs.srate, arg_scs.scs);
   fft_cfg.keep_dc           = true;
   fft_cfg.rx_window_offset  = UE_DL_NR_FFT_WINDOW_OFFSET;

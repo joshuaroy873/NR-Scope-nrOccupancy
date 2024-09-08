@@ -249,6 +249,7 @@ static int ofdm_init_nr_nrscope_30khz(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, 
 {
   // If the symbol size is not given, calculate in function of the number of resource blocks
   if (cfg->symbol_sz == 0) {
+    printf("[xuyang debug 9/7] cfg->symbol_sz == 0 triggered");
     int symbol_sz_err = srsran_symbol_sz(cfg->nof_prb);
     if (symbol_sz_err <= SRSRAN_SUCCESS) {
       ERROR("Invalid number of PRB %d", cfg->nof_prb);
@@ -284,14 +285,16 @@ static int ofdm_init_nr_nrscope_30khz(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, 
   // q->nof_symbols_mbsfn = SRSRAN_CP_NSYMB(SRSRAN_CP_EXT); // not necessary here
   // q->nof_symbols       = SRSRAN_CP_NSYMB(cp);
   q->nof_re            = cfg->nof_prb * SRSRAN_NRE;
+  printf("[xuyang debug 9/7] q->nof_re: %u; cfg->nof_prb: %u\n", q->nof_re, cfg->nof_prb);
   q->nof_guards        = (q->cfg.symbol_sz - q->nof_re) / 2U;
+  printf("[xuyang debug 9/7] q->cfg.symbol_sz: %u\n", q->cfg.symbol_sz);
   q->slot_sz           = (uint32_t)SRSRAN_SLOT_LEN_NR(q->cfg.symbol_sz);
   q->sf_sz             = (uint32_t)SRSRAN_SF_LEN_NR(q->cfg.symbol_sz, scs_idx);
 
-  // printf("q->slot_sz: %d\n", q->slot_sz);
-  // printf("q->sf_sz: %d\n", q->sf_sz);
-  // printf("symbol_sz: %d\n", symbol_sz);
-  // printf("q->nof_symbols: %d\n", q->nof_symbols);
+  printf("q->slot_sz: %d\n", q->slot_sz);
+  printf("q->sf_sz: %d\n", q->sf_sz);
+  printf("symbol_sz: %d\n", symbol_sz);
+  printf("q->nof_symbols: %d\n", q->nof_symbols);
 
   // Set the CFR parameters related to OFDM symbol and FFT size
   q->cfg.cfr_tx_cfg.symbol_sz = symbol_sz;
@@ -323,6 +326,7 @@ static int ofdm_init_nr_nrscope_30khz(srsran_ofdm_t* q, srsran_ofdm_cfg_t* cfg, 
 
   // Reallocate temporal buffer only if the new number of resource blocks is bigger than initial
   if (q->cfg.nof_prb > q->max_prb) {
+    printf("[xuyang debug 9/7] q->cfg.nof_prb > q->max_prb triggered\n");
     // Free before reallocating if allocated
     if (q->tmp) {
       free(q->tmp);
@@ -1219,11 +1223,12 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
   // printf("fft-output:");
   // srsran_vec_fprint_c(stdout, tmp, (symbol_sz) * 7);
   printf("[xuyang debug 9/6] coreset_offset_scs: %d\n", coreset_offset_scs);
+  printf("[xuyang debug 9/6] (nof_re / 2 - coreset_offset_scs): %d\n", (nof_re / 2 - coreset_offset_scs));
   uint32_t re_count = 0;
   for (int i = 0; i < q->nof_symbols; i++) {
     // Apply frequency domain window offset
     if (q->window_offset_n) {
-      printf("[xuyang debug 9/6] trigger here fft 3; i: %d\n", i);
+      // printf("[xuyang debug 9/6] trigger here fft 3; i: %d\n", i);
       srsran_vec_prod_ccc(tmp, q->window_offset_buffer, tmp, symbol_sz);
 
       // if(scs_idx == 0 && i > 6) {
@@ -1232,7 +1237,7 @@ static void ofdm_rx_slot_nrscope_30khz(srsran_ofdm_t* q, int slot_in_sf, int cor
       // printf("q->window_offset_buffer:");
       // srsran_vec_fprint_c(stdout, q->window_offset_buffer, symbol_sz);
     }
-    
+
 
     // Perform FFT shift
     // the position of CORESET 0's center is not on current radio's center frequency

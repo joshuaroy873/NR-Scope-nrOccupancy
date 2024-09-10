@@ -331,23 +331,29 @@ int Radio::RadioInitandStart(){
   args_t.set_ssb_from_band(ssb_scs);
   args_t.base_carrier.scs = args_t.ssb_scs;
   if(args_t.duplex_mode == SRSRAN_DUPLEX_MODE_TDD){
-    args_t.base_carrier.ul_center_frequency_hz = args_t.base_carrier.dl_center_frequency_hz;
+    args_t.base_carrier.ul_center_frequency_hz = 
+      args_t.base_carrier.dl_center_frequency_hz;
   }
 
-  pre_resampling_slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
+  pre_resampling_slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / 
+    SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
 
   // Allocate receive buffer
-  slot_sz = (uint32_t)(rf_args.srsran_srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
-  rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz * RING_BUF_SIZE);
+  slot_sz = (uint32_t)(rf_args.srsran_srate_hz / 1000.0f / 
+    SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
+  rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * 
+    pre_resampling_slot_sz * RING_BUF_SIZE);
   std::cout << "slot_sz: " << slot_sz << std::endl;
-  // std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
   srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
-  uint32_t actual_slot_szs[RESAMPLE_WORKER_NUM]; // the actual slot size after resampling 
+  /* the actual slot size after resampling */
+  uint32_t actual_slot_szs[RESAMPLE_WORKER_NUM]; 
 
   // Allocate pre-resampling receive buffer
-  pre_resampling_rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
+  pre_resampling_rx_buffer = srsran_vec_cf_malloc(
+      SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
   std::cout << "pre_resampling_slot_sz: " << pre_resampling_slot_sz << std::endl;
-  srsran_vec_zero(pre_resampling_rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
+  srsran_vec_zero(pre_resampling_rx_buffer, 
+    SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
 
   cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
   cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
@@ -357,15 +363,20 @@ int Radio::RadioInitandStart(){
 
   uint32_t ssb_scs_hz = SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
   double ssb_bw_hz = SRSRAN_SSB_BW_SUBC * ssb_scs_hz;
-  double ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-  double ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+  double ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - 
+    (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+  double ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + 
+    (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
 
-  uint32_t band = bands.get_band_from_dl_freq_Hz_and_scs(args_t.base_carrier.dl_center_frequency_hz, cs_args.ssb_scs);
-  srsran::srsran_band_helper::sync_raster_t ss = bands.get_sync_raster(band, cs_args.ssb_scs);
+  uint32_t band = bands.get_band_from_dl_freq_Hz_and_scs(
+    args_t.base_carrier.dl_center_frequency_hz, cs_args.ssb_scs);
+  srsran::srsran_band_helper::sync_raster_t ss = bands.get_sync_raster(
+    band, cs_args.ssb_scs);
   srsran_assert(ss.valid(), "Invalid synchronization raster");
 
   // initialize resampling tool
-  float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;       // resampling rate (output/input)
+  // resampling rate (output/input)
+  float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;       
   float As=60.0f;         // resampling filter stop-band attenuation [dB]
   msresamp_crcf q[RESAMPLE_WORKER_NUM];
   uint32_t temp_x_sz;
@@ -379,13 +390,16 @@ int Radio::RadioInitandStart(){
 
     float delay = resample_needed ? msresamp_crcf_get_delay(q[0]) : 0;
     // add a few zero padding
-    temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz + (int)ceilf(delay) + 10;
-    temp_x = (std::complex<float> *)malloc(temp_x_sz * sizeof(std::complex<float>));
+    temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * 
+      pre_resampling_slot_sz + (int)ceilf(delay) + 10;
+    temp_x = (std::complex<float> *)malloc(temp_x_sz * 
+      sizeof(std::complex<float>));
     // std::complex<float> temp_x[temp_x_sz];
 
     temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
     for (uint8_t i = 0; i < RESAMPLE_WORKER_NUM; i++) {
-      temp_y[i] = (std::complex<float> *)malloc(temp_y_sz * sizeof(std::complex<float>));
+      temp_y[i] = (std::complex<float> *)malloc(temp_y_sz * 
+        sizeof(std::complex<float>));
     }
     // std::complex<float> temp_y[RESAMPLE_WORKER_NUM][temp_y_sz];
   }
@@ -409,30 +423,36 @@ int Radio::RadioInitandStart(){
   task_scheduler_nrscope.InitandStart(nof_threads, nof_rnti_worker_groups, 
     nof_bwps, args_t, nof_workers);
 
+  std::cout << "Task scheduler started..." << std::endl;
   while (not ss.end()) {
     // Get SSB center frequency
     cs_args.ssb_freq_hz = ss.get_frequency();
     // Advance SSB frequency raster
     ss.next();
 
-    // Calculate frequency offset between the base-band center frequency and the SSB absolute frequency
-    uint32_t offset_hz = (uint32_t)std::abs(std::round(cs_args.ssb_freq_hz - args_t.base_carrier.dl_center_frequency_hz));
+    /* Calculate frequency offset between the base-band center frequency and 
+      the SSB absolute frequency */
+    uint32_t offset_hz = (uint32_t)std::abs(std::round(cs_args.ssb_freq_hz - 
+      args_t.base_carrier.dl_center_frequency_hz));
 
     // The SSB absolute frequency is invalid if it is outside the range and 
     // the offset is NOT multiple of the subcarrier spacing
-    if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or (cs_args.ssb_freq_hz > ssb_center_freq_max_hz) or
+    if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or 
+        (cs_args.ssb_freq_hz > ssb_center_freq_max_hz) or
         (offset_hz % ssb_scs_hz != 0)) {
       // Skip this frequency
       continue;
     }
 
-    // xuyang debug: skip all other nearby measure and just focus on the wanted SSB freq
+    /* xuyang debug: skip all other nearby measure and 
+      just focus on the wanted SSB freq */
     if (offset_hz > 1) {
       continue;
     }
 
-    srsran_searcher_cfg_t.srate_hz = args_t.srate_hz; // which is indeed the srsran srate
-    srsran_searcher_cfg_t.center_freq_hz = cs_args.ssb_freq_hz; //args_t.base_carrier.dl_center_frequency_hz;
+    /* which is indeed the srsran srate */
+    srsran_searcher_cfg_t.srate_hz = args_t.srate_hz; 
+    srsran_searcher_cfg_t.center_freq_hz = cs_args.ssb_freq_hz;
     srsran_searcher_cfg_t.ssb_freq_hz = cs_args.ssb_freq_hz;
     srsran_searcher_cfg_t.ssb_scs = args_t.ssb_scs;
     srsran_searcher_cfg_t.ssb_pattern = args_t.ssb_pattern;
@@ -441,8 +461,8 @@ int Radio::RadioInitandStart(){
       std::cout << "Searcher: failed to start cell search" << std::endl;
       return NR_FAILURE;
     }
-    // Set the searching frequency to ssb_freq
-    // Because the srsRAN implementation use the center_freq_hz for cell searching
+    /* Set the searching frequency to ssb_freq */
+    /* Because the srsRAN implementation use the center_freq_hz for cell search */
     cs_args.center_freq_hz = cs_args.ssb_freq_hz;
     // std::cout << cs_args.ssb_freq_hz << std::endl;
     args_t.base_carrier.ssb_center_freq_hz = cs_args.ssb_freq_hz;
@@ -469,11 +489,13 @@ int Radio::RadioInitandStart(){
 
       if (resample_needed) {
         // srsran_vec_fprint2_c(fp_time_series_pre_resample, pre_resampling_rx_buffer, pre_resampling_slot_sz);
-        copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, temp_x, pre_resampling_slot_sz, temp_x_sz);
+        copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, 
+          temp_x, pre_resampling_slot_sz, temp_x_sz);
         uint32_t splitted_nx = pre_resampling_slot_sz / RESAMPLE_WORKER_NUM;
         std::vector <std::thread> ssb_scan_resample_threads;
         for (uint8_t k = 0; k < RESAMPLE_WORKER_NUM; k++) {
-          ssb_scan_resample_threads.emplace_back(&resample_partially, &q[k], temp_x, temp_y[k], k, splitted_nx, &actual_slot_szs[k]);
+          ssb_scan_resample_threads.emplace_back(&resample_partially, &q[k], 
+            temp_x, temp_y[k], k, splitted_nx, &actual_slot_szs[k]);
         }
         // msresamp_crcf_execute(q, temp_x, pre_resampling_slot_sz, temp_y, &actual_slot_sz);
 
@@ -493,7 +515,8 @@ int Radio::RadioInitandStart(){
         // srsran_vec_fprint2_c(fp_time_series_post_resample, rx_buffer, actual_slot_sz);
       } else {
         // pre_resampling_slot_sz should be the same as slot_sz as resample ratio is 1 in this case
-        srsran_vec_cf_copy(rx_buffer, pre_resampling_rx_buffer, pre_resampling_slot_sz);
+        srsran_vec_cf_copy(rx_buffer, pre_resampling_rx_buffer, 
+          pre_resampling_slot_sz);
       }
 
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
@@ -511,7 +534,7 @@ int Radio::RadioInitandStart(){
       std::cout << "Decoding MIB..." << std::endl;
 
       /* And the states are updated in the task_scheduler*/
-      if(task_scheduler_nrscope.decode_mib(&args_t, &cs_ret, 
+      if(task_scheduler_nrscope.DecodeMIB(&args_t, &cs_ret, 
          &srsran_searcher_cfg_t, r, rf_args.srate_hz) < SRSRAN_SUCCESS){
         ERROR("Error init task scheduler");
         return NR_FAILURE;
@@ -539,7 +562,10 @@ int Radio::RadioInitandStart(){
   return SRSRAN_SUCCESS;
 }
 
-static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, srsran_timestamp_t* ts)
+static int slot_sync_recv_callback(void* ptr, 
+                                   cf_t** buffer, 
+                                   uint32_t nsamples, 
+                                   srsran_timestamp_t* ts)
 {
   if (ptr == nullptr) {
   return SRSRAN_ERROR_INVALID_INPUTS;
@@ -560,14 +586,20 @@ static int slot_sync_recv_callback(void* ptr, cf_t** buffer, uint32_t nsamples, 
 
 int Radio::SyncandDownlinkInit(){
   //***** DL args Config Start *****//
-  rf_buffer_t = srsran::rf_buffer_t(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * pre_resampling_slot_sz * 2); // only one sf here
+  rf_buffer_t = srsran::rf_buffer_t(rx_buffer, 
+    SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.args_t.ssb_scs) * 
+    pre_resampling_slot_sz * 2); // only one sf here
   // it appears the srsRAN is build on 15kHz scs, we need to use the srate and 
   // scs to calculate the correct subframe size 
-  arg_scs.srate = task_scheduler_nrscope.args_t.srate_hz;
-  arg_scs.scs = task_scheduler_nrscope.cell.mib.scs_common;
+  arg_scs.srate = task_scheduler_nrscope.task_scheduler_state.args_t.srate_hz;
+  arg_scs.scs = task_scheduler_nrscope.task_scheduler_state.cell.mib.scs_common;
 
-  arg_scs.coreset_offset_scs = (cs_args.ssb_freq_hz - task_scheduler_nrscope.coreset0_args_t.coreset0_center_freq_hz) / task_scheduler_nrscope.cell.abs_pdcch_scs;// + 12;
-  arg_scs.coreset_slot = (uint32_t)task_scheduler_nrscope.coreset0_args_t.n_0;
+  arg_scs.coreset_offset_scs = (cs_args.ssb_freq_hz - 
+    task_scheduler_nrscope.task_scheduler_state.coreset0_args_t.coreset0_center_freq_hz) / 
+    task_scheduler_nrscope.task_scheduler_state.cell.abs_pdcch_scs; // + 12;
+  arg_scs.coreset_slot = 
+    (uint32_t)task_scheduler_nrscope.task_scheduler_state.coreset0_args_t.n_0;
+  task_scheduler_nrscope.task_scheduler_state.arg_scs = arg_scs;
   // arg_scs.phase_diff_first_second_half = 0;
   //***** DL args Config End *****//
 
@@ -581,14 +613,15 @@ int Radio::SyncandDownlinkInit(){
   ue_sync_nr_args.recv_obj        = radio.get();
   ue_sync_nr_args.recv_callback   = slot_sync_recv_callback;
 
-  ue_sync_nr.resample_ratio = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;
+  ue_sync_nr.resample_ratio = (float)rf_args.srsran_srate_hz / 
+    (float)rf_args.srate_hz;
   if (srsran_ue_sync_nr_init(&ue_sync_nr, &ue_sync_nr_args) < SRSRAN_SUCCESS) {
     std::cout << "Error initiating UE SYNC NR object" << std::endl;
     logger.error("Error initiating UE SYNC NR object");
     return SRSRAN_ERROR;
   }
   // Be careful of all the frequency setting (SSB/center downlink and etc.)!
-  ssb_cfg.srate_hz       = task_scheduler_nrscope.args_t.srate_hz;
+  ssb_cfg.srate_hz       = task_scheduler_nrscope.task_scheduler_state.args_t.srate_hz;
   ssb_cfg.center_freq_hz = cs_args.ssb_freq_hz;
   ssb_cfg.ssb_freq_hz    = cs_args.ssb_freq_hz;
   ssb_cfg.scs            = cs_args.ssb_scs;
@@ -596,9 +629,9 @@ int Radio::SyncandDownlinkInit(){
   ssb_cfg.duplex_mode    = cs_args.duplex_mode;
   ssb_cfg.periodicity_ms = 20; // for all in FR1
 
-  sync_cfg.N_id = task_scheduler_nrscope.cs_ret.ssb_res.N_id;
+  sync_cfg.N_id = task_scheduler_nrscope.task_scheduler_state.cs_ret.ssb_res.N_id;
   sync_cfg.ssb = ssb_cfg;
-  sync_cfg.ssb.srate_hz = task_scheduler_nrscope.args_t.srate_hz;
+  sync_cfg.ssb.srate_hz = task_scheduler_nrscope.task_scheduler_state.args_t.srate_hz;
   if (srsran_ue_sync_nr_set_cfg(&ue_sync_nr, &sync_cfg) < SRSRAN_SUCCESS) {
     printf("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);
     logger.error("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);
@@ -613,26 +646,37 @@ int Radio::FetchAndResample(){
   uint64_t next_produce_at = 0;
 
   bool in_sync = false; 
-  uint32_t pre_resampling_sf_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * pre_resampling_slot_sz;
+  uint32_t pre_resampling_sf_sz = 
+    SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.args_t.ssb_scs) * 
+    pre_resampling_slot_sz;
 
   while(true){
     outcome.timestamp = last_rx_time.get(0);  
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);   
 
-    // if not sync, we fetch and sync at the rx_buffer start, otherwise we store from 1 to RING_BUF_MODULUS sf index and back in a ring buffer manner
-    // i.e., 0 sf index is for sync and moving a sf data there for decoders to process
-    // note at the first round we start like 0, 2, 3... (skip 1 if you do the math)
+    /* if not sync, we fetch and sync at the rx_buffer start, 
+      otherwise we store from 1 to RING_BUF_MODULUS sf index 
+      and back in a ring buffer manner
+      i.e., 0 sf index is for sync and moving a sf data there for decoders to 
+      process, note at the first round we start like 0, 2, 3... 
+      (skip 1 if you do the math) */
     rf_buffer_t = !in_sync ?
-    srsran::rf_buffer_t(rx_buffer, pre_resampling_sf_sz) :
-    srsran::rf_buffer_t(rx_buffer + (pre_resampling_sf_sz * (next_produce_at % RING_BUF_MODULUS + 1)), pre_resampling_sf_sz); 
-    std::cout << "current_produce_at: " << (!in_sync ? 0 : (next_produce_at % RING_BUF_MODULUS + 1)) << std::endl;
-    std::cout << "current_produce_ptr: " << (rf_buffer_t.to_cf_t())[0] << std::endl;
+      srsran::rf_buffer_t(rx_buffer, pre_resampling_sf_sz) :
+      srsran::rf_buffer_t(rx_buffer + (pre_resampling_sf_sz * 
+      (next_produce_at % RING_BUF_MODULUS + 1)), pre_resampling_sf_sz); 
+
+    std::cout << "current_produce_at: " << (!in_sync ? 0 : 
+        (next_produce_at % RING_BUF_MODULUS + 1)) << std::endl;
+      std::cout << "current_produce_ptr: " << (rf_buffer_t.to_cf_t())[0] << 
+      std::endl;
 
     // note fetching the raw samples will temporarily touch area out of the target sf boundary
     // yet after resampling, all meaningful data will reside the target sf arr area and the original raw extra part 
     // beyond the boundary doesn't matter
-    if (srsran_ue_sync_nr_zerocopy_twinrx_nrscope(&ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, rk, resample_needed, RESAMPLE_WORKER_NUM) < SRSRAN_SUCCESS) {
+    if (srsran_ue_sync_nr_zerocopy_twinrx_nrscope(
+        &ue_sync_nr, rf_buffer_t.to_cf_t(), &outcome, rk, resample_needed, 
+        RESAMPLE_WORKER_NUM) < SRSRAN_SUCCESS) {
       std::cout << "SYNC: error in zerocopy" << std::endl;
       logger.error("SYNC: error in zerocopy");
       return false;
@@ -651,169 +695,188 @@ int Radio::FetchAndResample(){
     } 
 
     gettimeofday(&t1, NULL);  
-    std::cout << "producer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
+    std::cout << "producer time_spend: " << 
+      (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
   }
 
   return SRSRAN_SUCCESS;
 }
 
 int Radio::DecodeAndProcess(){
-  uint32_t pre_resampling_sf_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.args_t.ssb_scs) * pre_resampling_slot_sz;
-  if(!task_scheduler_nrscope.sib1_inited){
-    /* Initialize all the worker's sib decoder */
-    srsran::rf_buffer_t rf_buffer_wrapper(rx_buffer, pre_resampling_sf_sz);
-    if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_wrapper.to_cf_t()) < SRSASN_SUCCESS){
-      ERROR("SIBsDecoder Init Error");
-      return NR_FAILURE;
-    }
-    std::cout << "SIB Decoder Initializing..." << std::endl;
-  }
+  uint32_t pre_resampling_sf_sz = 
+    SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.args_t.ssb_scs) * 
+    pre_resampling_slot_sz;
+  // if(!task_scheduler_nrscope.task_scheduler_state.sib1_inited){
+  //   /* Initialize all the worker's sib decoder */
+  //   srsran::rf_buffer_t rf_buffer_wrapper(rx_buffer, pre_resampling_sf_sz);
+  //   if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_wrapper.to_cf_t()) < SRSASN_SUCCESS){
+  //     ERROR("SIBsDecoder Init Error");
+  //     return NR_FAILURE;
+  //   }
+  //   std::cout << "SIB Decoder Initializing..." << std::endl;
+  // }
   
   uint64_t next_consume_at = 0;
   bool first_time = true;
+  task_scheduler_nrscope.task_scheduler_state.sib1_inited = true;
 
   while (true) {
     sem_wait(&smph_sf_data_prod_cons); 
-    std::cout << "current_consume_at: " << (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1))) << std::endl;
+    std::cout << "current_consume_at: " << (first_time ? 0 : 
+      ((next_consume_at % RING_BUF_MODULUS + 1))) << std::endl;
     outcome.timestamp = last_rx_time.get(0);  
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);
     // consume a sf data
     for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); slot_idx++){
       srsran_slot_cfg_t slot = {0};
-      slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 10 + slot_idx;
-      // Move rx_buffer
-      // here wanted data move to the buffer beginning for decoders to process
-      // fetch and resample thread will store unprocessed data at 1 to RING_BUF_MODULUS sf index; we copy wanted data to 0 sf idx
-      // assumption: no way when we are decoding this sf the fetch thread has go around the whole ring and modify this sf again
-      srsran_vec_cf_copy(rx_buffer, rx_buffer + (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1) * pre_resampling_sf_sz)) + (slot_idx * slot_sz), slot_sz);
-      std::cout << "decode slot: " << slot_idx << "; current_consume_ptr: " << rx_buffer + (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1) * pre_resampling_sf_sz)) + (slot_idx * slot_sz) << std::endl; 
+      slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 
+        10 + slot_idx;
+      /* Move rx_buffer
+        here wanted data move to the buffer beginning for decoders to process
+        fetch and resample thread will store unprocessed data at 1 to 
+        RING_BUF_MODULUS sf index; we copy wanted data to 0 sf idx
+        assumption: no way when we are decoding this sf the fetch thread has 
+        go around the whole ring and modify this sf again */
+      srsran_vec_cf_copy(rx_buffer, rx_buffer + 
+        (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1) * 
+        pre_resampling_sf_sz)) + (slot_idx * slot_sz), slot_sz);
 
-      if(!task_scheduler_nrscope.rach_inited and task_scheduler_nrscope.sib1_found){
-        // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};
-        rach_decoder.rach_decoder_init(&task_scheduler_nrscope);
-        srsran::rf_buffer_t rf_buffer_wrapper(rx_buffer, pre_resampling_sf_sz);
-        if(rach_decoder.rach_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_wrapper.to_cf_t()) < SRSASN_SUCCESS){
-          ERROR("RACHDecoder Init Error");
-          return NR_FAILURE;
-        }
-        std::cout << "RACH Decoder Initialized.." << std::endl;
-        task_scheduler_nrscope.rach_inited = true;
+      std::cout << "decode slot: " << slot_idx << "; current_consume_ptr: " 
+        << rx_buffer + (first_time ? 0 : 
+        ((next_consume_at % RING_BUF_MODULUS + 1) * pre_resampling_sf_sz)) + 
+        (slot_idx * slot_sz) << std::endl; 
+
+      if (task_scheduler_nrscope.AssignTask(&slot, rx_buffer) < SRSRAN_SUCCESS) {
+        ERROR("Assign task failed");
       }
 
-      if(!task_scheduler_nrscope.dci_inited and task_scheduler_nrscope.rach_found){
-        std::cout << "Initializing DCI decoder..." << std::endl;
-        task_scheduler_nrscope.sharded_results.resize(nof_threads);
-        task_scheduler_nrscope.nof_sharded_rntis.resize(nof_threads);
-        task_scheduler_nrscope.sharded_rntis.resize(nof_threads);
-        task_scheduler_nrscope.nof_threads = nof_threads;
-        task_scheduler_nrscope.nof_rnti_worker_groups = nof_rnti_worker_groups;
-        task_scheduler_nrscope.nof_bwps = nof_bwps;
-        task_scheduler_nrscope.results.resize(nof_bwps);
-        for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
-          // for each rnti worker group, for each bwp, spawn a decoder
-          for(uint8_t j = 0; j < nof_bwps; j++){
-            DCIDecoder *decoder = new DCIDecoder(100);
-            if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, j) < SRSASN_SUCCESS){
-              ERROR("DCIDecoder Init Error");
-              return NR_FAILURE;
-            }
-            decoder->dci_decoder_id = i * nof_bwps + j;
-            decoder->rnti_worker_group_id = i;
-            dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
-          }
-        }
+      // if(!task_scheduler_nrscope.rach_inited and task_scheduler_nrscope.sib1_found){
+      //   // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};
+      //   rach_decoder.rach_decoder_init(&task_scheduler_nrscope);
+      //   srsran::rf_buffer_t rf_buffer_wrapper(rx_buffer, pre_resampling_sf_sz);
+      //   if(rach_decoder.rach_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_wrapper.to_cf_t()) < SRSASN_SUCCESS){
+      //     ERROR("RACHDecoder Init Error");
+      //     return NR_FAILURE;
+      //   }
+      //   std::cout << "RACH Decoder Initialized.." << std::endl;
+      //   task_scheduler_nrscope.rach_inited = true;
+      // }
+
+      // if(!task_scheduler_nrscope.dci_inited and task_scheduler_nrscope.rach_found){
+      //   std::cout << "Initializing DCI decoder..." << std::endl;
+      //   task_scheduler_nrscope.sharded_results.resize(nof_threads);
+      //   task_scheduler_nrscope.nof_sharded_rntis.resize(nof_threads);
+      //   task_scheduler_nrscope.sharded_rntis.resize(nof_threads);
+      //   task_scheduler_nrscope.nof_threads = nof_threads;
+      //   task_scheduler_nrscope.nof_rnti_worker_groups = nof_rnti_worker_groups;
+      //   task_scheduler_nrscope.nof_bwps = nof_bwps;
+      //   task_scheduler_nrscope.results.resize(nof_bwps);
+      //   for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
+      //     // for each rnti worker group, for each bwp, spawn a decoder
+      //     for(uint8_t j = 0; j < nof_bwps; j++){
+      //       DCIDecoder *decoder = new DCIDecoder(100);
+      //       if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, j) < SRSASN_SUCCESS){
+      //         ERROR("DCIDecoder Init Error");
+      //         return NR_FAILURE;
+      //       }
+      //       decoder->dci_decoder_id = i * nof_bwps + j;
+      //       decoder->rnti_worker_group_id = i;
+      //       dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
+      //     }
+      //   }
         
-        std::cout << "DCI Decoder Initialized.." << std::endl;
-        task_scheduler_nrscope.dci_inited = true;
-      }
+      //   std::cout << "DCI Decoder Initialized.." << std::endl;
+      //   task_scheduler_nrscope.dci_inited = true;
+      // }
 
-      // Then start each type of decoder, TODO
-      task_scheduler_nrscope.dl_prb_rate.resize(task_scheduler_nrscope.nof_known_rntis);
-      task_scheduler_nrscope.ul_prb_rate.resize(task_scheduler_nrscope.nof_known_rntis);
-      task_scheduler_nrscope.dl_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
-      task_scheduler_nrscope.ul_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
+      // // Then start each type of decoder, TODO
+      // task_scheduler_nrscope.dl_prb_rate.resize(task_scheduler_nrscope.nof_known_rntis);
+      // task_scheduler_nrscope.ul_prb_rate.resize(task_scheduler_nrscope.nof_known_rntis);
+      // task_scheduler_nrscope.dl_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
+      // task_scheduler_nrscope.ul_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
 
-      // To save computing resources for dci decoders: assume SIB1 info should be static
-      std::thread sibs_thread;
-      if (!task_scheduler_nrscope.sib1_found) {
-        sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
-      }
-      std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
+      // // To save computing resources for dci decoders: assume SIB1 info should be static
+      // std::thread sibs_thread;
+      // if (!task_scheduler_nrscope.sib1_found) {
+      //   sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
+      // }
+      // std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
 
-      std::vector <std::thread> dci_threads;
-      if(task_scheduler_nrscope.dci_inited){
-        for (uint32_t i = 0; i < nof_threads; i++){
-          dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope);
-        }
-      }
+      // std::vector <std::thread> dci_threads;
+      // if(task_scheduler_nrscope.dci_inited){
+      //   for (uint32_t i = 0; i < nof_threads; i++){
+      //     dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope);
+      //   }
+      // }
 
-      if(sibs_thread.joinable()){
-        sibs_thread.join();
-      }
+      // if(sibs_thread.joinable()){
+      //   sibs_thread.join();
+      // }
 
-      if(rach_thread.joinable()){
-        rach_thread.join();
-      }
+      // if(rach_thread.joinable()){
+      //   rach_thread.join();
+      // }
 
-      if(task_scheduler_nrscope.dci_inited){
-        for (uint32_t i = 0; i < nof_threads; i++){
-          if(dci_threads[i].joinable()){
-            dci_threads[i].join();
-          }
-        }
-      }
+      // if(task_scheduler_nrscope.dci_inited){
+      //   for (uint32_t i = 0; i < nof_threads; i++){
+      //     if(dci_threads[i].joinable()){
+      //       dci_threads[i].join();
+      //     }
+      //   }
+      // }
 
-      if(task_scheduler_nrscope.dci_inited){
-        task_scheduler_nrscope.merge_results();
-        std::vector <DCIFeedback> results = task_scheduler_nrscope.get_results();
+      // if(task_scheduler_nrscope.dci_inited){
+      //   task_scheduler_nrscope.MergeResults();
+      //   std::vector <DCIFeedback> results = task_scheduler_nrscope.get_results();
 
-        for (uint8_t b = 0; b < nof_bwps; b++) {
-          DCIFeedback result = results[b];
-          if((result.dl_grants.size()>0 or result.ul_grants.size()>0)){
-            for (uint32_t i = 0; i < task_scheduler_nrscope.nof_known_rntis; i++){
-              if(result.dl_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-                LogNode log_node;
-                log_node.slot_idx = slot.idx;
-                log_node.system_frame_idx = outcome.sfn;
-                log_node.timestamp = get_now_timestamp_in_double();
-                log_node.grant = result.dl_grants[i];
-                log_node.dci_format = srsran_dci_format_nr_string(result.dl_dcis[i].ctx.format);
-                log_node.dl_dci = result.dl_dcis[i];
-                log_node.bwp_id = result.dl_dcis[i].bwp_id;
-                if(local_log){
-                  NRScopeLog::push_node(log_node, rf_index);
-                }
-                if(to_google){
-                  ToGoogle::push_google_node(log_node, rf_index);
-                }
-              }
+      //   for (uint8_t b = 0; b < nof_bwps; b++) {
+      //     DCIFeedback result = results[b];
+      //     if((result.dl_grants.size()>0 or result.ul_grants.size()>0)){
+      //       for (uint32_t i = 0; i < task_scheduler_nrscope.nof_known_rntis; i++){
+      //         if(result.dl_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
+      //           LogNode log_node;
+      //           log_node.slot_idx = slot.idx;
+      //           log_node.system_frame_idx = outcome.sfn;
+      //           log_node.timestamp = get_now_timestamp_in_double();
+      //           log_node.grant = result.dl_grants[i];
+      //           log_node.dci_format = srsran_dci_format_nr_string(result.dl_dcis[i].ctx.format);
+      //           log_node.dl_dci = result.dl_dcis[i];
+      //           log_node.bwp_id = result.dl_dcis[i].bwp_id;
+      //           if(local_log){
+      //             NRScopeLog::push_node(log_node, rf_index);
+      //           }
+      //           if(to_google){
+      //             ToGoogle::push_google_node(log_node, rf_index);
+      //           }
+      //         }
 
-              if(result.ul_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-                LogNode log_node;
-                log_node.slot_idx = slot.idx;
-                log_node.system_frame_idx = outcome.sfn;
-                log_node.timestamp = get_now_timestamp_in_double();
-                log_node.grant = result.ul_grants[i];
-                log_node.dci_format = srsran_dci_format_nr_string(result.ul_dcis[i].ctx.format);
-                log_node.ul_dci = result.ul_dcis[i];
-                log_node.bwp_id = result.ul_dcis[i].bwp_id;
-                if(local_log){
-                  NRScopeLog::push_node(log_node, rf_index);
-                }
-                if(to_google){
-                  ToGoogle::push_google_node(log_node, rf_index);
-                }
-              }
-            } 
-          }
-        }
-      }
-      task_scheduler_nrscope.update_known_rntis();
+      //         if(result.ul_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
+      //           LogNode log_node;
+      //           log_node.slot_idx = slot.idx;
+      //           log_node.system_frame_idx = outcome.sfn;
+      //           log_node.timestamp = get_now_timestamp_in_double();
+      //           log_node.grant = result.ul_grants[i];
+      //           log_node.dci_format = srsran_dci_format_nr_string(result.ul_dcis[i].ctx.format);
+      //           log_node.ul_dci = result.ul_dcis[i];
+      //           log_node.bwp_id = result.ul_dcis[i].bwp_id;
+      //           if(local_log){
+      //             NRScopeLog::push_node(log_node, rf_index);
+      //           }
+      //           if(to_google){
+      //             ToGoogle::push_google_node(log_node, rf_index);
+      //           }
+      //         }
+      //       } 
+      //     }
+      //   }
+      // }
+      // task_scheduler_nrscope.UpdateKnownRNTIs();
     } // slot iteration
 
     gettimeofday(&t1, NULL);
-    std::cout << "consumer time_spend: " << (t1.tv_usec - t0.tv_usec) << "(us)" << std::endl;
+    std::cout << "consumer time_spend: " << (int)(t1.tv_usec - t0.tv_usec) 
+      << "(us)" << std::endl;
     next_consume_at++;
     first_time = false;
   } // true loop

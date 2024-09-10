@@ -29,8 +29,10 @@ int TaskSchedulerNRScope::InitandStart(int32_t nof_threads,
   task_scheduler_state.slot_sz = (uint32_t)(args_t.srate_hz / 1000.0f / 
     SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs));
   nof_workers = nof_workers_;
-  for (int i = 0; i < nof_workers; i ++) {
+  std::cout << "Starting workers..." << std::endl;
+  for (uint32_t i = 0; i < nof_workers; i ++) {
     NRScopeWorker *worker = new NRScopeWorker();
+    std::cout << "New worker " << i << " is going to start... "<< std::endl;
     if(worker->InitWorker(task_scheduler_state) < SRSRAN_SUCCESS) {
       ERROR("Error initializing worker %d", i);
       return NR_FAILURE;
@@ -38,10 +40,15 @@ int TaskSchedulerNRScope::InitandStart(int32_t nof_threads,
     workers.emplace_back(std::unique_ptr<NRScopeWorker> (worker));
   }
 
+  std::cout << "Workers started..." << std::endl;
+
+  scheduler_thread = std::thread{&TaskSchedulerNRScope::Run, this};
+  scheduler_thread.detach();
+
   return SRSRAN_SUCCESS;
 }
 
-int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_, 
+int TaskSchedulerNRScope::DecodeMIB(cell_searcher_args_t* args_t_, 
                         srsue::nr::cell_search::ret_t* cs_ret_,
                         srsue::nr::cell_search::cfg_t* srsran_searcher_cfg_t_,
                         float resample_ratio_,
@@ -158,7 +165,7 @@ int TaskSchedulerNRScope::decode_mib(cell_searcher_args_t* args_t_,
   return SRSRAN_SUCCESS;
 }
 
-int TaskSchedulerNRScope::merge_results(){
+int TaskSchedulerNRScope::MergeResults(){
   
   for (uint8_t b = 0; b < task_scheduler_state.nof_bwps; b++) {
     DCIFeedback new_result;
@@ -177,7 +184,6 @@ int TaskSchedulerNRScope::merge_results(){
     uint32_t rnti_s = 0;
     uint32_t rnti_e = 0;
     for(uint32_t i = 0; i < task_scheduler_state.nof_rnti_worker_groups; i++){
-
       if(rnti_s >= task_scheduler_state.nof_known_rntis){
         continue;
       }
@@ -251,7 +257,7 @@ int TaskSchedulerNRScope::merge_results(){
   return SRSRAN_SUCCESS;
 }
 
-int TaskSchedulerNRScope::update_known_rntis(){
+int TaskSchedulerNRScope::UpdateKnownRNTIs(){
   if(task_scheduler_state.new_rnti_number <= 0){
     return SRSRAN_SUCCESS;
   }
@@ -265,6 +271,46 @@ int TaskSchedulerNRScope::update_known_rntis(){
   task_scheduler_state.new_rntis_found.clear();
   task_scheduler_state.new_rnti_number = 0;
   return SRSRAN_SUCCESS;
+}
+
+void TaskSchedulerNRScope::Run(){
+  while(true) {
+    /* Try to extract results from the global result queue*/
+
+  }
+}
+
+int TaskSchedulerNRScope::AssignTask(srsran_slot_cfg_t* slot, cf_t* rx_buffer_){
+  /* Find the first idle worker */
+  bool found_worker = false;
+  for (uint32_t i = 0; i < nof_workers; i ++) {
+    bool busy;
+    lock.lock();
+    busy = workers[i].get()->busy;
+    lock.unlock();
+    if (!busy) {
+      found_worker = true;
+
+      /* Copy the rx_buffer_ to the worker's rx_buffer */
+      workers[i].get()->CopySlotandBuffer(slot, rx_buffer_);
+
+      /* Update the worker's state */
+      workers[i].get()->SyncState(&task_scheduler_state);
+
+      /* Set the worker's sem to let the task run */
+      sem_post(&workers[i].get()->smph_has_job);
+
+      break;
+    }
+  }
+  
+  if (!found_worker) {
+    ERROR("No available worker, consider increasing the number of workers.");
+    return SRSRAN_ERROR;
+  } else {
+    return SRSRAN_SUCCESS;
+  }
+
 }
 
 }

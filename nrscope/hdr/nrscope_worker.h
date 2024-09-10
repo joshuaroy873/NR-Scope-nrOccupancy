@@ -10,21 +10,21 @@ namespace NRScopeTask{
 
 class NRScopeWorker{
 public:
-  srsran::rf_buffer_t rf_buffer_t;
   cf_t* rx_buffer;
+  srsran::rf_buffer_t rf_buffer_t;
 
   WorkState worker_state;
   RachDecoder rach_decoder; 
   SIBsDecoder sibs_decoder;
   std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
 
-  // uint32_t nof_threads;
-  // uint32_t nof_rnti_worker_groups;
-  // uint8_t nof_bwps;
-
   /* Job indicator */
   sem_t smph_has_job; 
+  bool busy;
+  std::mutex lock;
 
+  /* Worker thread */
+  std::thread worker_thread;
   // bool sib1_inited; /* SIBsDecoder is initialized, set by task_scheduler. */
   // bool rach_inited; /* RACHDecoder is initialized, set by task_scheduler. */
   // bool dci_inited; /* DCIDecoder is initialized, set by task_scheduler. */
@@ -68,11 +68,20 @@ public:
     so the worker can set its buffer.*/
   int InitWorker(WorkState task_scheduler_state);
 
+  /* Start the worker thread */
   void StartWorker();
+
+  /* Set worker's state the same as the scheduler's state, 
+    and initilize the decoders if needed. This function will be called
+    before the job starts, so don't need to consider about the thread
+    safe thing. */
+  int SyncState(WorkState* task_scheduler_state);
+  void CopySlotandBuffer(srsran_slot_cfg_t* slot_, cf_t* rx_buffer_);
+
   int InitSIBDecoder();
   int InitRACHDecoder();
   int InitDCIDecoders();
-
+  
 private:
   void Run();
 };

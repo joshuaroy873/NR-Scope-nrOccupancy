@@ -2,7 +2,7 @@
 #define DCI_DECODER_H
 
 #include "nrscope/hdr/nrscope_def.h"
-#include "nrscope/hdr/task_scheduler.h"
+// #include "nrscope/hdr/task_scheduler.h"
 
 class DCIDecoder{
   public:

@@ -4,7 +4,7 @@
 #include "srsran/support/srsran_assert.h"
 
 #include "nrscope/hdr/nrscope_def.h"
-#include "nrscope/hdr/task_scheduler.h"
+// #include "nrscope/hdr/task_scheduler.h"
 
 class SIBsDecoder{
   public:
@@ -51,8 +51,8 @@ class SIBsDecoder{
     * @return SRSRAN_SUCCESS (0) if everything goes well. 
     * SRSRAN_ERROR (-1) if something is wrong in the function.
     */
-    int sib_decoder_and_reception_init(WorkState* state,
-                                       cf_t* input[SRSRAN_MAX_PORTS]);
+    int SIBDecoderandReceptionInit(WorkState* state,
+                                   cf_t* input[SRSRAN_MAX_PORTS]);
 
     /**
     * This function decodes the current slot for SIB 1, and the result will reflect in the sib1 parameter.
@@ -64,12 +64,14 @@ class SIBsDecoder{
     * @return SRSRAN_SUCCESS (0) if everything goes well. 
     * SRSRAN_ERROR (-1) if something is wrong in the function.
     */
-    int decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
-                                        bool* sibs_vec_inited,
-                                        bool* all_sibs_found,
-                                        std::vector<int>& found_sib,
-                                        std::vector<asn1::rrc_nr::sys_info_s>& sibs,
-                                        asn1::rrc_nr::sib1_s* sib1_);
+    int DecodeandParseSIB1fromSlot(srsran_slot_cfg_t* slot,
+                                   WorkState state);
+                                  // srsran_slot_cfg_t* slot,
+                                  // bool* sibs_vec_inited,
+                                  // bool* all_sibs_found,
+                                  // std::vector<int>& found_sib,
+                                  // std::vector<asn1::rrc_nr::sys_info_s>& sibs,
+                                  // asn1::rrc_nr::sib1_s* sib1_);
 
     // /**
     // * A function that represents the SIB thread for a producer-consumer threading design,

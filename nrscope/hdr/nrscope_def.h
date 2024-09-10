@@ -75,13 +75,15 @@ struct cell_searcher_args_t {
     srsran::srsran_band_helper bands;
 
     // Deduce band number
-    uint16_t band = bands.get_band_from_dl_freq_Hz_and_scs(base_carrier.dl_center_frequency_hz, scs_input);
+    uint16_t band = bands.get_band_from_dl_freq_Hz_and_scs(
+      base_carrier.dl_center_frequency_hz, scs_input);
 
     srsran_assert(band != UINT16_MAX, "Invalid band");
     
     // Deduce point A in Hz
     double pointA_Hz =
-        bands.get_abs_freq_point_a_from_center_freq(base_carrier.nof_prb, base_carrier.dl_center_frequency_hz);
+      bands.get_abs_freq_point_a_from_center_freq(
+      base_carrier.nof_prb, base_carrier.dl_center_frequency_hz);
 
     // Deduce DL center frequency ARFCN
     uint32_t pointA_arfcn = bands.freq_to_nr_arfcn(pointA_Hz);
@@ -192,7 +194,7 @@ typedef struct WorkState_ WorkState;
     bool rach_found;
 
     bool sibs_vec_inited; // Is the vector for other SIBs set according to SIB?
-    bool all_sibs_found; // All SIBs are decoded, we can stop the SIB thread from now.
+    bool all_sibs_found; // All SIBs are decoded, stop the SIB thread now.
 
     bool sib1_inited; // SIBsDecoder is initialized.
     bool rach_inited; // RACHDecoder is initialized.
@@ -201,12 +203,27 @@ typedef struct WorkState_ WorkState;
     uint32_t nof_known_rntis;
     std::vector<uint16_t> known_rntis;
 
+    /* May need to change things below this */
     std::vector<uint32_t> nof_sharded_rntis;
     std::vector <std::vector <uint16_t> > sharded_rntis;
     std::vector <DCIFeedback> sharded_results;
-    uint32_t nof_threads;
-    uint32_t nof_rnti_worker_groups;
-    uint8_t nof_bwps;
+
+    std::vector <float> dl_prb_rate;
+    std::vector <float> ul_prb_rate;
+    std::vector <float> dl_prb_bits_rate;
+    std::vector <float> ul_prb_bits_rate;
+
+    uint32_t new_rnti_number;
+    std::vector<uint16_t> new_rntis_found;
+  };
+
+typedef struct SlotResult_ SlotResult;
+  struct SlotResult_{
+    
+    /* May need to change things below this */
+    std::vector<uint32_t> nof_sharded_rntis;
+    std::vector <std::vector <uint16_t> > sharded_rntis;
+    std::vector <DCIFeedback> sharded_results;
 
     std::vector <float> dl_prb_rate;
     std::vector <float> ul_prb_rate;

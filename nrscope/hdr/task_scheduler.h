@@ -57,9 +57,9 @@ public:
   // std::vector<uint16_t> new_rntis_found;
   WorkState task_scheduler_state;
   uint32_t nof_workers;
+  std::thread scheduler_thread;
 
   std::vector<std::unique_ptr <NRScopeWorker> > workers;
-
   std::mutex lock;
 
   TaskSchedulerNRScope();
@@ -67,21 +67,23 @@ public:
 
   /* Start the workers and the receiving result thread, called before the 
   radio reception. */
-  int TaskSchedulerNRScope::InitandStart(int32_t nof_threads, 
-                                         uint32_t nof_rnti_worker_groups,
-                                         uint8_t nof_bwps,
-                                         cell_searcher_args_t args_t,
-                                         uint32_t nof_workers_);
+  int InitandStart(int32_t nof_threads, 
+                   uint32_t nof_rnti_worker_groups,
+                   uint8_t nof_bwps,
+                   cell_searcher_args_t args_t,
+                   uint32_t nof_workers_);
 
-  int decode_mib(cell_searcher_args_t* args_t_, 
+  int DecodeMIB(cell_searcher_args_t* args_t_, 
                 srsue::nr::cell_search::ret_t* cs_ret_,
                 srsue::nr::cell_search::cfg_t* srsran_searcher_cfg_t,
                 float resample_ratio_,
                 uint32_t raw_srate_);
 
-  int merge_results();
+  int MergeResults();
+  int UpdateKnownRNTIs();
 
-  int update_known_rntis();
+  /* Assign the current slot to one worker*/
+  int AssignTask(srsran_slot_cfg_t* slot, cf_t* rx_buffer_);
 
   std::vector <DCIFeedback> get_results(){
     return results;
@@ -99,6 +101,9 @@ public:
   std::complex<float> * temp_x;
   std::complex<float> * temp_y;
   uint32_t pre_resampling_slot_sz;
+
+private:
+  void Run();
 };
 
 }

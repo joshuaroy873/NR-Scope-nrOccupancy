@@ -10,7 +10,7 @@
 #include "srsran/common/band_helper.h"
 
 #include "nrscope/hdr/nrscope_def.h"
-#include "nrscope/hdr/task_scheduler.h"
+// #include "nrscope/hdr/task_scheduler.h"
 
 class RachDecoder{
   public:
@@ -50,19 +50,12 @@ class RachDecoder{
     RachDecoder();
     ~RachDecoder();
 
-    int rach_decoder_init(asn1::rrc_nr::sib1_s sib1_,
-                          srsran_carrier_nr_t base_carrier_);
+    int RACHDecoderInit(WorkState state);
 
-    int rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                            srsran_coreset_t* coreset0_t_,
-                            srsran_carrier_nr_t* base_carrier_,
-                            cell_search_result_t cell_,
-                            double ssb_freq_hz_,
-                            srsran_subcarrier_spacing_t ssb_scs_,
-                            coreset0_args coreset0_args_t,
-                            cf_t* input[SRSRAN_MAX_PORTS]);
+    int RACHReceptionInit(WorkState* state,
+                          cf_t* input[SRSRAN_MAX_PORTS]);
 
-    int decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
+    int DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
                                         bool sib1_found,
                                         bool rach_inited,
                                         asn1::rrc_nr::rrc_setup_s* rrc_setup,

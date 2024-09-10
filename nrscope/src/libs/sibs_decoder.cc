@@ -11,10 +11,9 @@ SIBsDecoder::~SIBsDecoder(){
     
 }
 
-int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                                                TaskSchedulerNRScope* task_scheduler_nrscope,
+int SIBsDecoder::sib_decoder_and_reception_init(WorkState* state,
                                                 cf_t* input[SRSRAN_MAX_PORTS]){  
-  memcpy(&coreset0_t, &task_scheduler_nrscope->coreset0_t, sizeof(srsran_coreset_t));
+  memcpy(&coreset0_t, &state->coreset0_t, sizeof(srsran_coreset_t));
 
   dci_cfg.bwp_dl_initial_bw   = 275;
   dci_cfg.bwp_ul_initial_bw   = 275;
@@ -39,9 +38,9 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
   }
   pdcch_cfg.coreset[0] = coreset0_t; 
 
-  arg_scs = arg_scs_;
-  memcpy(&base_carrier, &task_scheduler_nrscope->args_t.base_carrier, sizeof(srsran_carrier_nr_t));
-  cell = task_scheduler_nrscope->cell;
+  arg_scs = state->arg_scs;
+  memcpy(&base_carrier, &state->args_t.base_carrier, sizeof(srsran_carrier_nr_t));
+  cell = state->cell;
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
 
   ue_dl_args.nof_rx_antennas               = 1;
@@ -73,25 +72,18 @@ int SIBsDecoder::sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info ar
     return SRSRAN_ERROR;
   }
 
-  task_scheduler_nrscope->sib1_inited = true;
-  std::cout << "SIB Decoder Initialized.." << std::endl;
+  // task_scheduler_nrscope->sib1_inited = true;
+  // std::cout << "SIB Decoder Initialized.." << std::endl;
 
   return SRSRAN_SUCCESS;
 }
 
 int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
-                                                TaskSchedulerNRScope* task_scheduler_nrscope,
-                                                cf_t * raw_buffer){
-
-  if(!task_scheduler_nrscope->sib1_inited){
-    std::cout << "SIB decoder not initialized..." << std::endl;
-    return SRSASN_SUCCESS;
-  }
-
-  if(task_scheduler_nrscope->sib1_found){
-    std::cout << "SIB 1 found, skipping..." << std::endl;
-    return SRSRAN_SUCCESS;
-  }
+                                                 bool* sibs_vec_inited,
+                                                 bool* all_sibs_found,
+                                                 std::vector<int>& found_sib,
+                                                 std::vector<asn1::rrc_nr::sys_info_s>& sibs,
+                                                 asn1::rrc_nr::sib1_s* sib1_){
 
   memset(&dci_sibs, 0, sizeof(srsran_dci_dl_nr_t));
 
@@ -111,7 +103,7 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
     ERROR("SIBDecoder -- Error in blind search");
     return SRSRAN_ERROR;
   }
-  // Print PDCCH blind search candidates
+  /* Print PDCCH blind search candidates */
   // for (uint32_t pdcch_idx = 0; pdcch_idx < ue_dl_sibs.pdcch_info_count; pdcch_idx++) {
   //   const srsran_ue_dl_nr_pdcch_info_t* info = &(ue_dl_sibs.pdcch_info[pdcch_idx]);
   //   printf("PDCCH: %s-rnti=0x%x, crst_id=%d, ss_type=%s, ncce=%d, al=%d, EPRE=%+.2f, RSRP=%+.2f, corr=%.3f; "
@@ -193,46 +185,45 @@ int SIBsDecoder::decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
   // Try to decode the SIB
   if(srsran_unlikely(asn1::rrc_nr::bcch_dl_sch_msg_type_c::c1_c_::types_opts::sib_type1 != dlsch_msg.msg.c1().type())){
     // Try to decode other SIBs
-    if(!task_scheduler_nrscope->sibs_vec_inited){
+    if(!(*sibs_vec_inited)){
       // Skip since the sib_vec is not intialized
       return SRSRAN_SUCCESS;
     }else{
       // Get the sib_id, sib_id is uint8_t and is 2 for sib2, 3 for sib 3, etc...
       auto sib_id = dlsch_msg.msg.c1().sys_info().crit_exts.sys_info().sib_type_and_info[0].type().to_number();
-      task_scheduler_nrscope->sibs[sib_id - 2] = dlsch_msg.msg.c1().sys_info();
-      task_scheduler_nrscope->found_sib[sib_id - 2] = 1;
+      sibs[sib_id - 2] = dlsch_msg.msg.c1().sys_info();
+      found_sib[sib_id - 2] = 1;
 
       // If we collect all the SIBs, we can skip the thread.
       long unsigned int found_result = 0;
-      for(long unsigned int i=0; i<task_scheduler_nrscope->found_sib.size(); i++){
-        found_result += task_scheduler_nrscope->found_sib[i];
+      for(long unsigned int i=0; i<found_sib.size(); i++){
+        found_result += found_sib[i];
       }
-      if(found_result >= task_scheduler_nrscope->found_sib.size()){
-        task_scheduler_nrscope->all_sibs_found = true;
+      if(found_result >= found_sib.size()){
+        *all_sibs_found = true;
       }
 
       std::cout << "SIB " << (int)sib_id << " Decoded." << std::endl;
       /* Uncomment to print the decode SIBs. */
       asn1::json_writer js_sibs;
-      (task_scheduler_nrscope->sibs[(int)(sib_id - 2)]).to_json(js_sibs);
+      (sibs[(int)(sib_id - 2)]).to_json(js_sibs);
       printf("Decoded SIBs: %s\n", js_sibs.to_string().c_str());
     }    
   }else if(srsran_unlikely(asn1::rrc_nr::bcch_dl_sch_msg_type_c::c1_c_::types_opts::sys_info != dlsch_msg.msg.c1().type())){
-    task_scheduler_nrscope->sib1 = dlsch_msg.msg.c1().sib_type1();
+    *sib1_ = dlsch_msg.msg.c1().sib_type1();
     std::cout << "SIB 1 Decoded." << std::endl;
-    task_scheduler_nrscope->sib1_found = true;
 
-    if(!task_scheduler_nrscope->sibs_vec_inited){
+    if(!(*sibs_vec_inited)){
       // Setting the size of the vector for other SIBs decoding.
-      int nof_sibs = task_scheduler_nrscope->sib1.si_sched_info_present ? task_scheduler_nrscope->sib1.si_sched_info.sched_info_list.size() : 0;
-      task_scheduler_nrscope->sibs.resize(nof_sibs);
-      task_scheduler_nrscope->found_sib.resize(nof_sibs);
-      task_scheduler_nrscope->sibs_vec_inited = true;
+      int nof_sibs = (*sib1_).si_sched_info_present ? (*sib1_).si_sched_info.sched_info_list.size() : 0;
+      sibs.resize(nof_sibs);
+      found_sib.resize(nof_sibs);
+      (*sibs_vec_inited) = true;
     }
 
     /* Uncomment to print the decode SIB1. */
     asn1::json_writer js_sib1;
-    (task_scheduler_nrscope->sib1).to_json(js_sib1);
+    (*sib1_).to_json(js_sib1);
     printf("Decoded SIB1: %s\n", js_sib1.to_string().c_str());
   }
 

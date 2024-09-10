@@ -21,9 +21,10 @@ RachDecoder::~RachDecoder(){
 
 }
 
-int RachDecoder::rach_decoder_init(TaskSchedulerNRScope* task_scheduler_nrscope){
-  sib1 = task_scheduler_nrscope->sib1;
-  base_carrier = task_scheduler_nrscope->args_t.base_carrier;
+int RachDecoder::rach_decoder_init(asn1::rrc_nr::sib1_s sib1_,
+                                   srsran_carrier_nr_t base_carrier_){
+  sib1 = sib1_;
+  base_carrier = base_carrier_;
   srsran::srsran_band_helper bands;
   uint16_t band = bands.get_band_from_dl_freq_Hz(base_carrier.dl_center_frequency_hz);
 
@@ -106,9 +107,14 @@ int RachDecoder::rach_decoder_init(TaskSchedulerNRScope* task_scheduler_nrscope)
 }
 
 int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                                     TaskSchedulerNRScope* task_scheduler_nrscope,
+                                     srsran_coreset_t* coreset0_t_,
+                                     srsran_carrier_nr_t* base_carrier_,
+                                     cell_search_result_t cell_,
+                                     double ssb_freq_hz_,
+                                     srsran_subcarrier_spacing_t ssb_scs_,
+                                     coreset0_args coreset0_args_t,
                                      cf_t* input[SRSRAN_MAX_PORTS]){
-  memcpy(&coreset0_t, &task_scheduler_nrscope->coreset0_t, sizeof(srsran_coreset_t));
+  memcpy(&coreset0_t, coreset0_t_, sizeof(srsran_coreset_t));
 
   dci_cfg.bwp_dl_initial_bw   = 275;
   dci_cfg.bwp_ul_initial_bw   = 275;
@@ -159,8 +165,8 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
                                        nrof_candidates.aggregation_level16;
 
   arg_scs = arg_scs_;                                   
-  memcpy(&base_carrier, &task_scheduler_nrscope->args_t.base_carrier, sizeof(srsran_carrier_nr_t));
-  cell = task_scheduler_nrscope->cell;
+  memcpy(&base_carrier, base_carrier_, sizeof(srsran_carrier_nr_t));
+  cell = cell_;
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
   for (uint32_t pdsch_time_id = 0; pdsch_time_id < sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list.size(); pdsch_time_id++){
     if(sib1.serving_cell_cfg_common.dl_cfg_common.init_dl_bwp.pdsch_cfg_common.setup().pdsch_time_domain_alloc_list[pdsch_time_id].k0_present){
@@ -214,17 +220,17 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
   pdsch_carrier = base_carrier;
   arg_scs_pdsch = arg_scs;
 
-  double pointA = task_scheduler_nrscope->srsran_searcher_cfg_t.ssb_freq_hz - (SRSRAN_SSB_BW_SUBC / 2) *
+  double pointA = ssb_freq_hz_ - (SRSRAN_SSB_BW_SUBC / 2) *
     cell.abs_ssb_scs - cell.k_ssb * SRSRAN_SUBC_SPACING_NR(srsran_subcarrier_spacing_15kHz) 
     - sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.offset_to_point_a * 
     SRSRAN_SUBC_SPACING_NR(srsran_subcarrier_spacing_15kHz) * NRSCOPE_NSC_PER_RB_NR;
 
   pdsch_carrier.nof_prb = sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.scs_specific_carrier_list[0].carrier_bw;
-  double dl_center_frequency = pointA + pdsch_carrier.nof_prb * NRSCOPE_NSC_PER_RB_NR * SRSRAN_SUBC_SPACING_NR(task_scheduler_nrscope->srsran_searcher_cfg_t.ssb_scs) / 2;
+  double dl_center_frequency = pointA + pdsch_carrier.nof_prb * NRSCOPE_NSC_PER_RB_NR * SRSRAN_SUBC_SPACING_NR(ssb_scs_) / 2;
   std::cout << "dl_center_frequency: " << dl_center_frequency << std::endl;
   std::cout << "pointA: " << pointA << std::endl;
 
-  arg_scs_pdsch.coreset_offset_scs = (task_scheduler_nrscope->srsran_searcher_cfg_t.ssb_freq_hz - dl_center_frequency) / cell.abs_pdcch_scs;
+  arg_scs_pdsch.coreset_offset_scs = (ssb_freq_hz_ - dl_center_frequency) / cell.abs_pdcch_scs;
   
   // The lower boundary of PDSCH can be not aligned with the lower boundary of PDCCH
   if (srsran_ue_dl_nr_init_nrscope(&ue_dl_pdsch, input, &ue_dl_args, arg_scs_pdsch)) {
@@ -237,7 +243,7 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
     return SRSRAN_ERROR;
   }
 
-  start_rb = (task_scheduler_nrscope->coreset0_args_t.coreset0_lower_freq_hz - pointA) / SRSRAN_SUBC_SPACING_NR(arg_scs_pdsch.scs) / 12;
+  start_rb = (coreset0_args_t.coreset0_lower_freq_hz - pointA) / SRSRAN_SUBC_SPACING_NR(arg_scs_pdsch.scs) / 12;
 
   if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl_pdsch, &pdcch_cfg, &dci_cfg)) {
     ERROR("Error setting CORESET");
@@ -249,9 +255,14 @@ int RachDecoder::rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
 
 
 int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
-                                                 TaskSchedulerNRScope* task_scheduler_nrscope,
-                                                 cf_t * raw_buffer){
-  if(!task_scheduler_nrscope->sib1_found or !task_scheduler_nrscope->rach_inited){
+                                                 bool sib1_found,
+                                                 bool rach_inited,
+                                                 asn1::rrc_nr::rrc_setup_s* rrc_setup,
+                                                 asn1::rrc_nr::cell_group_cfg_s* master_cell_group,
+                                                 bool* rach_found,
+                                                 uint32_t* new_rnti_number,
+                                                 std::vector<uint16_t>& new_rntis_found){
+  if(!sib1_found or !rach_inited){
     // If the SIB 1 is not detected or the RACH decoder is not initialized.
     std::cout << "SIB 1 not found or decoder not initialized, quitting..." << std::endl;
     return SRSRAN_SUCCESS;
@@ -383,7 +394,7 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
       ERROR("Failed to unpack DL-CCCH message (%d B)", pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
     }
 
-    task_scheduler_nrscope->rrc_setup = dlcch_msg.msg.c1().rrc_setup();
+    *rrc_setup = dlcch_msg.msg.c1().rrc_setup();
     std::cout << "Msg 4 Decoded." << std::endl;
     switch (dlcch_msg.msg.c1().type().value) {
       case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_reject: {
@@ -392,7 +403,7 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
       }break;
       case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_setup: {
         std::cout << "It's a rrc_setup, hooray!" << std::endl;
-        printf("rrc-TransactionIdentifier: %u\n", (task_scheduler_nrscope->rrc_setup).rrc_transaction_id);
+        printf("rrc-TransactionIdentifier: %u\n", (*rrc_setup).rrc_transaction_id);
       }break;
       default: {
         std::cout << "None detected, skip." << std::endl;
@@ -404,9 +415,9 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     // asn1::json_writer js_msg4;
     // task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
     // printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
-    asn1::cbit_ref bref_cg((task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.data(),
-                      (task_scheduler_nrscope->rrc_setup).crit_exts.rrc_setup().master_cell_group.size());
-    if (task_scheduler_nrscope->master_cell_group.unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
+    asn1::cbit_ref bref_cg((*rrc_setup).crit_exts.rrc_setup().master_cell_group.data(),
+                      (*rrc_setup).crit_exts.rrc_setup().master_cell_group.size());
+    if ((*master_cell_group).unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
       ERROR("Could not unpack master cell group config.");
       return SRSRAN_ERROR;
     }        
@@ -416,18 +427,18 @@ int RachDecoder::decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
     // printf("masterCellGroup: %s\n", js.to_string().c_str());
 
     // Tells the task scheduler that the RACH is decoded and there are some entries in the know_rntis vector.
-    task_scheduler_nrscope->rach_found = true;
+    *rach_found = true;
 
-    if (!task_scheduler_nrscope->master_cell_group.sp_cell_cfg.recfg_with_sync.new_ue_id){
+    if (!(*master_cell_group).sp_cell_cfg.recfg_with_sync.new_ue_id){
       c_rnti = tc_rnti;
     }else{
-      c_rnti = task_scheduler_nrscope->master_cell_group.sp_cell_cfg.recfg_with_sync.new_ue_id;
+      c_rnti = (*master_cell_group).sp_cell_cfg.recfg_with_sync.new_ue_id;
     }
     std::cout << "c-rnti: " << c_rnti << std::endl;
 
     // Add the new rntis into a different list and update the known_rnti vector in the end of the threads.
-    task_scheduler_nrscope->new_rnti_number += 1;
-    task_scheduler_nrscope->new_rntis_found.emplace_back(c_rnti);
+    *new_rnti_number += 1;
+    new_rntis_found.emplace_back(c_rnti);
     // task_scheduler_nrscope->nof_known_rntis += 1;
     // task_scheduler_nrscope->known_rntis.emplace_back(c_rnti);
 

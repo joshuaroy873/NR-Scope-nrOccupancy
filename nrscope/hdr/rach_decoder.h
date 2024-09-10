@@ -50,15 +50,26 @@ class RachDecoder{
     RachDecoder();
     ~RachDecoder();
 
-    int rach_decoder_init(TaskSchedulerNRScope* task_scheduler_nrscope);
+    int rach_decoder_init(asn1::rrc_nr::sib1_s sib1_,
+                          srsran_carrier_nr_t base_carrier_);
 
     int rach_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                            TaskSchedulerNRScope* task_scheduler_nrscope,
+                            srsran_coreset_t* coreset0_t_,
+                            srsran_carrier_nr_t* base_carrier_,
+                            cell_search_result_t cell_,
+                            double ssb_freq_hz_,
+                            srsran_subcarrier_spacing_t ssb_scs_,
+                            coreset0_args coreset0_args_t,
                             cf_t* input[SRSRAN_MAX_PORTS]);
 
     int decode_and_parse_msg4_from_slot(srsran_slot_cfg_t* slot,
-                                        TaskSchedulerNRScope* task_scheduler_nrscope,
-                                        cf_t * raw_buffer);
+                                        bool sib1_found,
+                                        bool rach_inited,
+                                        asn1::rrc_nr::rrc_setup_s* rrc_setup,
+                                        asn1::rrc_nr::cell_group_cfg_s* master_cell_group,
+                                        bool* rach_found,
+                                        uint32_t* new_rnti_number,
+                                        std::vector<uint16_t>& new_rntis_found);
     
     // int rach_thread(TaskSchedulerNRScope* task_scheduler_nrscope);
 };

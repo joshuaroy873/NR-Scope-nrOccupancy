@@ -51,8 +51,7 @@ class SIBsDecoder{
     * @return SRSRAN_SUCCESS (0) if everything goes well. 
     * SRSRAN_ERROR (-1) if something is wrong in the function.
     */
-    int sib_decoder_and_reception_init(srsran_ue_dl_nr_sratescs_info arg_scs_,
-                                       TaskSchedulerNRScope* task_scheduler_nrscope,
+    int sib_decoder_and_reception_init(WorkState* state,
                                        cf_t* input[SRSRAN_MAX_PORTS]);
 
     /**
@@ -66,8 +65,11 @@ class SIBsDecoder{
     * SRSRAN_ERROR (-1) if something is wrong in the function.
     */
     int decode_and_parse_sib1_from_slot(srsran_slot_cfg_t* slot,
-                                        TaskSchedulerNRScope* task_scheduler_nrscope,
-                                        cf_t * raw_buffer);
+                                        bool* sibs_vec_inited,
+                                        bool* all_sibs_found,
+                                        std::vector<int>& found_sib,
+                                        std::vector<asn1::rrc_nr::sys_info_s>& sibs,
+                                        asn1::rrc_nr::sib1_s* sib1_);
 
     // /**
     // * A function that represents the SIB thread for a producer-consumer threading design,

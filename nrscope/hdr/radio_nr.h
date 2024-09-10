@@ -60,7 +60,7 @@ class Radio{
     
     srsran_ssb_cfg_t ssb_cfg;
 
-    TaskSchedulerNRScope task_scheduler_nrscope;
+    NRScopeTask::TaskSchedulerNRScope task_scheduler_nrscope;
     RachDecoder rach_decoder; // processing for uplink in rach
     SIBsDecoder sibs_decoder;
     HarqTracker harq_tracker;
@@ -68,6 +68,7 @@ class Radio{
     uint32_t nof_threads;
     uint32_t nof_rnti_worker_groups;
     uint8_t nof_bwps;
+    uint32_t nof_workers;
     std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
 
     // a better coordination between producer (fetch) and consumer (resample and decode)

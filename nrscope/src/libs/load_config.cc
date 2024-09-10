@@ -143,6 +143,12 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
         radios[i].nof_bwps = 1;
       }
 
+      if(config_yaml[setting_name]["nof_workers"]){
+        radios[i].nof_workers = config_yaml[setting_name]["nof_workers"].as<int>();
+      }else{
+        radios[i].nof_workers = 1;
+      }
+
       radios[i].nof_threads = radios[i].nof_threads * radios[i].nof_bwps;
 
       // std::cout << "    nof_thread: " << radios[i].nof_thread << std::endl;

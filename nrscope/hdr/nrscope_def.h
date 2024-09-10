@@ -163,18 +163,59 @@ typedef struct ScanLogNode_ ScanLogNode;
     uint32 pci;
   };
 
-struct sib1_task_element{
-  srsran_ue_sync_nr_outcome_t outcome;
-  srsran_slot_cfg_t slot;
-};
+typedef struct WorkState_ WorkState;
+  struct WorkState_{
+    uint32_t nof_threads;
+    uint32_t nof_rnti_worker_groups;
+    uint8_t nof_bwps;
 
-struct rach_task_element{
+    uint32_t slot_sz;
 
-};
+    cell_searcher_args_t args_t;
+    cell_search_result_t cell;
+    srsue::nr::cell_search::ret_t cs_ret;
+    srsue::nr::cell_search::cfg_t srsran_searcher_cfg_t;
+    coreset0_args coreset0_args_t;
+    srsran_coreset_t coreset0_t;
 
-struct dci_task_element{
+    srsran_ue_dl_nr_sratescs_info arg_scs;
 
-};
+    asn1::rrc_nr::sib1_s sib1;
+    std::vector<asn1::rrc_nr::sys_info_s> sibs;
+    std::vector<int> found_sib; 
+
+    asn1::rrc_nr::rrc_setup_s rrc_setup;
+    asn1::rrc_nr::cell_group_cfg_s master_cell_group;
+    asn1::rrc_nr::rrc_recfg_s rrc_recfg;
+
+    bool sib1_found; // SIB 1 decoded, we can start the RACH thread
+    bool rach_found;
+
+    bool sibs_vec_inited; // Is the vector for other SIBs set according to SIB?
+    bool all_sibs_found; // All SIBs are decoded, we can stop the SIB thread from now.
+
+    bool sib1_inited; // SIBsDecoder is initialized.
+    bool rach_inited; // RACHDecoder is initialized.
+    bool dci_inited; // DCIDecoder is initialized.
+
+    uint32_t nof_known_rntis;
+    std::vector<uint16_t> known_rntis;
+
+    std::vector<uint32_t> nof_sharded_rntis;
+    std::vector <std::vector <uint16_t> > sharded_rntis;
+    std::vector <DCIFeedback> sharded_results;
+    uint32_t nof_threads;
+    uint32_t nof_rnti_worker_groups;
+    uint8_t nof_bwps;
+
+    std::vector <float> dl_prb_rate;
+    std::vector <float> ul_prb_rate;
+    std::vector <float> dl_prb_bits_rate;
+    std::vector <float> ul_prb_bits_rate;
+
+    uint32_t new_rnti_number;
+    std::vector<uint16_t> new_rntis_found;
+  };
 
 /**
  * @brief Function brought from phch_cfg_nr.c

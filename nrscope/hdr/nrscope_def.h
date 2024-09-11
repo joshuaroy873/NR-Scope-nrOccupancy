@@ -94,7 +94,8 @@ struct cell_searcher_args_t {
     // ssb_scs = srsran_subcarrier_spacing_30kHz;
 
     // Deduce SSB center frequency ARFCN
-    // uint32_t ssb_arfcn = bands.get_abs_freq_ssb_arfcn(band, ssb_scs, pointA_arfcn);
+    // uint32_t ssb_arfcn = 
+    //    bands.get_abs_freq_ssb_arfcn(band, ssb_scs, pointA_arfcn);
     // srsran_assert(ssb_arfcn, "Invalid SSB center frequency");
 
     duplex_mode                     = bands.get_duplex_mode(band);
@@ -185,6 +186,7 @@ typedef struct WorkState_ WorkState;
     asn1::rrc_nr::sib1_s sib1;
     std::vector<asn1::rrc_nr::sys_info_s> sibs;
     std::vector<int> found_sib; 
+    std::vector<int> sibs_to_be_found;
 
     asn1::rrc_nr::rrc_setup_s rrc_setup;
     asn1::rrc_nr::cell_group_cfg_s master_cell_group;
@@ -202,36 +204,28 @@ typedef struct WorkState_ WorkState;
 
     uint32_t nof_known_rntis;
     std::vector<uint16_t> known_rntis;
-
-    /* May need to change things below this */
-    std::vector<uint32_t> nof_sharded_rntis;
-    std::vector <std::vector <uint16_t> > sharded_rntis;
-    std::vector <DCIFeedback> sharded_results;
-
-    std::vector <float> dl_prb_rate;
-    std::vector <float> ul_prb_rate;
-    std::vector <float> dl_prb_bits_rate;
-    std::vector <float> ul_prb_bits_rate;
-
-    uint32_t new_rnti_number;
-    std::vector<uint16_t> new_rntis_found;
   };
 
 typedef struct SlotResult_ SlotResult;
   struct SlotResult_{
-    
-    /* May need to change things below this */
-    std::vector<uint32_t> nof_sharded_rntis;
-    std::vector <std::vector <uint16_t> > sharded_rntis;
-    std::vector <DCIFeedback> sharded_results;
+    /* The worker works on SIBs decoding */
+    bool sib_result;
+    bool found_sib1;
+    asn1::rrc_nr::sib1_s sib1;
+    std::vector<asn1::rrc_nr::sys_info_s> sibs;
+    std::vector<int> found_sib; 
 
-    std::vector <float> dl_prb_rate;
-    std::vector <float> ul_prb_rate;
-    std::vector <float> dl_prb_bits_rate;
-    std::vector <float> ul_prb_bits_rate;
-
+    /* The worker works on RACH decoding */
+    bool rach_result;
+    bool found_rach;
+    asn1::rrc_nr::rrc_setup_s rrc_setup;
+    asn1::rrc_nr::cell_group_cfg_s master_cell_group;
     uint32_t new_rnti_number;
     std::vector<uint16_t> new_rntis_found;
+
+    /* The worker works on DCI decoding */
+    bool dci_result;
+    std::vector <DCIFeedback> dci_feedback_results;    
   };
 
 /**
@@ -273,5 +267,6 @@ uint32_t get_P(uint32_t bwp_nof_prb, bool config_1_or_2);
 /**
   * Calculate nof_rbgs, from sched_nr_rb.cc
   */
-uint32_t get_nof_rbgs(uint32_t bwp_nof_prb, uint32_t bwp_start, bool config1_or_2);
+uint32_t get_nof_rbgs(uint32_t bwp_nof_prb, uint32_t bwp_start, 
+  bool config1_or_2);
 #endif

@@ -3,8 +3,6 @@
 
 #include <liquid/liquid.h>
 
-/* A class that stores some intermediate results and schedules the SIB, RACH and DCI loops. */
-
 #include "nrscope/hdr/nrscope_def.h"
 #include "nrscope/hdr/nrscope_worker.h"
 
@@ -85,12 +83,14 @@ public:
   /* Assign the current slot to one worker*/
   int AssignTask(srsran_slot_cfg_t* slot, cf_t* rx_buffer_);
 
-  std::vector <DCIFeedback> get_results(){
-    return results;
-  }
+  // std::vector<uint32_t> nof_sharded_rntis;
+  // std::vector <std::vector <uint16_t> > sharded_rntis;
+  // std::vector <DCIFeedback> sharded_results;
+  
 
-  // per bwp DCI decoding result for current TTI
-  std::vector <DCIFeedback> results;
+  // std::vector <DCIFeedback> get_results(){
+  //   return results;
+  // }
 
   // resampler tools
   float resample_ratio;

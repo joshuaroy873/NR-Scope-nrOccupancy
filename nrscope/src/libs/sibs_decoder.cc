@@ -57,7 +57,7 @@ int SIBsDecoder::SIBDecoderandReceptionInit(WorkState* state,
     return SRSRAN_ERROR;
   }
 
-  if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl_sibs, &base_carrier, arg_scs)) {
+  if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl_sibs, &base_carrier, arg_scs)){
     ERROR("Error setting SCH NR carrier");
     return SRSRAN_ERROR;
   }
@@ -81,14 +81,19 @@ int SIBsDecoder::SIBDecoderandReceptionInit(WorkState* state,
 }
 
 int SIBsDecoder::DecodeandParseSIB1fromSlot(srsran_slot_cfg_t* slot,
-                                            WorkState state) {
-                                // srsran_slot_cfg_t* slot,
-                                // bool* sibs_vec_inited,
-                                // bool* all_sibs_found,
-                                // std::vector<int>& found_sib,
-                                // std::vector<asn1::rrc_nr::sys_info_s>& sibs,
-                                // asn1::rrc_nr::sib1_s* sib1_){
-
+                                            WorkState* state,
+                                            SlotResult* result) {
+  if (state->all_sibs_found) {
+    result->sib_result = false;
+    return SRSRAN_SUCCESS;
+  }
+  
+  /* reset the result's elements */
+  result->sib_result = true;
+  result->found_sib1 = false;
+  result->found_sib.clear();
+  result->sibs.clear();
+  
   memset(&dci_sibs, 0, sizeof(srsran_dci_dl_nr_t));
 
   // FILE *fp;
@@ -130,7 +135,8 @@ int SIBsDecoder::DecodeandParseSIB1fromSlot(srsran_slot_cfg_t* slot,
   }
 
   char str[1024] = {};
-  srsran_dci_dl_nr_to_str(&(ue_dl_sibs.dci), &dci_sibs, str, (uint32_t)sizeof(str));
+  srsran_dci_dl_nr_to_str(&(ue_dl_sibs.dci), &dci_sibs, str, 
+    (uint32_t)sizeof(str));
   printf("SIBDecoder -- Found DCI: %s\n", str);
 
   pdsch_cfg = {};
@@ -168,7 +174,8 @@ int SIBsDecoder::DecodeandParseSIB1fromSlot(srsran_slot_cfg_t* slot,
     return SRSRAN_ERROR;
   }
   // printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
-  // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+  // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, 
+  // pdsch_cfg.grant.tb[0].tbs / 8);
 
    // check payload is not all null
   bool all_zero = true;
@@ -184,40 +191,41 @@ int SIBsDecoder::DecodeandParseSIB1fromSlot(srsran_slot_cfg_t* slot,
   }
   std::cout << "Try to decode SIBs..." << std::endl;
   asn1::rrc_nr::bcch_dl_sch_msg_s dlsch_msg;
-  asn1::cbit_ref dlsch_bref(pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+  asn1::cbit_ref dlsch_bref(pdsch_res.tb[0].payload, 
+    pdsch_cfg.grant.tb[0].tbs / 8);
   asn1::SRSASN_CODE err = dlsch_msg.unpack(dlsch_bref);
 
   /* Try to decode the SIB, we need a better way to provide the result */
-  if(srsran_unlikely(asn1::rrc_nr::bcch_dl_sch_msg_type_c::c1_c_::types_opts::sib_type1 != dlsch_msg.msg.c1().type())){
+  if(srsran_unlikely(asn1::rrc_nr::bcch_dl_sch_msg_type_c::c1_c_::types_opts::
+      sib_type1 != dlsch_msg.msg.c1().type())){
     // Try to decode other SIBs
-    if(!(state.sibs_vec_inited)){
-      // Skip since the sib_vec is not intialized
-      ERROR("SIBs vec is not initialized");
-      return SRSRAN_SUCCESS;
-    }else{
-      // Get the sib_id, sib_id is uint8_t and is 2 for sib2, 3 for sib 3, etc...
-      auto sib_id = dlsch_msg.msg.c1().sys_info().crit_exts.sys_info().sib_type_and_info[0].type().to_number();
-      auto decoded_sib = dlsch_msg.msg.c1().sys_info();
-      // sibs[sib_id - 2] = dlsch_msg.msg.c1().sys_info();
-      // found_sib[sib_id - 2] = 1;
+    // Get the sib_id, sib_id is uint8_t and is 2 for sib2, 3 for sib 3, etc...
+    auto sib_id = dlsch_msg.msg.c1().sys_info().crit_exts.sys_info().
+      sib_type_and_info[0].type().to_number();
+    auto decoded_sib = dlsch_msg.msg.c1().sys_info();
+    result->sibs.emplace_back(decoded_sib);
+    result->found_sib.emplace_back(sib_id);
+    // sibs[sib_id - 2] = dlsch_msg.msg.c1().sys_info();
+    // found_sib[sib_id - 2] = 1;
 
-      // // If we collect all the SIBs, we can skip the thread.
-      // long unsigned int found_result = 0;
-      // for(long unsigned int i=0; i<found_sib.size(); i++){
-      //   found_result += found_sib[i];
-      // }
-      // if(found_result >= found_sib.size()){
-      //   *all_sibs_found = true;
-      // }
+    // If we collect all the SIBs, we can skip the thread.
+    // long unsigned int found_result = 0;
+    // for(long unsigned int i=0; i<found_sib.size(); i++){
+    //   found_result += found_sib[i];
+    // }
+    // if(found_result >= found_sib.size()){
+    //   *all_sibs_found = true;
+    // }
 
-      std::cout << "SIB " << (int)sib_id << " Decoded." << std::endl;
-      /* Uncomment to print the decode SIBs. */
-      asn1::json_writer js_sibs;
-      (decoded_sib).to_json(js_sibs);
-      printf("Decoded SIBs: %s\n", js_sibs.to_string().c_str());
-    }    
-  }else if(srsran_unlikely(asn1::rrc_nr::bcch_dl_sch_msg_type_c::c1_c_::types_opts::sys_info != dlsch_msg.msg.c1().type())){
-    auto sib1 = dlsch_msg.msg.c1().sib_type1();
+    std::cout << "SIB " << (int)sib_id << " Decoded." << std::endl;
+    /* Uncomment to print the decode SIBs. */
+    asn1::json_writer js_sibs;
+    (decoded_sib).to_json(js_sibs);
+    printf("Decoded SIBs: %s\n", js_sibs.to_string().c_str()); 
+  }else if(srsran_unlikely(asn1::rrc_nr::bcch_dl_sch_msg_type_c::c1_c_::
+      types_opts::sys_info != dlsch_msg.msg.c1().type())){
+    result->found_sib1 = true;
+    result->sib1 = dlsch_msg.msg.c1().sib_type1();
     std::cout << "SIB 1 Decoded." << std::endl;
 
     // if(!(*sibs_vec_inited)){

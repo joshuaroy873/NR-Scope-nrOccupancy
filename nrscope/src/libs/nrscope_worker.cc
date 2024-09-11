@@ -62,21 +62,44 @@ int NRScopeWorker::InitSIBDecoder(){
   /* Will always be called before any tasks */
   if(sibs_decoder.SIBDecoderandReceptionInit(&worker_state, 
      rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
-    return NR_FAILURE;
+    return SRSRAN_ERROR;
   }
+  std::cout << "SIBs decoder initialized..." << std::endl;
   return SRSRAN_SUCCESS;
 }
 
 int NRScopeWorker::InitRACHDecoder() {
-  // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};
-  rach_decoder.RACHDecoderInit(&task_scheduler_nrscope);
-  srsran::rf_buffer_t rf_buffer_wrapper(rx_buffer, pre_resampling_sf_sz);
-  if(rach_decoder.rach_reception_init(arg_scs, &task_scheduler_nrscope, rf_buffer_wrapper.to_cf_t()) < SRSASN_SUCCESS){
+  // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, 
+  //  &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};
+  rach_decoder.RACHDecoderInit(worker_state);
+  if(rach_decoder.RACHReceptionInit(&worker_state, rf_buffer_t.to_cf_t()) < 
+      SRSASN_SUCCESS){
     ERROR("RACHDecoder Init Error");
-    return NR_FAILURE;
+    return SRSRAN_ERROR;
   }
-  std::cout << "RACH Decoder Initialized.." << std::endl;
-  task_scheduler_nrscope.rach_inited = true;
+  std::cout << "RACH decoder initialized.." << std::endl;
+  return SRSRAN_SUCCESS;
+}
+
+int NRScopeWorker::InitDCIDecoders() {
+  sharded_results.resize(worker_state.nof_threads);
+  nof_sharded_rntis.resize(worker_state.nof_threads);
+  sharded_rntis.resize(worker_state.nof_threads);
+  results.resize(worker_state.nof_bwps);
+  for(uint32_t i = 0; i < worker_state.nof_rnti_worker_groups; i++){
+    // for each rnti worker group, for each bwp, spawn a decoder
+    for(uint8_t j = 0; j < worker_state.nof_bwps; j++){
+      DCIDecoder *decoder = new DCIDecoder(100);
+      if(decoder->DCIDecoderandReceptionInit(&worker_state, j, 
+          rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
+        ERROR("DCIDecoder Init Error");
+        return SRSRAN_ERROR;
+      }
+      decoder->dci_decoder_id = i * worker_state.nof_bwps + j;
+      decoder->rnti_worker_group_id = i;
+      dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
+    }
+  }
   return SRSRAN_SUCCESS;
 }
 
@@ -99,10 +122,16 @@ int NRScopeWorker::SyncState(WorkState* task_scheduler_state) {
   for(long unsigned int i = 0; i < task_scheduler_state->sibs.size(); i++) {
     worker_state.sibs[i] = task_scheduler_state->sibs[i];
   }
-
   worker_state.found_sib.resize(task_scheduler_state->found_sib.size());
   for(long unsigned int i = 0; i < task_scheduler_state->found_sib.size(); i++){
     worker_state.found_sib[i] = task_scheduler_state->found_sib[i];
+  }
+  worker_state.sibs_to_be_found.resize(
+    task_scheduler_state->sibs_to_be_found.size());
+  for(long unsigned int i = 0; i < 
+      task_scheduler_state->sibs_to_be_found.size(); i++) {
+    worker_state.sibs_to_be_found[i] = 
+      task_scheduler_state->sibs_to_be_found[i];
   }
 
   worker_state.rrc_setup = task_scheduler_state->rrc_setup;
@@ -121,38 +150,107 @@ int NRScopeWorker::SyncState(WorkState* task_scheduler_state) {
     worker_state.sib1_inited = task_scheduler_state->sib1_inited;
   }
 
+  if (!worker_state.rach_inited && task_scheduler_state->rach_inited) {
+    InitRACHDecoder();
+    worker_state.rach_inited = task_scheduler_state->rach_inited;
+  }
+
+  if (!worker_state.dci_inited && task_scheduler_state->dci_inited) {
+    InitDCIDecoders();
+    worker_state.dci_inited = task_scheduler_state->dci_inited;
+  }
+
+  worker_state.nof_known_rntis = task_scheduler_state->nof_known_rntis;
+  worker_state.known_rntis.resize(worker_state.nof_known_rntis);
+  for (long unsigned int i = 0; i < worker_state.nof_known_rntis; i ++) {
+    worker_state.known_rntis[i] = task_scheduler_state->known_rntis[i];
+  }
+
   return SRSRAN_SUCCESS;
+}
 
-  // if (!worker_state.rach_inited && task_scheduler_state->rach_inited) {
-  //   if (srsran_unlikely(!worker_state.sib1_found)) {
-  //     /* Error happens */
-  //     ERROR("SIB 1 is not found while trying to init RACH decoder.");
-  //     return NR_FAILURE;
-  //   }
-  //   InitRACHDecoder();
-  //   worker_state.rach_inited = task_scheduler_state->rach_inited;
-  // }
+int NRScopeWorker::MergeResults(){
+  for (uint8_t b = 0; b < worker_state.nof_bwps; b++) {
+    DCIFeedback new_result;
+    results[b] = new_result;
+    results[b].dl_grants.resize(worker_state.nof_known_rntis);
+    results[b].ul_grants.resize(worker_state.nof_known_rntis);
+    results[b].spare_dl_prbs.resize(worker_state.nof_known_rntis);
+    results[b].spare_dl_tbs.resize(worker_state.nof_known_rntis);
+    results[b].spare_dl_bits.resize(worker_state.nof_known_rntis);
+    results[b].spare_ul_prbs.resize(worker_state.nof_known_rntis);
+    results[b].spare_ul_tbs.resize(worker_state.nof_known_rntis);
+    results[b].spare_ul_bits.resize(worker_state.nof_known_rntis);
+    results[b].dl_dcis.resize(worker_state.nof_known_rntis);
+    results[b].ul_dcis.resize(worker_state.nof_known_rntis);
 
-  // bool dci_inited; // DCIDecoder is initialized.
+    uint32_t rnti_s = 0;
+    uint32_t rnti_e = 0;
+    for(uint32_t i = 0; i < worker_state.nof_rnti_worker_groups; i++){
+      if(rnti_s >= worker_state.nof_known_rntis){
+        continue;
+      }
+      uint32_t n_rntis = nof_sharded_rntis[i * worker_state.nof_bwps];
+      rnti_e = rnti_s + n_rntis;
+      if(rnti_e > worker_state.nof_known_rntis){
+        rnti_e = worker_state.nof_known_rntis;
+      }
 
-  // uint32_t nof_known_rntis;
-  // std::vector<uint16_t> known_rntis;
+      uint32_t thread_id = i * worker_state.nof_bwps + b;
+      results[b].nof_dl_used_prbs += 
+        sharded_results[thread_id].nof_dl_used_prbs;
+      results[b].nof_ul_used_prbs += 
+        sharded_results[thread_id].nof_ul_used_prbs;
 
-  /* Below this, these variables go to the result structure. */
-  // std::vector<uint32_t> nof_sharded_rntis;
-  // std::vector <std::vector <uint16_t> > sharded_rntis;
-  // std::vector <DCIFeedback> sharded_results;
-  // uint32_t nof_threads;
-  // uint32_t nof_rnti_worker_groups;
-  // uint8_t nof_bwps;
+      for(uint32_t k = 0; k < n_rntis; k++) {
+        results[b].dl_dcis[k+rnti_s] = sharded_results[thread_id].dl_dcis[k];
+        results[b].ul_dcis[k+rnti_s] = sharded_results[thread_id].ul_dcis[k];
+        results[b].dl_grants[k+rnti_s] = 
+          sharded_results[thread_id].dl_grants[k];
+        results[b].ul_grants[k+rnti_s] = 
+          sharded_results[thread_id].ul_grants[k];
+      }
+      rnti_s = rnti_e;
+    }
 
-  // std::vector <float> dl_prb_rate;
-  // std::vector <float> ul_prb_rate;
-  // std::vector <float> dl_prb_bits_rate;
-  // std::vector <float> ul_prb_bits_rate;
+    std::cout << "End of nof_threads..." << std::endl;
 
-  // uint32_t new_rnti_number;
-  // std::vector<uint16_t> new_rntis_found;
+    /* TO-DISCUSS: to obtain even more precise result, 
+      here maybe we should total user payload prb in that bwp - used prb */
+    results[b].nof_dl_spare_prbs = 
+      worker_state.args_t.base_carrier.nof_prb * 
+      (14 - 2) - results[b].nof_dl_used_prbs;
+    for(uint32_t idx = 0; idx < worker_state.nof_known_rntis; idx ++){
+      results[b].spare_dl_prbs[idx] = results[b].nof_dl_spare_prbs / 
+        worker_state.nof_known_rntis;
+      if(abs(results[b].spare_dl_prbs[idx]) > 
+          worker_state.args_t.base_carrier.nof_prb * (14 - 2)){
+        results[b].spare_dl_prbs[idx] = 0;
+      }
+      results[b].spare_dl_tbs[idx] = 
+        (int) ((float)results[b].spare_dl_prbs[idx] * dl_prb_rate[idx]);
+      results[b].spare_dl_bits[idx] = 
+        (int) ((float)results[b].spare_dl_prbs[idx] * dl_prb_bits_rate[idx]);
+    }
+
+    results[b].nof_ul_spare_prbs = 
+      worker_state.args_t.base_carrier.nof_prb * (14 - 2) - 
+      results[b].nof_ul_used_prbs;
+    for(uint32_t idx = 0; idx < worker_state.nof_known_rntis; idx ++){
+      results[b].spare_ul_prbs[idx] = results[b].nof_ul_spare_prbs / 
+        worker_state.nof_known_rntis;
+      if(abs(results[b].spare_ul_prbs[idx]) > 
+          worker_state.args_t.base_carrier.nof_prb * (14 - 2)){
+        results[b].spare_ul_prbs[idx] = 0;
+      }
+      results[b].spare_ul_tbs[idx] = 
+        (int) ((float)results[b].spare_ul_prbs[idx] * ul_prb_rate[idx]);
+      results[b].spare_ul_bits[idx] = 
+        (int) ((float)results[b].spare_ul_prbs[idx] * ul_prb_bits_rate[idx]);
+    }
+  }
+
+  return SRSRAN_SUCCESS;
 }
 
 void NRScopeWorker::Run() {
@@ -163,6 +261,13 @@ void NRScopeWorker::Run() {
     busy = true;
     lock.unlock();
 
+    SlotResult slot_result = {};
+    /* Set the all the results to be false, will be set inside the decoder
+    threads */
+    slot_result.sib_result = false;
+    slot_result.rach_result = false;
+    slot_result.dci_result = false;
+
     /* If we accidentally assign the job without initializing the SIB decoder */
     if(!worker_state.sib1_inited){
       continue;
@@ -170,43 +275,53 @@ void NRScopeWorker::Run() {
 
     std::thread sibs_thread;
     /* If sib1 is not found, we run the sibs_thread; if it's found, we skip. */
-    if (!worker_state.sib1_found) {
+    if (worker_state.sib1_inited) {
       sibs_thread = std::thread {&SIBsDecoder::DecodeandParseSIB1fromSlot, 
-        &sibs_decoder, &slot, worker_state};
+        &sibs_decoder, &slot, &worker_state, &slot_result};
     }    
 
-    // std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, 
-    //   &rach_decoder, &slot, sib1_found, rach_inited, &rrc_setup, 
-    //   &master_cell_group, &rach_found, &new_rnti_number, &new_rntis_found};
+    std::thread rach_thread;
+    if (worker_state.rach_inited) {
+      rach_thread = std::thread {&RachDecoder::DecodeandParseMS4fromSlot,
+        &rach_decoder, &slot, &worker_state, &slot_result};
+    }
 
-    // std::vector <std::thread> dci_threads;
-    // if(dci_inited){
-    //   for (uint32_t i = 0; i < nof_threads; i++){
-    //     dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, 
-    //       dci_decoders[i].get(), &slot, nof_known_rntis, nof_rnti_worker_groups,
-    //       sharded_results, sharded_rntis, nof_sharded_rntis, known_rntis,
-    //       dl_prb_rate, dl_prb_bits_rate, ul_prb_rate, ul_prb_bits_rate);
-    //   }
-    // }
+    std::vector <std::thread> dci_threads;
+    if(worker_state.dci_inited){
+      slot_result.dci_result = true;
+
+      dl_prb_rate.resize(worker_state.nof_known_rntis);
+      ul_prb_rate.resize(worker_state.nof_known_rntis);
+      dl_prb_bits_rate.resize(worker_state.nof_known_rntis);
+      ul_prb_bits_rate.resize(worker_state.nof_known_rntis);
+
+      for (uint32_t i = 0; i < worker_state.nof_threads; i++){
+        dci_threads.emplace_back(&DCIDecoder::DecodeandParseDCIfromSlot, 
+          dci_decoders[i].get(), &slot, &worker_state, &sharded_results,
+          &sharded_rntis, &nof_sharded_rntis, &dl_prb_rate, &dl_prb_bits_rate,
+          &ul_prb_rate, &ul_prb_bits_rate);
+      }
+    }
 
     if(sibs_thread.joinable()){
       sibs_thread.join();
     }
 
-    // if(rach_thread.joinable()){
-    //   rach_thread.join();
-    // }
+    if(rach_thread.joinable()){
+      rach_thread.join();
+    }
 
-    // if(dci_inited){
-    //   for (uint32_t i = 0; i < worker_state.nof_threads; i++){
-    //     if(dci_threads[i].joinable()){
-    //       dci_threads[i].join();
-    //     }
-    //   }
-    // }
+    if(worker_state.dci_inited){
+      for (uint32_t i = 0; i < worker_state.nof_threads; i++){
+        if(dci_threads[i].joinable()){
+          dci_threads[i].join();
+        }
+      }
+      MergeResults();
+      slot_result.dci_feedback_results = results;
+    }
 
-    /* TODO: Post result to a global result queue */
-
+    /* Post the result into the result queue*/
     lock.lock();
     busy = false;
     lock.unlock();

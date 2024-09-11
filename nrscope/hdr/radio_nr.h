@@ -71,7 +71,8 @@ class Radio{
     uint32_t nof_workers;
     std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
 
-    // a better coordination between producer (fetch) and consumer (resample and decode)
+    /* a better coordination between producer (fetch) and consumer 
+       (resample and decode) */
     sem_t smph_sf_data_prod_cons;
 
     bool resample_needed;
@@ -106,28 +107,34 @@ class Radio{
     int ScanThread();
 
     /**
-    * This function first sets up some parameters related to the radio sample caputure according to the config file, 
-    * such as sampling frequency, SSB frequency and SCS. Then it will search the MIB within the range of 
-    * [SSB frequency - 0.7 * sampling frequency / 2, SSB frequency + 0.7 * sampling frequency / 2].
-    *   (1) If a cell is found, this functions notifies the parameters to task_scheduler_nrscope and start decoding 
-    *     SIB, RACH and DCIs.
-    *   (2) If no cell is found, it will return and the thread for this USRP ends.
+    * This function first sets up some parameters related to the radio sample 
+    * caputure according to the config file, such as sampling frequency, 
+    * SSB frequency and SCS. Then it will search the MIB within the range of 
+    * [SSB frequency - 0.7 * sampling frequency / 2, SSB frequency + 0.7 * 
+    * sampling frequency / 2].
+    *   (1) If a cell is found, this functions notifies the parameters to 
+    *     task_scheduler_nrscope and start decoding SIB, RACH and DCIs.
+    *   (2) If no cell is found, it will return and the thread for this 
+    *     USRP ends.
     * 
-    * @return SRSRAN_SUCCESS (0) if no cell is found. NR_FAILURE (-1) if something is wrong in the function.
+    * @return SRSRAN_SUCCESS (0) if no cell is found. NR_FAILURE (-1) 
+    * if something is wrong in the function.
     */
     int RadioInitandStart();
 
     /**
-    * This function goes through the per band (denoted by outer loop), and search each GSCN raster point in the band
-    * (denoted by inner loop)
+    * This function goes through the per band (denoted by outer loop), and 
+    * search each GSCN raster point in the band (denoted by inner loop)
     * 
-    * @return SRSRAN_SUCCESS (0) if no cell is found. NR_FAILURE (-1) if something is wrong in the function.
+    * @return SRSRAN_SUCCESS (0) if no cell is found. NR_FAILURE (-1) 
+    *  if something is wrong in the function.
     */
     int ScanInitandStart();
 
     /**
-    * After finding the cell and decoding the cell and synchronization signal, this function sets up the parameters
-    * related to downlink synchronization, in terms of mitigating the CFO and time adjustment.
+    * After finding the cell and decoding the cell and synchronization signal, 
+    * this function sets up the parameters related to downlink synchronization, 
+    * in terms of mitigating the CFO and time adjustment.
     * 
     * @return SRSRAN_SUCCESS (0) these parameters are successfuly set. 
     * SRSRAN_ERROR (-1) if something goes wrong.
@@ -136,11 +143,12 @@ class Radio{
 
     /**
     * (TASKS HAVE BEEN DELEGATED TO FetchAndResample AND DecodeAndProcess) 
-    * After MIB decoding and synchronization, the USRP grabs 1ms data every time and dispatches the raw radio 
-    * samples among SIB, RACH and DCI decoding threads. Also initialize these threads if they are not.
+    * After MIB decoding and synchronization, the USRP grabs 1ms data every 
+    * time and dispatches the raw radio samples among SIB, RACH and DCI 
+    * decoding threads. Also initialize these threads if they are not.
     * 
-    * @return SRSRAN_SUCCESS (0) if the function is stopped or it will run infinitely. 
-    * NR_FAILURE (-1) if something goes wrong.
+    * @return SRSRAN_SUCCESS (0) if the function is stopped or it will run 
+    * infinitely. NR_FAILURE (-1) if something goes wrong.
     */
     int RadioCapture();
   
@@ -148,16 +156,16 @@ class Radio{
     /**
     * sync, track sync, and grab 1ms raw samples from USRP continuously 
     * 
-    * @return SRSRAN_SUCCESS (0) if the function is stopped or it will run infinitely. 
-    * NR_FAILURE (-1) if something goes wrong.
+    * @return SRSRAN_SUCCESS (0) if the function is stopped or it will run 
+    * infinitely. NR_FAILURE (-1) if something goes wrong.
     */
     int FetchAndResample();
 
     /**
     * resample and decode the signals
     * 
-    * @return SRSRAN_SUCCESS (0) if the function is stopped or it will run infinitely. 
-    * NR_FAILURE (-1) if something goes wrong.
+    * @return SRSRAN_SUCCESS (0) if the function is stopped or it will 
+    * run infinitely. NR_FAILURE (-1) if something goes wrong.
     */
     int DecodeAndProcess();
 };

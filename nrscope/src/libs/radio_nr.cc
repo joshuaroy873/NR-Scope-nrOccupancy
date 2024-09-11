@@ -10,6 +10,7 @@ std::mutex lock_radio_nr;
 
 namespace NRScopeTask{
   /* Add some global variables for the task_scheduler and workers */
+  
 }
 
 Radio::Radio() : 
@@ -587,16 +588,17 @@ static int slot_sync_recv_callback(void* ptr,
 int Radio::SyncandDownlinkInit(){
   //***** DL args Config Start *****//
   rf_buffer_t = srsran::rf_buffer_t(rx_buffer, 
-    SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.args_t.ssb_scs) * 
-    pre_resampling_slot_sz * 2); // only one sf here
+    SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.
+    args_t.ssb_scs) * pre_resampling_slot_sz * 2); // only one sf here
   // it appears the srsRAN is build on 15kHz scs, we need to use the srate and 
   // scs to calculate the correct subframe size 
   arg_scs.srate = task_scheduler_nrscope.task_scheduler_state.args_t.srate_hz;
   arg_scs.scs = task_scheduler_nrscope.task_scheduler_state.cell.mib.scs_common;
 
   arg_scs.coreset_offset_scs = (cs_args.ssb_freq_hz - 
-    task_scheduler_nrscope.task_scheduler_state.coreset0_args_t.coreset0_center_freq_hz) / 
-    task_scheduler_nrscope.task_scheduler_state.cell.abs_pdcch_scs; // + 12;
+    task_scheduler_nrscope.task_scheduler_state.coreset0_args_t.
+    coreset0_center_freq_hz) / task_scheduler_nrscope.task_scheduler_state.
+    cell.abs_pdcch_scs; // + 12;
   arg_scs.coreset_slot = 
     (uint32_t)task_scheduler_nrscope.task_scheduler_state.coreset0_args_t.n_0;
   task_scheduler_nrscope.task_scheduler_state.arg_scs = arg_scs;
@@ -634,7 +636,8 @@ int Radio::SyncandDownlinkInit(){
   sync_cfg.ssb.srate_hz = task_scheduler_nrscope.task_scheduler_state.args_t.srate_hz;
   if (srsran_ue_sync_nr_set_cfg(&ue_sync_nr, &sync_cfg) < SRSRAN_SUCCESS) {
     printf("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);
-    logger.error("SYNC: failed to set cell configuration for N_id %d", sync_cfg.N_id);
+    logger.error("SYNC: failed to set cell configuration for N_id %d", 
+      sync_cfg.N_id);
     return SRSRAN_ERROR;
   }
 
@@ -647,8 +650,8 @@ int Radio::FetchAndResample(){
 
   bool in_sync = false; 
   uint32_t pre_resampling_sf_sz = 
-    SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.args_t.ssb_scs) * 
-    pre_resampling_slot_sz;
+    SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.
+    args_t.ssb_scs) * pre_resampling_slot_sz;
 
   while(true){
     outcome.timestamp = last_rx_time.get(0);  
@@ -704,8 +707,8 @@ int Radio::FetchAndResample(){
 
 int Radio::DecodeAndProcess(){
   uint32_t pre_resampling_sf_sz = 
-    SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.args_t.ssb_scs) * 
-    pre_resampling_slot_sz;
+    SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.
+    args_t.ssb_scs) * pre_resampling_slot_sz;
   // if(!task_scheduler_nrscope.task_scheduler_state.sib1_inited){
   //   /* Initialize all the worker's sib decoder */
   //   srsran::rf_buffer_t rf_buffer_wrapper(rx_buffer, pre_resampling_sf_sz);

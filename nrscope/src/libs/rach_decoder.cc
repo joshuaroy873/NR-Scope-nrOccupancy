@@ -265,12 +265,14 @@ int RachDecoder::RACHReceptionInit(WorkState* state,
     dl_center_frequency) / cell.abs_pdcch_scs;
   
   // The lower boundary of PDSCH can be not aligned with the lower boundary of PDCCH
-  if (srsran_ue_dl_nr_init_nrscope(&ue_dl_pdsch, input, &ue_dl_args, arg_scs_pdsch)) {
+  if (srsran_ue_dl_nr_init_nrscope(&ue_dl_pdsch, input, &ue_dl_args, 
+      arg_scs_pdsch)) {
     ERROR("Error UE DL");
     return SRSRAN_ERROR;
   }
 
-  if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl_pdsch, &pdsch_carrier, arg_scs_pdsch)) {
+  if (srsran_ue_dl_nr_set_carrier_nrscope(&ue_dl_pdsch, &pdsch_carrier, 
+      arg_scs_pdsch)) {
     ERROR("Error setting SCH NR carrier");
     return SRSRAN_ERROR;
   }
@@ -288,20 +290,21 @@ int RachDecoder::RACHReceptionInit(WorkState* state,
 
 
 int RachDecoder::DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
-                                          bool sib1_found,
-                                          bool rach_inited,
-                                          asn1::rrc_nr::rrc_setup_s* rrc_setup,
-                                          asn1::rrc_nr::cell_group_cfg_s* master_cell_group,
-                                          bool* rach_found,
-                                          uint32_t* new_rnti_number,
-                                          std::vector<uint16_t>& new_rntis_found){
-  if(!sib1_found or !rach_inited){
+                                           WorkState* state,
+                                           SlotResult* result){
+  if(!state->sib1_found or !state->rach_inited){
     // If the SIB 1 is not detected or the RACH decoder is not initialized.
     std::cout << "SIB 1 not found or decoder not initialized, quitting..." 
       << std::endl;
+    result->rach_result = false;
     return SRSRAN_SUCCESS;
   }
   
+  result->rach_result = true;
+  result->found_rach = false;
+  result->new_rnti_number = 0;
+  result->new_rntis_found.clear();
+
   uint16_t tc_rnti;
   uint16_t c_rnti;
 
@@ -388,7 +391,8 @@ int RachDecoder::DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
     }
 
     // printf("Decoded PDSCH (%d B)\n", pdsch_cfg.grant.tb[0].tbs / 8);
-    // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, pdsch_cfg.grant.tb[0].tbs / 8);
+    // srsran_vec_fprint_byte(stdout, pdsch_res.tb[0].payload, 
+    //    pdsch_cfg.grant.tb[0].tbs / 8);
     uint32_t bytes_offset = 0;
 
     for (uint32_t pdsch_res_idx = 0; pdsch_res_idx < 
@@ -426,8 +430,8 @@ int RachDecoder::DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
 
     std::cout << "Decoding Msg 4..." << std::endl;
     asn1::rrc_nr::dl_ccch_msg_s dlcch_msg;
-    // What the first few bytes are? In srsgNB there are 10 extra bytes and for small cell there are 3 extra bytes
-    // before the RRCSetup message.
+    /* What the first few bytes are? In srsgNB there are 10 extra bytes and for 
+      small cell there are 3 extra bytes before the RRCSetup message. */
     asn1::cbit_ref dlcch_bref(pdsch_res.tb[0].payload + bytes_offset, 
       pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
     asn1::SRSASN_CODE err = dlcch_msg.unpack(dlcch_bref);
@@ -436,7 +440,7 @@ int RachDecoder::DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
         pdsch_cfg.grant.tb[0].tbs / 8 - bytes_offset);
     }
 
-    *rrc_setup = dlcch_msg.msg.c1().rrc_setup();
+    result->rrc_setup = dlcch_msg.msg.c1().rrc_setup();
     std::cout << "Msg 4 Decoded." << std::endl;
     switch (dlcch_msg.msg.c1().type().value) {
       case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_reject: {
@@ -445,7 +449,9 @@ int RachDecoder::DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
       }break;
       case asn1::rrc_nr::dl_ccch_msg_type_c::c1_c_::types::rrc_setup: {
         std::cout << "It's a rrc_setup, hooray!" << std::endl;
-        printf("rrc-TransactionIdentifier: %u\n", (*rrc_setup).rrc_transaction_id);
+        printf("rrc-TransactionIdentifier: %u\n", 
+          (result->rrc_setup).rrc_transaction_id);
+        result->found_rach = true;
       }break;
       default: {
         std::cout << "None detected, skip." << std::endl;
@@ -457,9 +463,10 @@ int RachDecoder::DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
     // asn1::json_writer js_msg4;
     // task_scheduler_nrscope->rrc_setup.to_json(js_msg4);
     // printf("rrcSetup content: %s\n", js_msg4.to_string().c_str());
-    asn1::cbit_ref bref_cg((*rrc_setup).crit_exts.rrc_setup().master_cell_group.data(),
-                      (*rrc_setup).crit_exts.rrc_setup().master_cell_group.size());
-    if ((*master_cell_group).unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
+    asn1::cbit_ref bref_cg((result->rrc_setup).crit_exts.rrc_setup().
+      master_cell_group.data(), (result->rrc_setup).crit_exts.rrc_setup().
+      master_cell_group.size());
+    if ((result->master_cell_group).unpack(bref_cg) != asn1::SRSASN_SUCCESS) {
       ERROR("Could not unpack master cell group config.");
       return SRSRAN_ERROR;
     }        
@@ -468,19 +475,17 @@ int RachDecoder::DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
     // task_scheduler_nrscope->master_cell_group.to_json(js);
     // printf("masterCellGroup: %s\n", js.to_string().c_str());
 
-    // Tells the task scheduler that the RACH is decoded and there are some entries in the know_rntis vector.
-    *rach_found = true;
-
-    if (!(*master_cell_group).sp_cell_cfg.recfg_with_sync.new_ue_id){
+    if (!(result->master_cell_group).sp_cell_cfg.recfg_with_sync.new_ue_id){
       c_rnti = tc_rnti;
     }else{
-      c_rnti = (*master_cell_group).sp_cell_cfg.recfg_with_sync.new_ue_id;
+      c_rnti = result->master_cell_group.sp_cell_cfg.recfg_with_sync.new_ue_id;
     }
     std::cout << "c-rnti: " << c_rnti << std::endl;
 
-    // Add the new rntis into a different list and update the known_rnti vector in the end of the threads.
-    *new_rnti_number += 1;
-    new_rntis_found.emplace_back(c_rnti);
+    /* Add the new rntis into a different list and update the 
+      known_rnti vector in the end of the threads. */
+    result->new_rnti_number += 1;
+    result->new_rntis_found.emplace_back(c_rnti);
     // task_scheduler_nrscope->nof_known_rntis += 1;
     // task_scheduler_nrscope->known_rntis.emplace_back(c_rnti);
 

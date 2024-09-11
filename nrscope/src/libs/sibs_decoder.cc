@@ -230,7 +230,7 @@ int SIBsDecoder::DecodeandParseSIB1fromSlot(srsran_slot_cfg_t* slot,
 
     /* Uncomment to print the decode SIB1. */
     asn1::json_writer js_sib1;
-    (sib1).to_json(js_sib1);
+    (result->sib1).to_json(js_sib1);
     printf("Decoded SIB1: %s\n", js_sib1.to_string().c_str());
   }
 

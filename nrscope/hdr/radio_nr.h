@@ -41,7 +41,8 @@ class Radio{
     srsran::srsran_band_helper                    bands;
     srsran_ue_dl_nr_sratescs_info                 arg_scs;
 
-    srsue::nr::cell_search                        srsran_searcher; // from cell_search.cc
+    /* from cell_search.cc */
+    srsue::nr::cell_search                        srsran_searcher; 
     srsue::nr::cell_search::cfg_t                 srsran_searcher_cfg_t;
     srsue::nr::cell_search::args_t                srsran_searcher_args_t;
     srsue::nr::cell_search::ret_t                 cs_ret;
@@ -54,22 +55,17 @@ class Radio{
     srsran_ue_sync_nr_args_t                      ue_sync_nr_args;
     srsran_ue_sync_nr_cfg_t                       sync_cfg;
 
-    srsue::nr::slot_sync                          slot_synchronizer;
     srsran_ue_sync_nr_t                           ue_sync_nr;
     srsran_ue_sync_nr_outcome_t                   outcome;
     
     srsran_ssb_cfg_t ssb_cfg;
 
     NRScopeTask::TaskSchedulerNRScope task_scheduler_nrscope;
-    RachDecoder rach_decoder; // processing for uplink in rach
-    SIBsDecoder sibs_decoder;
-    HarqTracker harq_tracker;
 
     uint32_t nof_threads;
     uint32_t nof_rnti_worker_groups;
     uint8_t nof_bwps;
     uint32_t nof_workers;
-    std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
 
     /* a better coordination between producer (fetch) and consumer 
        (resample and decode) */

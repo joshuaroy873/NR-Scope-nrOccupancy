@@ -21,7 +21,6 @@ public:
   /* Job indicator */
   sem_t smph_has_job; 
   bool busy;
-  std::mutex lock;
 
   /* Worker thread */
   std::thread worker_thread;
@@ -37,6 +36,7 @@ public:
   std::vector <float> ul_prb_bits_rate;
 
   srsran_slot_cfg_t slot; /* Current slot. */
+  srsran_ue_sync_nr_outcome_t outcome; /* Sync outcome, including the sfn */
   
   NRScopeWorker();
   ~NRScopeWorker();
@@ -56,7 +56,9 @@ public:
   int SyncState(WorkState* task_scheduler_state);
 
   /* Copy the buffer and the slot structure from the task_scheduler */
-  void CopySlotandBuffer(srsran_slot_cfg_t* slot_, cf_t* rx_buffer_);
+  void CopySlotandBuffer(srsran_slot_cfg_t* slot_, 
+                         srsran_ue_sync_nr_outcome_t* outcome_, 
+                         cf_t* rx_buffer_);
 
   int InitSIBDecoder();
   int InitRACHDecoder();

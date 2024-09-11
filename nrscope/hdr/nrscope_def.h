@@ -208,6 +208,10 @@ typedef struct WorkState_ WorkState;
 
 typedef struct SlotResult_ SlotResult;
   struct SlotResult_{
+    /* slot and frame information */
+    srsran_slot_cfg_t slot;
+    srsran_ue_sync_nr_outcome_t outcome;
+
     /* The worker works on SIBs decoding */
     bool sib_result;
     bool found_sib1;
@@ -226,7 +230,31 @@ typedef struct SlotResult_ SlotResult;
     /* The worker works on DCI decoding */
     bool dci_result;
     std::vector <DCIFeedback> dci_feedback_results;    
+
+    /* Define the compare operator between structure by sfn and slot idx */
+    bool operator<(const SlotResult& other) const {
+      /* If the sfn is different*/
+      if (outcome.sfn < other.outcome.sfn) return true;
+      if (outcome.sfn > other.outcome.sfn) return false;
+      
+      /* If the sfn is the same */
+      return slot.idx < other.slot.idx;
+    }
+
+    bool operator==(const SlotResult& other) const {
+        return outcome.sfn == other.outcome.sfn && slot.idx == other.slot.idx;
+    }
   };
+
+extern std::vector<SlotResult> global_slot_results;
+extern std::mutex task_lock;
+
+// namespace NRScopeTask{
+//   /* Add some global variables for the task_scheduler and workers */
+//   std::vector<SlotResult> global_slot_results;
+
+//   std::mutex task_lock;
+// }
 
 /**
  * @brief Function brought from phch_cfg_nr.c

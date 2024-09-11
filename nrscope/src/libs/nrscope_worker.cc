@@ -2,7 +2,11 @@
 #include <semaphore>
 #include <chrono>
 
+std::vector<SlotResult> global_slot_results;
+std::mutex task_lock;
+
 namespace NRScopeTask{
+
 NRScopeWorker::NRScopeWorker() : 
   rf_buffer_t(1),
   rach_decoder(),
@@ -53,8 +57,10 @@ void NRScopeWorker::StartWorker(){
 }
 
 void NRScopeWorker::CopySlotandBuffer(srsran_slot_cfg_t* slot_, 
+                                      srsran_ue_sync_nr_outcome_t* outcome_,
                                       cf_t* rx_buffer_) {
   slot = *slot_;
+  outcome = *outcome_;
   srsran_vec_cf_copy(rx_buffer, rx_buffer_, worker_state.slot_sz);
 }
 
@@ -257,9 +263,9 @@ void NRScopeWorker::Run() {
   while (true) {
     /* When there is a job, the semaphore is set and buffer is copied */
     sem_wait(&smph_has_job);
-    lock.lock();
+    task_lock.lock();
     busy = true;
-    lock.unlock();
+    task_lock.unlock();
 
     SlotResult slot_result = {};
     /* Set the all the results to be false, will be set inside the decoder
@@ -267,6 +273,8 @@ void NRScopeWorker::Run() {
     slot_result.sib_result = false;
     slot_result.rach_result = false;
     slot_result.dci_result = false;
+    slot_result.slot = slot;
+    slot_result.outcome = outcome;
 
     /* If we accidentally assign the job without initializing the SIB decoder */
     if(!worker_state.sib1_inited){
@@ -297,9 +305,11 @@ void NRScopeWorker::Run() {
 
       for (uint32_t i = 0; i < worker_state.nof_threads; i++){
         dci_threads.emplace_back(&DCIDecoder::DecodeandParseDCIfromSlot, 
-          dci_decoders[i].get(), &slot, &worker_state, &sharded_results,
-          &sharded_rntis, &nof_sharded_rntis, &dl_prb_rate, &dl_prb_bits_rate,
-          &ul_prb_rate, &ul_prb_bits_rate);
+          dci_decoders[i].get(), &slot, &worker_state, 
+          std::ref(sharded_results), std::ref(sharded_rntis), 
+          std::ref(nof_sharded_rntis), std::ref(dl_prb_rate), 
+          std::ref(dl_prb_bits_rate), std::ref(ul_prb_rate), 
+          std::ref(ul_prb_bits_rate));
       }
     }
 
@@ -322,9 +332,10 @@ void NRScopeWorker::Run() {
     }
 
     /* Post the result into the result queue*/
-    lock.lock();
+    task_lock.lock();
+    global_slot_results.emplace_back(slot_result);
     busy = false;
-    lock.unlock();
+    task_lock.unlock();
   }
 }
 }

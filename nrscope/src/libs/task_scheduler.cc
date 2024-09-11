@@ -1,6 +1,7 @@
 #include "nrscope/hdr/task_scheduler.h"
 
 namespace NRScopeTask{
+
 TaskSchedulerNRScope::TaskSchedulerNRScope(){
   task_scheduler_state.sib1_inited = false;
   task_scheduler_state.rach_inited = false;
@@ -165,42 +166,56 @@ int TaskSchedulerNRScope::DecodeMIB(cell_searcher_args_t* args_t_,
   return SRSRAN_SUCCESS;
 }
 
-int TaskSchedulerNRScope::UpdateKnownRNTIs(){
-  if(task_scheduler_state.new_rnti_number <= 0){
-    return SRSRAN_SUCCESS;
-  }
+// int TaskSchedulerNRScope::UpdateKnownRNTIs(){
+//   if(task_scheduler_state.new_rnti_number <= 0){
+//     return SRSRAN_SUCCESS;
+//   }
 
-  task_scheduler_state.nof_known_rntis += task_scheduler_state.new_rnti_number;
-  for(uint32_t i = 0; i < task_scheduler_state.new_rnti_number; i++){
-    task_scheduler_state.known_rntis.emplace_back(
-      task_scheduler_state.new_rntis_found[i]);
-  }
+//   task_scheduler_state.nof_known_rntis += task_scheduler_state.new_rnti_number;
+//   for(uint32_t i = 0; i < task_scheduler_state.new_rnti_number; i++){
+//     task_scheduler_state.known_rntis.emplace_back(
+//       task_scheduler_state.new_rntis_found[i]);
+//   }
 
-  task_scheduler_state.new_rntis_found.clear();
-  task_scheduler_state.new_rnti_number = 0;
-  return SRSRAN_SUCCESS;
-}
+//   task_scheduler_state.new_rntis_found.clear();
+//   task_scheduler_state.new_rnti_number = 0;
+//   return SRSRAN_SUCCESS;
+// }
 
 void TaskSchedulerNRScope::Run(){
   while(true) {
     /* Try to extract results from the global result queue*/
+    task_lock.lock();
+    auto queue_len = global_slot_results.size();
+    if (queue_len > 0) {
+      while (global_slot_results.size() > 0) {
+        /* dequeue from the head of the queue */
+        slot_results.push_back(global_slot_results.front());
+        global_slot_results.erase(global_slot_results.begin());
+      }
+    }
+    task_lock.unlock();
 
+    /* reorder the local slot_results and 
+      wait for the correct data for output */
   }
 }
 
-int TaskSchedulerNRScope::AssignTask(srsran_slot_cfg_t* slot, cf_t* rx_buffer_){
+int TaskSchedulerNRScope::AssignTask(srsran_slot_cfg_t* slot, 
+                                     srsran_ue_sync_nr_outcome_t* outcome,
+                                     cf_t* rx_buffer_){
   /* Find the first idle worker */
   bool found_worker = false;
   for (uint32_t i = 0; i < nof_workers; i ++) {
-    bool busy;
-    lock.lock();
+    bool busy = true;
+    task_lock.lock();
     busy = workers[i].get()->busy;
-    lock.unlock();
+    task_lock.unlock();
     if (!busy) {
       found_worker = true;
 
       /* Copy the rx_buffer_ to the worker's rx_buffer */
-      workers[i].get()->CopySlotandBuffer(slot, rx_buffer_);
+      workers[i].get()->CopySlotandBuffer(slot, outcome, rx_buffer_);
 
       /* Update the worker's state */
       workers[i].get()->SyncState(&task_scheduler_state);

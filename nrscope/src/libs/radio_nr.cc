@@ -409,8 +409,8 @@ int Radio::RadioInitandStart(){
 
   /* Initialize the task_scheduler and the workers in it.
      They will all remain inactive until the MIB is found. */
-  task_scheduler_nrscope.InitandStart(nof_threads, nof_rnti_worker_groups, 
-    nof_bwps, args_t, nof_workers);
+  task_scheduler_nrscope.InitandStart(local_log, to_google, rf_index, 
+    nof_threads, nof_rnti_worker_groups, nof_bwps, args_t, nof_workers);
 
   std::cout << "Task scheduler started..." << std::endl;
   while (not ss.end()) {

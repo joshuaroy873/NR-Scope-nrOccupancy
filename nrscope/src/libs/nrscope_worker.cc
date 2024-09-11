@@ -2,10 +2,10 @@
 #include <semaphore>
 #include <chrono>
 
+namespace NRScopeTask{
+
 std::vector<SlotResult> global_slot_results;
 std::mutex task_lock;
-
-namespace NRScopeTask{
 
 NRScopeWorker::NRScopeWorker() : 
   rf_buffer_t(1),
@@ -18,7 +18,6 @@ NRScopeWorker::NRScopeWorker() :
 
   worker_state.sib1_found = false;
   worker_state.rach_found = false;
-  worker_state.sibs_vec_inited = false;
 
   worker_state.nof_known_rntis = 0;
   worker_state.known_rntis.resize(worker_state.nof_known_rntis);
@@ -148,7 +147,6 @@ int NRScopeWorker::SyncState(WorkState* task_scheduler_state) {
   worker_state.sib1_found = task_scheduler_state->sib1_found;
   worker_state.rach_found = task_scheduler_state->rach_found;
 
-  worker_state.sibs_vec_inited = task_scheduler_state->sibs_vec_inited;
   worker_state.all_sibs_found = task_scheduler_state->all_sibs_found;
 
   if (!worker_state.sib1_inited && task_scheduler_state->sib1_inited) {
@@ -218,8 +216,6 @@ int NRScopeWorker::MergeResults(){
       }
       rnti_s = rnti_e;
     }
-
-    std::cout << "End of nof_threads..." << std::endl;
 
     /* TO-DISCUSS: to obtain even more precise result, 
       here maybe we should total user payload prb in that bwp - used prb */

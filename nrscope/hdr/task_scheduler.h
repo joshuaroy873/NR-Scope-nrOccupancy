@@ -5,6 +5,8 @@
 
 #include "nrscope/hdr/nrscope_def.h"
 #include "nrscope/hdr/nrscope_worker.h"
+#include "nrscope/hdr/nrscope_logger.h"
+#include "nrscope/hdr/to_google.h"
 
 namespace NRScopeTask{
 class TaskSchedulerNRScope{
@@ -19,12 +21,20 @@ public:
   /* Slot results reorder buffer */
   std::vector<SlotResult> slot_results;
 
+  bool local_log;
+  bool to_google;
+  /* USRP's index */
+  int rf_index;
+
   TaskSchedulerNRScope();
   ~TaskSchedulerNRScope();
 
   /* Start the workers and the receiving result thread, called before the 
   radio reception. */
-  int InitandStart(int32_t nof_threads, 
+  int InitandStart(bool local_log_,
+                   bool to_google_,
+                   int rf_index_,
+                   int32_t nof_threads, 
                    uint32_t nof_rnti_worker_groups,
                    uint8_t nof_bwps,
                    cell_searcher_args_t args_t,
@@ -36,14 +46,16 @@ public:
                 float resample_ratio_,
                 uint32_t raw_srate_);
 
-  int UpdateKnownRNTIs();
+  int UpdateStateandLog();
+
+  int UpdatewithResult(SlotResult now_result);
 
   /* Assign the current slot to one worker*/
   int AssignTask(srsran_slot_cfg_t* slot, 
                  srsran_ue_sync_nr_outcome_t* outcome,
                  cf_t* rx_buffer_);
 
-  // resampler tools
+  /* resampler tools */
   float resample_ratio;
   msresamp_crcf resampler;
   float resampler_delay;

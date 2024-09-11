@@ -9,7 +9,6 @@ TaskSchedulerNRScope::TaskSchedulerNRScope(){
 
   task_scheduler_state.sib1_found = false;
   task_scheduler_state.rach_found = false;
-  task_scheduler_state.sibs_vec_inited = false;
 
   task_scheduler_state.nof_known_rntis = 0;
   task_scheduler_state.known_rntis.resize(task_scheduler_state.nof_known_rntis);
@@ -18,11 +17,17 @@ TaskSchedulerNRScope::TaskSchedulerNRScope(){
 TaskSchedulerNRScope::~TaskSchedulerNRScope(){
 }
 
-int TaskSchedulerNRScope::InitandStart(int32_t nof_threads, 
+int TaskSchedulerNRScope::InitandStart(bool local_log_,
+                                       bool to_google_,
+                                       int rf_index_,
+                                       int32_t nof_threads, 
                                        uint32_t nof_rnti_worker_groups,
                                        uint8_t nof_bwps,
                                        cell_searcher_args_t args_t,
                                        uint32_t nof_workers_){
+  local_log = local_log_;
+  to_google = to_google_;
+  rf_index = rf_index_;
   task_scheduler_state.nof_threads = nof_threads;
   task_scheduler_state.nof_rnti_worker_groups = nof_rnti_worker_groups;
   task_scheduler_state.nof_bwps = nof_bwps;
@@ -99,8 +104,9 @@ int TaskSchedulerNRScope::DecodeMIB(cell_searcher_args_t* args_t_,
   /* To find the position of coreset0, we need to use the offset between SSB 
     and CORESET0, because we don't know the ssb_pointA_freq_offset_Hz yet 
     required by the srsran_coreset_zero function.
-    coreset0_t low bound freq = ssb center freq - 120 * scs (half of sc in ssb) - 
-    ssb_subcarrierOffset(from MIB) * scs - entry->offset_rb * 12(sc in one rb) * scs */
+    coreset0_t low bound freq = ssb center freq - 120 * scs (half of sc in ssb) 
+    - ssb_subcarrierOffset(from MIB) * scs - entry->offset_rb * 
+    12(sc in one rb) * scs */
   task_scheduler_state.cell.abs_ssb_scs = 
     SRSRAN_SUBC_SPACING_NR(args_t_->ssb_scs);
   task_scheduler_state.cell.abs_pdcch_scs = 
@@ -166,23 +172,143 @@ int TaskSchedulerNRScope::DecodeMIB(cell_searcher_args_t* args_t_,
   return SRSRAN_SUCCESS;
 }
 
-// int TaskSchedulerNRScope::UpdateKnownRNTIs(){
-//   if(task_scheduler_state.new_rnti_number <= 0){
-//     return SRSRAN_SUCCESS;
-//   }
+int TaskSchedulerNRScope::UpdatewithResult(SlotResult now_result) {
+  task_lock.lock();
+  /* This slot contains SIBs decoder's result */
+  if (now_result.sib_result) {
+    if (now_result.found_sib1 && !task_scheduler_state.sib1_found) {
+      /* The sib1 is not found in the task_scheduler's state */
+      /* We only process the SIB 1 once */
+      task_scheduler_state.sib1 = now_result.sib1;
+      task_scheduler_state.sib1_found = true;
+      /* Setting the size of the vector for other SIBs decoding. */
+      int nof_sibs = (task_scheduler_state.sib1).si_sched_info_present ? 
+        (task_scheduler_state.sib1).si_sched_info.sched_info_list[0].
+        sib_map_info.size() : 0;
+      for (int i = 0; i < nof_sibs; i++) {
+        task_scheduler_state.sibs_to_be_found.push_back(
+          task_scheduler_state.sib1.si_sched_info.sched_info_list[0].
+          sib_map_info[i].type.to_number());
+      }
+      /* Since we got the SIB1, we can now init the RACH decoder*/
+      task_scheduler_state.rach_inited = true;
+    }
 
-//   task_scheduler_state.nof_known_rntis += task_scheduler_state.new_rnti_number;
-//   for(uint32_t i = 0; i < task_scheduler_state.new_rnti_number; i++){
-//     task_scheduler_state.known_rntis.emplace_back(
-//       task_scheduler_state.new_rntis_found[i]);
-//   }
+    if (now_result.found_sib.size() > 0) {
+      /* Found sibs other than SIB 1 */
+      unsigned long int task_sibs_len = 
+        task_scheduler_state.sibs_to_be_found.size();
+      if (task_sibs_len > 0) {
+        /* There are still some sibs to be found */
+        for (unsigned long int i = 0; i < now_result.found_sib.size(); i ++) {
+          int sib_id = now_result.found_sib[i];
+          for (unsigned long int j = 0; j < task_sibs_len; j ++) {
+            if (sib_id == task_scheduler_state.sibs_to_be_found[j]) {
+              /* If the sib_id is in the to_be_found list */
+              task_scheduler_state.found_sib.push_back(sib_id);
+              task_scheduler_state.sibs.push_back(now_result.sibs[i]);
+              task_scheduler_state.sibs_to_be_found.erase(
+                task_scheduler_state.sibs_to_be_found.begin() + j);
+              break;
+            }
+            /* Else skip the data */
+          }
+        }
+      } 
+      /* Or else, skip the sibs */
+      if (task_scheduler_state.sibs_to_be_found.size() == 0) {
+        task_scheduler_state.all_sibs_found = true;
+      }
+    }
+  }
 
-//   task_scheduler_state.new_rntis_found.clear();
-//   task_scheduler_state.new_rnti_number = 0;
-//   return SRSRAN_SUCCESS;
-// }
+  /* This slot contains the RACH decoder's result */
+  if (now_result.rach_result) {
+    if (now_result.found_rach) {
+      if (!task_scheduler_state.rach_found) {
+        /* The first time that we found the RACH */
+        task_scheduler_state.rrc_setup = now_result.rrc_setup;
+        task_scheduler_state.master_cell_group = now_result.master_cell_group;
+        task_scheduler_state.nof_known_rntis += now_result.new_rnti_number;
+        for (uint32_t i = 0; i < now_result.new_rnti_number; i++) {
+          task_scheduler_state.known_rntis.push_back(
+            now_result.new_rntis_found[i]);
+        }
+      } else {
+        /* We already found the RACH, we just append the new RNTIs */
+        task_scheduler_state.nof_known_rntis += now_result.new_rnti_number;
+        for (uint32_t i = 0; i < now_result.new_rnti_number; i++) {
+          task_scheduler_state.known_rntis.push_back(
+            now_result.new_rntis_found[i]);
+        }
+      }
+    }
+  }
+  task_lock.unlock();
 
-void TaskSchedulerNRScope::Run(){
+  /* This slot contains the DCI decoder's result, put all the results to log */
+  if (now_result.dci_result) {
+    std::vector <DCIFeedback> results = now_result.dci_feedback_results;
+    for (uint8_t b = 0; b < task_scheduler_state.nof_bwps; b++) {
+      DCIFeedback result = results[b];
+      if((result.dl_grants.size()>0 or result.ul_grants.size()>0)){
+        for (uint32_t i = 0; i < task_scheduler_state.nof_known_rntis; i++){
+          if(result.dl_grants[i].grant.rnti == 
+              task_scheduler_state.known_rntis[i]){
+            LogNode log_node;
+            log_node.slot_idx = now_result.slot.idx;
+            log_node.system_frame_idx = now_result.outcome.sfn;
+            log_node.timestamp = get_now_timestamp_in_double();
+            log_node.grant = result.dl_grants[i];
+            log_node.dci_format = 
+              srsran_dci_format_nr_string(result.dl_dcis[i].ctx.format);
+            log_node.dl_dci = result.dl_dcis[i];
+            log_node.bwp_id = result.dl_dcis[i].bwp_id;
+            if(local_log){
+              NRScopeLog::push_node(log_node, rf_index);
+            }
+            if(to_google){
+              ToGoogle::push_google_node(log_node, rf_index);
+            }
+          }
+
+          if(result.ul_grants[i].grant.rnti == 
+              task_scheduler_state.known_rntis[i]){
+            LogNode log_node;
+            log_node.slot_idx = now_result.slot.idx;
+            log_node.system_frame_idx = now_result.outcome.sfn;
+            log_node.timestamp = get_now_timestamp_in_double();
+            log_node.grant = result.ul_grants[i];
+            log_node.dci_format = 
+              srsran_dci_format_nr_string(result.ul_dcis[i].ctx.format);
+            log_node.ul_dci = result.ul_dcis[i];
+            log_node.bwp_id = result.ul_dcis[i].bwp_id;
+            if(local_log){
+              NRScopeLog::push_node(log_node, rf_index);
+            }
+            if(to_google){
+              ToGoogle::push_google_node(log_node, rf_index);
+            }
+          }
+        } 
+      }
+    }
+  }
+  return SRSRAN_SUCCESS;
+}
+
+int TaskSchedulerNRScope::UpdateStateandLog() {
+  /* Right now there is no re-order function, 
+    just update the state and log*/
+  while(slot_results.size() > 0) {
+    SlotResult now_result = slot_results[0];
+    UpdatewithResult(now_result);
+    slot_results.erase(slot_results.begin());
+  }
+  return SRSRAN_SUCCESS;
+}
+
+void TaskSchedulerNRScope::Run() {
   while(true) {
     /* Try to extract results from the global result queue*/
     task_lock.lock();
@@ -198,6 +324,7 @@ void TaskSchedulerNRScope::Run(){
 
     /* reorder the local slot_results and 
       wait for the correct data for output */
+    UpdateStateandLog();
   }
 }
 
@@ -213,13 +340,13 @@ int TaskSchedulerNRScope::AssignTask(srsran_slot_cfg_t* slot,
     task_lock.unlock();
     if (!busy) {
       found_worker = true;
-
-      /* Copy the rx_buffer_ to the worker's rx_buffer */
+      /* Copy the rx_buffer_ to the worker's rx_buffer. This won't be 
+      interfering with other threads? */
       workers[i].get()->CopySlotandBuffer(slot, outcome, rx_buffer_);
-
+      task_lock.lock();
       /* Update the worker's state */
       workers[i].get()->SyncState(&task_scheduler_state);
-
+      task_lock.unlock();
       /* Set the worker's sem to let the task run */
       sem_post(&workers[i].get()->smph_has_job);
 

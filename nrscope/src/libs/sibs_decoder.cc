@@ -228,14 +228,6 @@ int SIBsDecoder::DecodeandParseSIB1fromSlot(srsran_slot_cfg_t* slot,
     result->sib1 = dlsch_msg.msg.c1().sib_type1();
     std::cout << "SIB 1 Decoded." << std::endl;
 
-    // if(!(*sibs_vec_inited)){
-    //   // Setting the size of the vector for other SIBs decoding.
-    //   int nof_sibs = (*sib1_).si_sched_info_present ? (*sib1_).si_sched_info.sched_info_list.size() : 0;
-    //   sibs.resize(nof_sibs);
-    //   found_sib.resize(nof_sibs);
-    //   (*sibs_vec_inited) = true;
-    // }
-
     /* Uncomment to print the decode SIB1. */
     asn1::json_writer js_sib1;
     (sib1).to_json(js_sib1);

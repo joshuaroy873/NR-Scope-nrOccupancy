@@ -10,8 +10,6 @@
 #include "nrscope/hdr/dci_decoder.h"
 #include "nrscope/hdr/harq_tracking.h"
 #include "nrscope/hdr/task_scheduler.h"
-#include "nrscope/hdr/nrscope_logger.h"
-#include "nrscope/hdr/to_google.h"
 
 #include <semaphore>
 #include <liquid/liquid.h>

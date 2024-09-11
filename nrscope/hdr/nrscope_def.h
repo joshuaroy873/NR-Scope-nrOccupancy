@@ -195,7 +195,6 @@ typedef struct WorkState_ WorkState;
     bool sib1_found; // SIB 1 decoded, we can start the RACH thread
     bool rach_found;
 
-    bool sibs_vec_inited; // Is the vector for other SIBs set according to SIB?
     bool all_sibs_found; // All SIBs are decoded, stop the SIB thread now.
 
     bool sib1_inited; // SIBsDecoder is initialized.
@@ -246,8 +245,10 @@ typedef struct SlotResult_ SlotResult;
     }
   };
 
-extern std::vector<SlotResult> global_slot_results;
-extern std::mutex task_lock;
+namespace NRScopeTask{
+  extern std::vector<SlotResult> global_slot_results;
+  extern std::mutex task_lock;
+}
 
 // namespace NRScopeTask{
 //   /* Add some global variables for the task_scheduler and workers */

@@ -15,7 +15,7 @@
 #include <liquid/liquid.h>
 #include <chrono>
 
-#define RESAMPLE_WORKER_NUM 4
+#define RESAMPLE_WORKER_NUM 8
 
 class Radio{
   public:
@@ -73,6 +73,8 @@ class Radio{
     bool resample_needed;
     resampler_kit rk[RESAMPLE_WORKER_NUM];
     bool rk_initialized = false;
+
+    bool cpu_affinity = false;
 
     std::string log_name;
     bool local_log;

@@ -263,7 +263,8 @@ int Radio::ScanInitandStart(){
         }
       }
       if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND){
-        std::cout << "Cell Found! (maybe reported multiple times in the next several GSCN; see README)" << std::endl;
+        std::cout << "Cell Found! (maybe reported multiple times in the"
+          " next several GSCN; see README)" << std::endl;
         std::cout << "N_id: " << cs_ret.ssb_res.N_id << std::endl;
 
         if (local_log) {
@@ -411,7 +412,8 @@ int Radio::RadioInitandStart(){
   /* Initialize the task_scheduler and the workers in it.
      They will all remain inactive until the MIB is found. */
   task_scheduler_nrscope.InitandStart(local_log, to_google, rf_index, 
-    nof_threads, nof_rnti_worker_groups, nof_bwps, args_t, nof_workers);
+    nof_threads, nof_rnti_worker_groups, nof_bwps, cpu_affinity ,args_t, 
+    nof_workers);
 
   std::cout << "Task scheduler started..." << std::endl;
   while (not ss.end()) {
@@ -713,7 +715,6 @@ int Radio::DecodeAndProcess(){
   uint64_t next_consume_at = 0;
   bool first_time = true;
   task_scheduler_nrscope.task_scheduler_state.sib1_inited = true;
-
   while (true) {
     sem_wait(&smph_sf_data_prod_cons); 
     std::cout << "current_consume_at: " << (first_time ? 0 : 
@@ -749,7 +750,7 @@ int Radio::DecodeAndProcess(){
 
       if (first_time) {
         /* If the next result is not set */
-        NRScopeTask::task_lock.lock();
+        NRScopeTask::task_scheduler_lock.lock();
         task_scheduler_nrscope.next_result.sf_round = sf_round;
         task_scheduler_nrscope.next_result.slot.idx = slot.idx;
         if (outcome.sfn == 1023){
@@ -759,7 +760,7 @@ int Radio::DecodeAndProcess(){
           task_scheduler_nrscope.next_result.outcome.sfn = outcome.sfn + 1;
         }
         
-        NRScopeTask::task_lock.unlock();
+        NRScopeTask::task_scheduler_lock.unlock();
       }
 
       if (task_scheduler_nrscope.AssignTask(sf_round, slot, outcome, rx_buffer) 
@@ -773,9 +774,9 @@ int Radio::DecodeAndProcess(){
         empty_result.sib_result = false;
         empty_result.rach_result = false;
         empty_result.dci_result = false;
-        NRScopeTask::task_lock.lock();
+        NRScopeTask::queue_lock.lock();
         NRScopeTask::global_slot_results.push_back(empty_result);
-        NRScopeTask::task_lock.unlock();
+        NRScopeTask::queue_lock.unlock();
       }
     } // slot iteration
 

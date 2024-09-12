@@ -5,7 +5,9 @@
 namespace NRScopeTask{
 
 std::vector<SlotResult> global_slot_results;
-std::mutex task_lock;
+std::mutex queue_lock;
+std::mutex task_scheduler_lock;
+std::mutex worker_locks[128];
 
 NRScopeWorker::NRScopeWorker() : 
   rf_buffer_t(1),
@@ -27,7 +29,8 @@ NRScopeWorker::NRScopeWorker() :
 
 NRScopeWorker::~NRScopeWorker(){ }
 
-int NRScopeWorker::InitWorker(WorkState task_scheduler_state){
+int NRScopeWorker::InitWorker(WorkState task_scheduler_state, int worker_id_){
+  worker_id = worker_id_;
   /* Copy initial values */
   worker_state.nof_threads = task_scheduler_state.nof_threads;
   worker_state.nof_rnti_worker_groups = 
@@ -35,6 +38,7 @@ int NRScopeWorker::InitWorker(WorkState task_scheduler_state){
   worker_state.nof_bwps = task_scheduler_state.nof_bwps;
   worker_state.args_t = task_scheduler_state.args_t;
   worker_state.slot_sz = task_scheduler_state.slot_sz;
+  worker_state.cpu_affinity = task_scheduler_state.cpu_affinity;
   /* Size of one subframe */
   rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(
     worker_state.args_t.ssb_scs) * worker_state.slot_sz);
@@ -52,6 +56,14 @@ int NRScopeWorker::InitWorker(WorkState task_scheduler_state){
 void NRScopeWorker::StartWorker(){
   // std::cout << "Creating the thread. " << std::endl;
   worker_thread = std::thread{&NRScopeWorker::Run, this};
+  // if (worker_state.cpu_affinity){
+  //   cpu_set_t cpu_set_worker;
+  //   CPU_ZERO(&cpu_set_worker);
+  //   CPU_SET(worker_id * (3 + worker_state.nof_threads), &cpu_set_worker);
+  //   assert(pthread_setaffinity_np(worker_thread.native_handle(), 
+  //     sizeof(cpu_set_t), &cpu_set_worker) == 0);
+  // }
+  
   worker_thread.detach();
 }
 
@@ -246,12 +258,12 @@ void NRScopeWorker::Run() {
   while (true) {
     /* When there is a job, the semaphore is set and buffer is copied */
     sem_wait(&smph_has_job);
-    task_lock.lock();
+    worker_locks[worker_id].lock();
     busy = true;
-    task_lock.unlock();
+    worker_locks[worker_id].unlock();
 
-    std::cout << "Processing sf_round: " << sf_round << ", sfn: " << outcome.sfn
-     << ", slot.idx: " << slot.idx << std::endl; 
+    // std::cout << "Processing sf_round: " << sf_round << ", sfn: " << outcome.sfn
+    //  << ", slot.idx: " << slot.idx << std::endl; 
 
     SlotResult slot_result = {};
     /* Set the all the results to be false, will be set inside the decoder
@@ -284,12 +296,26 @@ void NRScopeWorker::Run() {
     if (worker_state.sib1_inited) {
       sibs_thread = std::thread {&SIBsDecoder::DecodeandParseSIB1fromSlot, 
         &sibs_decoder, &slot, &worker_state, &slot_result};
+      // if (worker_state.cpu_affinity){
+      //   cpu_set_t cpu_set_sib;
+      //   CPU_ZERO(&cpu_set_sib);
+      //   CPU_SET(worker_id * (3+worker_state.nof_threads) + 1, &cpu_set_sib);
+      //   assert(pthread_setaffinity_np(sibs_thread.native_handle(), 
+      //     sizeof(cpu_set_t), &cpu_set_sib) == 0);
+      // }
     }    
 
     std::thread rach_thread;
     if (worker_state.rach_inited) {
       rach_thread = std::thread {&RachDecoder::DecodeandParseMS4fromSlot,
         &rach_decoder, &slot, &worker_state, &slot_result};
+      // if (worker_state.cpu_affinity) {
+      //   cpu_set_t cpu_set_rach;
+      //   CPU_ZERO(&cpu_set_rach);
+      //   CPU_SET(worker_id * (3+worker_state.nof_threads) + 2, &cpu_set_rach);
+      //   assert(pthread_setaffinity_np(rach_thread.native_handle(), 
+      //     sizeof(cpu_set_t), &cpu_set_rach) == 0);
+      // }
     }
 
     std::vector <std::thread> dci_threads;
@@ -309,6 +335,17 @@ void NRScopeWorker::Run() {
           std::ref(dl_prb_bits_rate), std::ref(ul_prb_rate), 
           std::ref(ul_prb_bits_rate));
       }
+
+      // if (worker_state.cpu_affinity) {
+      //   for (uint32_t i = 0; i < worker_state.nof_threads; i ++) {
+      //     cpu_set_t cpu_set_dci;
+      //     CPU_ZERO(&cpu_set_dci);
+      //     CPU_SET(worker_id * (3+worker_state.nof_threads) + i + 3, 
+      //       &cpu_set_dci);
+      //     assert(pthread_setaffinity_np(dci_threads[i].native_handle(), 
+      //       sizeof(cpu_set_t), &cpu_set_dci) == 0);
+      //   }
+      // }
     }
 
     if(sibs_thread.joinable()){
@@ -329,17 +366,17 @@ void NRScopeWorker::Run() {
       slot_result.dci_feedback_results = results;
     }
 
-    std::cout << "After processing sf_round: " << sf_round << ", sfn: " 
-      << outcome.sfn << ", slot.idx: " << slot.idx << std::endl; 
-    std::cout << "slot_result sf_round: " << slot_result.sf_round << ", sfn: " 
-      << slot_result.outcome.sfn << ", slot.idx: " << slot_result.slot.idx 
-      << std::endl;
+    // std::cout << "After processing sf_round: " << sf_round << ", sfn: " 
+    //   << outcome.sfn << ", slot.idx: " << slot.idx << std::endl; 
+    // std::cout << "slot_result sf_round: " << slot_result.sf_round << ", sfn: " 
+    //   << slot_result.outcome.sfn << ", slot.idx: " << slot_result.slot.idx 
+    //   << std::endl;
 
     /* Post the result into the result queue*/
-    task_lock.lock();
+    queue_lock.lock();
     global_slot_results.push_back(slot_result);
     busy = false;
-    task_lock.unlock();
+    queue_lock.unlock();
   }
 }
 }

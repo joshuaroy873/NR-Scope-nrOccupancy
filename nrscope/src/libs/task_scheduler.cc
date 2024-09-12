@@ -25,6 +25,7 @@ int TaskSchedulerNRScope::InitandStart(bool local_log_,
                                        int32_t nof_threads, 
                                        uint32_t nof_rnti_worker_groups,
                                        uint8_t nof_bwps,
+                                       bool cpu_affinity,
                                        cell_searcher_args_t args_t,
                                        uint32_t nof_workers_){
   local_log = local_log_;
@@ -36,12 +37,13 @@ int TaskSchedulerNRScope::InitandStart(bool local_log_,
   task_scheduler_state.args_t = args_t;
   task_scheduler_state.slot_sz = (uint32_t)(args_t.srate_hz / 1000.0f / 
     SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs));
+  task_scheduler_state.cpu_affinity = cpu_affinity;
   nof_workers = nof_workers_;
   std::cout << "Starting workers..." << std::endl;
   for (uint32_t i = 0; i < nof_workers; i ++) {
     NRScopeWorker *worker = new NRScopeWorker();
     std::cout << "New worker " << i << " is going to start... "<< std::endl;
-    if(worker->InitWorker(task_scheduler_state) < SRSRAN_SUCCESS) {
+    if(worker->InitWorker(task_scheduler_state, i) < SRSRAN_SUCCESS) {
       ERROR("Error initializing worker %d", i);
       return NR_FAILURE;
     }
@@ -175,7 +177,7 @@ int TaskSchedulerNRScope::DecodeMIB(cell_searcher_args_t* args_t_,
 }
 
 int TaskSchedulerNRScope::UpdatewithResult(SlotResult now_result) {
-  task_lock.lock();
+  task_scheduler_lock.lock();
   /* This slot contains SIBs decoder's result */
   if (now_result.sib_result) {
     if (now_result.found_sib1 && !task_scheduler_state.sib1_found) {
@@ -250,7 +252,7 @@ int TaskSchedulerNRScope::UpdatewithResult(SlotResult now_result) {
       task_scheduler_state.dci_inited = true;
     }
   }
-  task_lock.unlock();
+  task_scheduler_lock.unlock();
 
   /* This slot contains the DCI decoder's result, put all the results to log */
   if (now_result.dci_result) {
@@ -352,7 +354,7 @@ void TaskSchedulerNRScope::UpdateNextResult() {
 void TaskSchedulerNRScope::Run() {
   while(true) {
     /* Try to extract results from the global result queue*/
-    task_lock.lock();
+    queue_lock.lock();
     auto queue_len = global_slot_results.size();
     if (queue_len > 0) {
       while (global_slot_results.size() > 0) {
@@ -361,7 +363,7 @@ void TaskSchedulerNRScope::Run() {
         global_slot_results.erase(global_slot_results.begin());
       }
     }
-    task_lock.unlock();
+    queue_lock.unlock();
 
     /* reorder the local slot_results and 
       wait for the correct data for output */
@@ -376,11 +378,11 @@ int TaskSchedulerNRScope::AssignTask(uint64_t sf_round,
                                      cf_t* rx_buffer_){
   /* Find the first idle worker */
   bool found_worker = false;
-  std::cout << "Assigning sf_round: " << sf_round << ", sfn: " << outcome.sfn 
-    << ", slot.idx: " << slot.idx << std::endl;
+  // std::cout << "Assigning sf_round: " << sf_round << ", sfn: " << outcome.sfn 
+  //   << ", slot.idx: " << slot.idx << std::endl;
   for (uint32_t i = 0; i < nof_workers; i ++) {
+    worker_locks[i].lock();
     bool busy = true;
-    task_lock.lock();
     busy = workers[i].get()->busy;
     if (!busy) {
       found_worker = true;
@@ -392,7 +394,7 @@ int TaskSchedulerNRScope::AssignTask(uint64_t sf_round,
       /* Set the worker's sem to let the task run */
       sem_post(&workers[i].get()->smph_has_job);
     }
-    task_lock.unlock();
+    worker_locks[i].unlock();
     if (found_worker) {
       break;
     }

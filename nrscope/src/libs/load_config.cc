@@ -142,17 +142,26 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
         radios[i].nof_rnti_worker_groups = 1;
       }
 
-      radios[i].nof_threads = radios[i].nof_rnti_worker_groups;
-
       if(config_yaml[setting_name]["nof_bwps"]){
         radios[i].nof_bwps = config_yaml[setting_name]["nof_bwps"].as<int>();
       }else{
         radios[i].nof_bwps = 1;
       }
 
+      if(config_yaml[setting_name]["cpu_affinity"]){
+        radios[i].cpu_affinity = 
+          config_yaml[setting_name]["cpu_affinity"].as<bool>();
+      }else{
+        radios[i].cpu_affinity = false;
+      } 
+
       if(config_yaml[setting_name]["nof_workers"]){
         radios[i].nof_workers = 
           config_yaml[setting_name]["nof_workers"].as<int>();
+        if (radios[i].nof_workers > 128) {
+          ERROR("Worker number shouldn't be > 128");
+          return SRSRAN_ERROR;
+        }
       }else{
         radios[i].nof_workers = 1;
       }
@@ -165,6 +174,25 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
         << " in config.yaml properly." << std::endl;
     return NR_FAILURE;
     }
+  }
+
+  /* Check if the config viable */
+  const auto nof_cores = std::thread::hardware_concurrency();
+  unsigned int required_cores = 0;
+  for (int i = 0; i < nof_usrp; i ++) {
+    if (radios[i].cpu_affinity) {
+      /* One for SIB thread, one RACH thread,
+       and nof_bwp * nof_rnti_group for DCI decoding*/
+      required_cores += radios[i].nof_workers * (3 + 
+        radios[i].nof_bwps * radios[i].nof_rnti_worker_groups);
+    }
+  }
+  if (required_cores > nof_cores) {
+    ERROR("CPU affinity set, usrp_i's core requirement is: "
+      "nof_workers * (3 + nof_bwps * nof_rnti_worker_groups)"
+      ", please make sure the total required cores %d smaller than your total"
+      "number of cores: %d.", required_cores, nof_cores);
+    return NR_FAILURE;
   }
 
   std::string setting_name = "log_config";

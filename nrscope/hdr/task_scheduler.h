@@ -39,6 +39,7 @@ public:
                    int32_t nof_threads, 
                    uint32_t nof_rnti_worker_groups,
                    uint8_t nof_bwps,
+                   bool cpu_affinity,
                    cell_searcher_args_t args_t,
                    uint32_t nof_workers_);
 

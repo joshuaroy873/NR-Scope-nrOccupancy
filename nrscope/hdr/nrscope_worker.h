@@ -21,6 +21,7 @@ public:
   /* Job indicator */
   sem_t smph_has_job; 
   bool busy;
+  int worker_id;
 
   /* Worker thread */
   std::thread worker_thread;
@@ -45,7 +46,7 @@ public:
   /* This is called right after entering the radio_nr.cc,
     The cell's information is set to the worker,
     so the worker can set its buffer.*/
-  int InitWorker(WorkState task_scheduler_state);
+  int InitWorker(WorkState task_scheduler_state, int worker_id_);
 
   /* Start the worker thread */
   void StartWorker();

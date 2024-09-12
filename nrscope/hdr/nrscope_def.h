@@ -171,6 +171,7 @@ typedef struct WorkState_ WorkState;
     uint32_t nof_threads;
     uint32_t nof_rnti_worker_groups;
     uint8_t nof_bwps;
+    bool cpu_affinity;
 
     uint32_t slot_sz;
 
@@ -260,15 +261,11 @@ bool CompareSlotResult (SlotResult a, SlotResult b);
 
 namespace NRScopeTask{
   extern std::vector<SlotResult> global_slot_results;
-  extern std::mutex task_lock;
+  extern std::mutex queue_lock;
+  extern std::mutex task_scheduler_lock;
+  extern std::mutex worker_locks[128];
 }
 
-// namespace NRScopeTask{
-//   /* Add some global variables for the task_scheduler and workers */
-//   std::vector<SlotResult> global_slot_results;
-
-//   std::mutex task_lock;
-// }
 
 /**
  * @brief Function brought from phch_cfg_nr.c

@@ -55,15 +55,16 @@ class Radio{
 
     srsran_ue_sync_nr_t                           ue_sync_nr;
     srsran_ue_sync_nr_outcome_t                   outcome;
+    uint64_t                                      sf_round;
     
     srsran_ssb_cfg_t ssb_cfg;
-
-    NRScopeTask::TaskSchedulerNRScope task_scheduler_nrscope;
 
     uint32_t nof_threads;
     uint32_t nof_rnti_worker_groups;
     uint8_t nof_bwps;
     uint32_t nof_workers;
+
+    NRScopeTask::TaskSchedulerNRScope task_scheduler_nrscope;
 
     /* a better coordination between producer (fetch) and consumer 
        (resample and decode) */
@@ -78,7 +79,6 @@ class Radio{
 
     bool to_google;
     std::string google_credential;
-    // std::string google_project_id;
     std::string google_dataset_id;
 
     Radio();  //constructor

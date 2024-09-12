@@ -12,7 +12,7 @@ usrp_setting_0:
   rf_log_level: "debug"
   nof_rnti_worker_groups: 1
   nof_bwps: 1
-  nof_workers: 4
+  nof_workers: 16
 
   log_name: "a.csv" #"/home/wanhr/Documents/data/nrscope/evaluation/coverage_amarisoft/dci_tx_50.csv" # x (0-10), y(0-8) coordinates
   google_dataset_id: "ngscope5g_dci_log_wanhr"

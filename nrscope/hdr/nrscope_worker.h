@@ -35,6 +35,7 @@ public:
   std::vector <float> ul_prb_rate;
   std::vector <float> ul_prb_bits_rate;
 
+  uint64_t sf_round;
   srsran_slot_cfg_t slot; /* Current slot. */
   srsran_ue_sync_nr_outcome_t outcome; /* Sync outcome, including the sfn */
   
@@ -56,8 +57,9 @@ public:
   int SyncState(WorkState* task_scheduler_state);
 
   /* Copy the buffer and the slot structure from the task_scheduler */
-  void CopySlotandBuffer(srsran_slot_cfg_t* slot_, 
-                         srsran_ue_sync_nr_outcome_t* outcome_, 
+  void CopySlotandBuffer(uint64_t sf_round_,
+                         srsran_slot_cfg_t slot_, 
+                         srsran_ue_sync_nr_outcome_t outcome_,
                          cf_t* rx_buffer_);
 
   int InitSIBDecoder();

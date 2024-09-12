@@ -17,6 +17,7 @@ Radio::Radio() :
 
   nof_trials = 100;
   nof_trials_scan = 200;
+  sf_round = 0;
   srsran_searcher_args_t.max_srate_hz = 92.16e6;
   srsran_searcher_args_t.ssb_min_scs = srsran_subcarrier_spacing_15kHz;
   srsran_searcher.init(srsran_searcher_args_t);
@@ -708,16 +709,6 @@ int Radio::DecodeAndProcess(){
   uint32_t pre_resampling_sf_sz = 
     SRSRAN_NOF_SLOTS_PER_SF_NR(task_scheduler_nrscope.task_scheduler_state.
     args_t.ssb_scs) * pre_resampling_slot_sz;
-  // if(!task_scheduler_nrscope.task_scheduler_state.sib1_inited){
-  //   /* Initialize all the worker's sib decoder */
-  //   srsran::rf_buffer_t rf_buffer_wrapper(rx_buffer, pre_resampling_sf_sz);
-  //   if(sibs_decoder.sib_decoder_and_reception_init(arg_scs, 
-  //      &task_scheduler_nrscope, rf_buffer_wrapper.to_cf_t()) < SRSASN_SUCCESS){
-  //     ERROR("SIBsDecoder Init Error");
-  //     return NR_FAILURE;
-  //   }
-  //   std::cout << "SIB Decoder Initializing..." << std::endl;
-  // }
   
   uint64_t next_consume_at = 0;
   bool first_time = true;
@@ -736,6 +727,11 @@ int Radio::DecodeAndProcess(){
       srsran_slot_cfg_t slot = {0};
       slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 
         10 + slot_idx;
+      
+      if (slot.idx == 0 && outcome.sfn == 0) {
+        /* this is a new round of system frame indexes */
+        sf_round ++;
+      }
       /* Move rx_buffer
         here wanted data move to the buffer beginning for decoders to process
         fetch and resample thread will store unprocessed data at 1 to 
@@ -746,141 +742,41 @@ int Radio::DecodeAndProcess(){
         (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1) * 
         pre_resampling_sf_sz)) + (slot_idx * slot_sz), slot_sz);
 
-      std::cout << "decode slot: " << slot_idx << "; current_consume_ptr: " 
+      std::cout << "decode slot: " << (int) slot.idx << "; current_consume_ptr: " 
         << rx_buffer + (first_time ? 0 : 
         ((next_consume_at % RING_BUF_MODULUS + 1) * pre_resampling_sf_sz)) + 
         (slot_idx * slot_sz) << std::endl; 
 
-      if (task_scheduler_nrscope.AssignTask(&slot, &outcome, rx_buffer) 
-          < SRSRAN_SUCCESS) {
-        ERROR("Assign task failed");
+      if (first_time) {
+        /* If the next result is not set */
+        NRScopeTask::task_lock.lock();
+        task_scheduler_nrscope.next_result.sf_round = sf_round;
+        task_scheduler_nrscope.next_result.slot.idx = slot.idx;
+        if (outcome.sfn == 1023){
+          task_scheduler_nrscope.next_result.outcome.sfn = 0;
+          task_scheduler_nrscope.next_result.sf_round ++;
+        } else {
+          task_scheduler_nrscope.next_result.outcome.sfn = outcome.sfn + 1;
+        }
+        
+        NRScopeTask::task_lock.unlock();
       }
 
-      // if(!task_scheduler_nrscope.rach_inited and task_scheduler_nrscope.
-      //    sib1_found){
-      //   // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, 
-      //   //   &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};
-      //   rach_decoder.rach_decoder_init(&task_scheduler_nrscope);
-      //   srsran::rf_buffer_t rf_buffer_wrapper(rx_buffer, pre_resampling_sf_sz);
-      //   if(rach_decoder.rach_reception_init(arg_scs, &task_scheduler_nrscope, 
-      //      rf_buffer_wrapper.to_cf_t()) < SRSASN_SUCCESS){
-      //     ERROR("RACHDecoder Init Error");
-      //     return NR_FAILURE;
-      //   }
-      //   std::cout << "RACH Decoder Initialized.." << std::endl;
-      //   task_scheduler_nrscope.rach_inited = true;
-      // }
-
-      // if(!task_scheduler_nrscope.dci_inited and task_scheduler_nrscope.
-      //    rach_found){
-      //   std::cout << "Initializing DCI decoder..." << std::endl;
-      //   task_scheduler_nrscope.sharded_results.resize(nof_threads);
-      //   task_scheduler_nrscope.nof_sharded_rntis.resize(nof_threads);
-      //   task_scheduler_nrscope.sharded_rntis.resize(nof_threads);
-      //   task_scheduler_nrscope.nof_threads = nof_threads;
-      //   task_scheduler_nrscope.nof_rnti_worker_groups = nof_rnti_worker_groups;
-      //   task_scheduler_nrscope.nof_bwps = nof_bwps;
-      //   task_scheduler_nrscope.results.resize(nof_bwps);
-      //   for(uint32_t i = 0; i < nof_rnti_worker_groups; i++){
-      //     // for each rnti worker group, for each bwp, spawn a decoder
-      //     for(uint8_t j = 0; j < nof_bwps; j++){
-      //       DCIDecoder *decoder = new DCIDecoder(100);
-      //       if(decoder->dci_decoder_and_reception_init(arg_scs, &task_scheduler_nrscope, j) < SRSASN_SUCCESS){
-      //         ERROR("DCIDecoder Init Error");
-      //         return NR_FAILURE;
-      //       }
-      //       decoder->dci_decoder_id = i * nof_bwps + j;
-      //       decoder->rnti_worker_group_id = i;
-      //       dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
-      //     }
-      //   }
-        
-      //   std::cout << "DCI Decoder Initialized.." << std::endl;
-      //   task_scheduler_nrscope.dci_inited = true;
-      // }
-
-      // // Then start each type of decoder, TODO
-      // task_scheduler_nrscope.dl_prb_rate.resize(task_scheduler_nrscope.nof_known_rntis);
-      // task_scheduler_nrscope.ul_prb_rate.resize(task_scheduler_nrscope.nof_known_rntis);
-      // task_scheduler_nrscope.dl_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
-      // task_scheduler_nrscope.ul_prb_bits_rate.resize(task_scheduler_nrscope.nof_known_rntis);
-
-      // // To save computing resources for dci decoders: assume SIB1 info should be static
-      // std::thread sibs_thread;
-      // if (!task_scheduler_nrscope.sib1_found) {
-      //   sibs_thread = std::thread {&SIBsDecoder::decode_and_parse_sib1_from_slot, &sibs_decoder, &slot, &task_scheduler_nrscope};
-      // }
-      // std::thread rach_thread {&RachDecoder::decode_and_parse_msg4_from_slot, &rach_decoder, &slot, &task_scheduler_nrscope};
-
-      // std::vector <std::thread> dci_threads;
-      // if(task_scheduler_nrscope.dci_inited){
-      //   for (uint32_t i = 0; i < nof_threads; i++){
-      //     dci_threads.emplace_back(&DCIDecoder::decode_and_parse_dci_from_slot, dci_decoders[i].get(), &slot, &task_scheduler_nrscope);
-      //   }
-      // }
-
-      // if(sibs_thread.joinable()){
-      //   sibs_thread.join();
-      // }
-
-      // if(rach_thread.joinable()){
-      //   rach_thread.join();
-      // }
-
-      // if(task_scheduler_nrscope.dci_inited){
-      //   for (uint32_t i = 0; i < nof_threads; i++){
-      //     if(dci_threads[i].joinable()){
-      //       dci_threads[i].join();
-      //     }
-      //   }
-      // }
-
-      // if(task_scheduler_nrscope.dci_inited){
-      //   task_scheduler_nrscope.MergeResults();
-      //   std::vector <DCIFeedback> results = task_scheduler_nrscope.get_results();
-
-      //   for (uint8_t b = 0; b < nof_bwps; b++) {
-      //     DCIFeedback result = results[b];
-      //     if((result.dl_grants.size()>0 or result.ul_grants.size()>0)){
-      //       for (uint32_t i = 0; i < task_scheduler_nrscope.nof_known_rntis; i++){
-      //         if(result.dl_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-      //           LogNode log_node;
-      //           log_node.slot_idx = slot.idx;
-      //           log_node.system_frame_idx = outcome.sfn;
-      //           log_node.timestamp = get_now_timestamp_in_double();
-      //           log_node.grant = result.dl_grants[i];
-      //           log_node.dci_format = srsran_dci_format_nr_string(result.dl_dcis[i].ctx.format);
-      //           log_node.dl_dci = result.dl_dcis[i];
-      //           log_node.bwp_id = result.dl_dcis[i].bwp_id;
-      //           if(local_log){
-      //             NRScopeLog::push_node(log_node, rf_index);
-      //           }
-      //           if(to_google){
-      //             ToGoogle::push_google_node(log_node, rf_index);
-      //           }
-      //         }
-
-      //         if(result.ul_grants[i].grant.rnti == task_scheduler_nrscope.known_rntis[i]){
-      //           LogNode log_node;
-      //           log_node.slot_idx = slot.idx;
-      //           log_node.system_frame_idx = outcome.sfn;
-      //           log_node.timestamp = get_now_timestamp_in_double();
-      //           log_node.grant = result.ul_grants[i];
-      //           log_node.dci_format = srsran_dci_format_nr_string(result.ul_dcis[i].ctx.format);
-      //           log_node.ul_dci = result.ul_dcis[i];
-      //           log_node.bwp_id = result.ul_dcis[i].bwp_id;
-      //           if(local_log){
-      //             NRScopeLog::push_node(log_node, rf_index);
-      //           }
-      //           if(to_google){
-      //             ToGoogle::push_google_node(log_node, rf_index);
-      //           }
-      //         }
-      //       } 
-      //     }
-      //   }
-      // }
-      // task_scheduler_nrscope.UpdateKnownRNTIs();
+      if (task_scheduler_nrscope.AssignTask(sf_round, slot, outcome, rx_buffer) 
+          < SRSRAN_SUCCESS) {
+        ERROR("Assign task failed");
+        /* Push empty slot result to the queue */
+        SlotResult empty_result = {};
+        empty_result.sf_round = sf_round;
+        empty_result.slot = slot;
+        empty_result.outcome = outcome;
+        empty_result.sib_result = false;
+        empty_result.rach_result = false;
+        empty_result.dci_result = false;
+        NRScopeTask::task_lock.lock();
+        NRScopeTask::global_slot_results.push_back(empty_result);
+        NRScopeTask::task_lock.unlock();
+      }
     } // slot iteration
 
     gettimeofday(&t1, NULL);

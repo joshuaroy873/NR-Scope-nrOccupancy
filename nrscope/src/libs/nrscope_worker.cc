@@ -55,11 +55,13 @@ void NRScopeWorker::StartWorker(){
   worker_thread.detach();
 }
 
-void NRScopeWorker::CopySlotandBuffer(srsran_slot_cfg_t* slot_, 
-                                      srsran_ue_sync_nr_outcome_t* outcome_,
+void NRScopeWorker::CopySlotandBuffer(uint64_t sf_round_,
+                                      srsran_slot_cfg_t slot_, 
+                                      srsran_ue_sync_nr_outcome_t outcome_,
                                       cf_t* rx_buffer_) {
-  slot = *slot_;
-  outcome = *outcome_;
+  sf_round = sf_round_;
+  slot = slot_;
+  outcome = outcome_;
   srsran_vec_cf_copy(rx_buffer, rx_buffer_, worker_state.slot_sz);
 }
 
@@ -148,21 +150,6 @@ int NRScopeWorker::SyncState(WorkState* task_scheduler_state) {
   worker_state.rach_found = task_scheduler_state->rach_found;
 
   worker_state.all_sibs_found = task_scheduler_state->all_sibs_found;
-
-  if (!worker_state.sib1_inited && task_scheduler_state->sib1_inited) {
-    InitSIBDecoder();
-    worker_state.sib1_inited = task_scheduler_state->sib1_inited;
-  }
-
-  if (!worker_state.rach_inited && task_scheduler_state->rach_inited) {
-    InitRACHDecoder();
-    worker_state.rach_inited = task_scheduler_state->rach_inited;
-  }
-
-  if (!worker_state.dci_inited && task_scheduler_state->dci_inited) {
-    InitDCIDecoders();
-    worker_state.dci_inited = task_scheduler_state->dci_inited;
-  }
 
   worker_state.nof_known_rntis = task_scheduler_state->nof_known_rntis;
   worker_state.known_rntis.resize(worker_state.nof_known_rntis);
@@ -263,6 +250,9 @@ void NRScopeWorker::Run() {
     busy = true;
     task_lock.unlock();
 
+    std::cout << "Processing sf_round: " << sf_round << ", sfn: " << outcome.sfn
+     << ", slot.idx: " << slot.idx << std::endl; 
+
     SlotResult slot_result = {};
     /* Set the all the results to be false, will be set inside the decoder
     threads */
@@ -271,10 +261,22 @@ void NRScopeWorker::Run() {
     slot_result.dci_result = false;
     slot_result.slot = slot;
     slot_result.outcome = outcome;
+    slot_result.sf_round = sf_round;
 
-    /* If we accidentally assign the job without initializing the SIB decoder */
-    if(!worker_state.sib1_inited){
-      continue;
+    /* Put the initialization delay into the worker's thread */
+    if (!worker_state.sib1_inited) {
+      InitSIBDecoder();
+      worker_state.sib1_inited = true;
+    }
+
+    if (!worker_state.rach_inited && worker_state.sib1_found) {
+      InitRACHDecoder();
+      worker_state.rach_inited = true;
+    }
+
+    if (!worker_state.dci_inited && worker_state.rach_found) {
+      InitDCIDecoders();
+      worker_state.dci_inited = true;
     }
 
     std::thread sibs_thread;
@@ -327,9 +329,15 @@ void NRScopeWorker::Run() {
       slot_result.dci_feedback_results = results;
     }
 
+    std::cout << "After processing sf_round: " << sf_round << ", sfn: " 
+      << outcome.sfn << ", slot.idx: " << slot.idx << std::endl; 
+    std::cout << "slot_result sf_round: " << slot_result.sf_round << ", sfn: " 
+      << slot_result.outcome.sfn << ", slot.idx: " << slot_result.slot.idx 
+      << std::endl;
+
     /* Post the result into the result queue*/
     task_lock.lock();
-    global_slot_results.emplace_back(slot_result);
+    global_slot_results.push_back(slot_result);
     busy = false;
     task_lock.unlock();
   }

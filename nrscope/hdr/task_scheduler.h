@@ -20,6 +20,8 @@ public:
   std::vector<std::unique_ptr <NRScopeWorker> > workers;
   /* Slot results reorder buffer */
   std::vector<SlotResult> slot_results;
+  /* The next slot result that task_scheduler expects*/
+  SlotResult next_result;
 
   bool local_log;
   bool to_google;
@@ -50,9 +52,12 @@ public:
 
   int UpdatewithResult(SlotResult now_result);
 
+  void UpdateNextResult();
+
   /* Assign the current slot to one worker*/
-  int AssignTask(srsran_slot_cfg_t* slot, 
-                 srsran_ue_sync_nr_outcome_t* outcome,
+  int AssignTask(uint64_t sf_round,
+                 srsran_slot_cfg_t slot, 
+                 srsran_ue_sync_nr_outcome_t outcome,
                  cf_t* rx_buffer_);
 
   /* resampler tools */

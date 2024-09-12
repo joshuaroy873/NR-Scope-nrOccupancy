@@ -6,12 +6,14 @@ TaskSchedulerNRScope::TaskSchedulerNRScope(){
   task_scheduler_state.sib1_inited = false;
   task_scheduler_state.rach_inited = false;
   task_scheduler_state.dci_inited = false;
-
   task_scheduler_state.sib1_found = false;
   task_scheduler_state.rach_found = false;
-
   task_scheduler_state.nof_known_rntis = 0;
   task_scheduler_state.known_rntis.resize(task_scheduler_state.nof_known_rntis);
+
+  next_result.sf_round = 0;
+  next_result.slot.idx = 0;
+  next_result.outcome.sfn = 0;
 }
 
 TaskSchedulerNRScope::~TaskSchedulerNRScope(){
@@ -304,12 +306,47 @@ int TaskSchedulerNRScope::UpdatewithResult(SlotResult now_result) {
 int TaskSchedulerNRScope::UpdateStateandLog() {
   /* Right now there is no re-order function, 
     just update the state and log*/
-  while(slot_results.size() > 0) {
+  std::sort(slot_results.begin(), slot_results.end());
+  // std::cout << "expected sf_round: " << next_result.sf_round << std::endl;
+  // std::cout << "expected sfn: " << next_result.outcome.sfn << std::endl;
+  // std::cout << "expected slot: " << next_result.slot.idx << std::endl;
+  // for (unsigned long int i = 0; i < slot_results.size(); i++) {
+  //   std::cout << i << ", sfn: " << slot_results[i].outcome.sfn << std::endl;
+  //   std::cout << i << ", sf_round: " << slot_results[i].sf_round << std::endl;
+  //   std::cout << i << ", slot: " << slot_results[i].slot.idx << std::endl;
+  // }
+  while (//(slot_results[0] < next_result || slot_results[0] == next_result) && 
+  slot_results.size() > 0) {
+    // if (slot_results[0] < next_result){
+    //   slot_results.erase(slot_results.begin());
+    //   continue;
+    // } else if (slot_results[0] == next_result){
     SlotResult now_result = slot_results[0];
     UpdatewithResult(now_result);
     slot_results.erase(slot_results.begin());
+    UpdateNextResult();
+    // } else {
+    //   break;
+    // }
   }
   return SRSRAN_SUCCESS;
+}
+
+void TaskSchedulerNRScope::UpdateNextResult() {
+  if (next_result.slot.idx == 
+    SRSRAN_NSLOTS_PER_FRAME_NR(task_scheduler_state.args_t.ssb_scs)-1) {
+    next_result.slot.idx = 0;
+    /* We will need to increase the outcome.sfn */
+    if (next_result.outcome.sfn == 1023) {
+      /* We will need to increase the sf_round */
+      next_result.sf_round ++;
+      next_result.outcome.sfn = 0;
+    } else {
+      next_result.outcome.sfn ++;
+    }
+  } else {
+    next_result.slot.idx ++;
+  }
 }
 
 void TaskSchedulerNRScope::Run() {
@@ -320,7 +357,7 @@ void TaskSchedulerNRScope::Run() {
     if (queue_len > 0) {
       while (global_slot_results.size() > 0) {
         /* dequeue from the head of the queue */
-        slot_results.push_back(global_slot_results.front());
+        slot_results.push_back(global_slot_results[0]);
         global_slot_results.erase(global_slot_results.begin());
       }
     }
@@ -328,38 +365,43 @@ void TaskSchedulerNRScope::Run() {
 
     /* reorder the local slot_results and 
       wait for the correct data for output */
-    UpdateStateandLog();
+    if (slot_results.size() > 0)
+      UpdateStateandLog();
   }
 }
 
-int TaskSchedulerNRScope::AssignTask(srsran_slot_cfg_t* slot, 
-                                     srsran_ue_sync_nr_outcome_t* outcome,
+int TaskSchedulerNRScope::AssignTask(uint64_t sf_round,
+                                     srsran_slot_cfg_t slot, 
+                                     srsran_ue_sync_nr_outcome_t outcome,
                                      cf_t* rx_buffer_){
   /* Find the first idle worker */
   bool found_worker = false;
+  std::cout << "Assigning sf_round: " << sf_round << ", sfn: " << outcome.sfn 
+    << ", slot.idx: " << slot.idx << std::endl;
   for (uint32_t i = 0; i < nof_workers; i ++) {
     bool busy = true;
     task_lock.lock();
     busy = workers[i].get()->busy;
-    task_lock.unlock();
     if (!busy) {
       found_worker = true;
       /* Copy the rx_buffer_ to the worker's rx_buffer. This won't be 
       interfering with other threads? */
-      workers[i].get()->CopySlotandBuffer(slot, outcome, rx_buffer_);
-      task_lock.lock();
+      workers[i].get()->CopySlotandBuffer(sf_round, slot, outcome, rx_buffer_);
       /* Update the worker's state */
       workers[i].get()->SyncState(&task_scheduler_state);
-      task_lock.unlock();
       /* Set the worker's sem to let the task run */
       sem_post(&workers[i].get()->smph_has_job);
-
+    }
+    task_lock.unlock();
+    if (found_worker) {
       break;
     }
   }
   
   if (!found_worker) {
-    ERROR("No available worker, consider increasing the number of workers.");
+    ERROR("No available worker, if this constantly happens not in the intial"
+          "stage (SIBs, RACH, DCI decoders initialization), please consider "
+          "increasing the number of workers.");
     return SRSRAN_ERROR;
   } else {
     return SRSRAN_SUCCESS;

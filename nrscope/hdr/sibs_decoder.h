@@ -78,16 +78,6 @@ class SIBsDecoder{
                                   // std::vector<asn1::rrc_nr::sys_info_s>& sibs,
                                   // asn1::rrc_nr::sib1_s* sib1_);
 
-    // /**
-    // * A function that represents the SIB thread for a producer-consumer threading design,
-    // * but currently we don't adopt such design.
-    // * 
-    // * @return SRSRAN_SUCCESS (0) if everything goes well. 
-    // * SRSRAN_ERROR (-1) if something is wrong in the function.
-    // */
-    // int sibs_thread(srsran_ue_dl_nr_sratescs_info arg_scs_, 
-    //                 TaskSchedulerNRScope* task_scheduler_nrscope, 
-    //                 cf_t* input[SRSRAN_MAX_PORTS]);
 };
 
 #endif

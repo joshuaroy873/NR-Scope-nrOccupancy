@@ -207,7 +207,10 @@ typedef struct WorkState_ WorkState;
 
 typedef struct SlotResult_ SlotResult;
   struct SlotResult_{
-    /* slot and frame information */
+    /* 3GPP only marks system frame up to 10.24 seconds, 0-1023.
+     We want to also capture the level above that. */
+    uint64_t sf_round;
+    /* slot and system frame information */
     srsran_slot_cfg_t slot;
     srsran_ue_sync_nr_outcome_t outcome;
 
@@ -230,9 +233,14 @@ typedef struct SlotResult_ SlotResult;
     bool dci_result;
     std::vector <DCIFeedback> dci_feedback_results;    
 
-    /* Define the compare operator between structure by sfn and slot idx */
+    /* Define the compare operator between structure by sf_round, 
+      sfn and slot idx */
     bool operator<(const SlotResult& other) const {
-      /* If the sfn is different*/
+      /* If the sf_round is different */
+      if (sf_round < other.sf_round) return true;
+      if (sf_round > other.sf_round) return false;
+
+      /* If the sfn is different */
       if (outcome.sfn < other.outcome.sfn) return true;
       if (outcome.sfn > other.outcome.sfn) return false;
       
@@ -241,9 +249,14 @@ typedef struct SlotResult_ SlotResult;
     }
 
     bool operator==(const SlotResult& other) const {
-        return outcome.sfn == other.outcome.sfn && slot.idx == other.slot.idx;
+      return sf_round == other.sf_round && outcome.sfn == other.outcome.sfn &&
+        slot.idx == other.slot.idx;
     }
+
+    /* The + operator depends on the SCS, so it's not defined here. */
   };
+
+bool CompareSlotResult (SlotResult a, SlotResult b);
 
 namespace NRScopeTask{
   extern std::vector<SlotResult> global_slot_results;

@@ -55,15 +55,17 @@ int NRScopeWorker::InitWorker(WorkState task_scheduler_state, int worker_id_){
 
 void NRScopeWorker::StartWorker(){
   // std::cout << "Creating the thread. " << std::endl;
-  worker_thread = std::thread{&NRScopeWorker::Run, this};
-  // if (worker_state.cpu_affinity){
-  //   cpu_set_t cpu_set_worker;
-  //   CPU_ZERO(&cpu_set_worker);
-  //   CPU_SET(worker_id * (3 + worker_state.nof_threads), &cpu_set_worker);
-  //   assert(pthread_setaffinity_np(worker_thread.native_handle(), 
-  //     sizeof(cpu_set_t), &cpu_set_worker) == 0);
-  // }
-  
+  if (worker_state.cpu_affinity) {
+    cpu_set_t cpu_set_worker;
+    CPU_ZERO(&cpu_set_worker);
+    CPU_SET(worker_id * (3 + worker_state.nof_threads), &cpu_set_worker);
+    worker_thread = std::thread{&NRScopeWorker::Run, this};      
+    assert(pthread_setaffinity_np(worker_thread.native_handle(), 
+      sizeof(cpu_set_t), &cpu_set_worker) == 0);
+  } else {
+    worker_thread = std::thread{&NRScopeWorker::Run, this};
+  }
+    
   worker_thread.detach();
 }
 
@@ -294,28 +296,34 @@ void NRScopeWorker::Run() {
     std::thread sibs_thread;
     /* If sib1 is not found, we run the sibs_thread; if it's found, we skip. */
     if (worker_state.sib1_inited) {
-      sibs_thread = std::thread {&SIBsDecoder::DecodeandParseSIB1fromSlot, 
-        &sibs_decoder, &slot, &worker_state, &slot_result};
-      // if (worker_state.cpu_affinity){
-      //   cpu_set_t cpu_set_sib;
-      //   CPU_ZERO(&cpu_set_sib);
-      //   CPU_SET(worker_id * (3+worker_state.nof_threads) + 1, &cpu_set_sib);
-      //   assert(pthread_setaffinity_np(sibs_thread.native_handle(), 
-      //     sizeof(cpu_set_t), &cpu_set_sib) == 0);
-      // }
+      if (worker_state.cpu_affinity){
+        cpu_set_t cpu_set_sib;
+        CPU_ZERO(&cpu_set_sib);
+        CPU_SET(worker_id * (3+worker_state.nof_threads) + 1, &cpu_set_sib);
+        sibs_thread = std::thread {&SIBsDecoder::DecodeandParseSIB1fromSlot, 
+          &sibs_decoder, &slot, &worker_state, &slot_result};
+        assert(pthread_setaffinity_np(sibs_thread.native_handle(), 
+          sizeof(cpu_set_t), &cpu_set_sib) == 0);
+      } else {
+        sibs_thread = std::thread {&SIBsDecoder::DecodeandParseSIB1fromSlot, 
+          &sibs_decoder, &slot, &worker_state, &slot_result};
+      }
     }    
 
     std::thread rach_thread;
     if (worker_state.rach_inited) {
-      rach_thread = std::thread {&RachDecoder::DecodeandParseMS4fromSlot,
-        &rach_decoder, &slot, &worker_state, &slot_result};
-      // if (worker_state.cpu_affinity) {
-      //   cpu_set_t cpu_set_rach;
-      //   CPU_ZERO(&cpu_set_rach);
-      //   CPU_SET(worker_id * (3+worker_state.nof_threads) + 2, &cpu_set_rach);
-      //   assert(pthread_setaffinity_np(rach_thread.native_handle(), 
-      //     sizeof(cpu_set_t), &cpu_set_rach) == 0);
-      // }
+      if (worker_state.cpu_affinity) {
+        cpu_set_t cpu_set_rach;
+        CPU_ZERO(&cpu_set_rach);
+        CPU_SET(worker_id * (3+worker_state.nof_threads) + 2, &cpu_set_rach);
+        rach_thread = std::thread {&RachDecoder::DecodeandParseMS4fromSlot,
+          &rach_decoder, &slot, &worker_state, &slot_result};
+        assert(pthread_setaffinity_np(rach_thread.native_handle(), 
+          sizeof(cpu_set_t), &cpu_set_rach) == 0);
+      } else {
+        rach_thread = std::thread {&RachDecoder::DecodeandParseMS4fromSlot,
+          &rach_decoder, &slot, &worker_state, &slot_result};
+      }
     }
 
     std::vector <std::thread> dci_threads;
@@ -327,25 +335,32 @@ void NRScopeWorker::Run() {
       dl_prb_bits_rate.resize(worker_state.nof_known_rntis);
       ul_prb_bits_rate.resize(worker_state.nof_known_rntis);
 
-      for (uint32_t i = 0; i < worker_state.nof_threads; i++){
-        dci_threads.emplace_back(&DCIDecoder::DecodeandParseDCIfromSlot, 
+      
+      if (worker_state.cpu_affinity) {
+        for (uint32_t i = 0; i < worker_state.nof_threads; i ++) {
+          cpu_set_t cpu_set_dci;
+          CPU_ZERO(&cpu_set_dci);
+          CPU_SET(worker_id * (3+worker_state.nof_threads) + i + 3, 
+            &cpu_set_dci);
+          dci_threads.emplace_back(&DCIDecoder::DecodeandParseDCIfromSlot, 
           dci_decoders[i].get(), &slot, &worker_state, 
           std::ref(sharded_results), std::ref(sharded_rntis), 
           std::ref(nof_sharded_rntis), std::ref(dl_prb_rate), 
           std::ref(dl_prb_bits_rate), std::ref(ul_prb_rate), 
           std::ref(ul_prb_bits_rate));
+          assert(pthread_setaffinity_np(dci_threads[i].native_handle(), 
+            sizeof(cpu_set_t), &cpu_set_dci) == 0);
+        }
+      } else {
+        for (uint32_t i = 0; i < worker_state.nof_threads; i++){
+          dci_threads.emplace_back(&DCIDecoder::DecodeandParseDCIfromSlot, 
+          dci_decoders[i].get(), &slot, &worker_state, 
+          std::ref(sharded_results), std::ref(sharded_rntis), 
+          std::ref(nof_sharded_rntis), std::ref(dl_prb_rate), 
+          std::ref(dl_prb_bits_rate), std::ref(ul_prb_rate), 
+          std::ref(ul_prb_bits_rate));
+        }
       }
-
-      // if (worker_state.cpu_affinity) {
-      //   for (uint32_t i = 0; i < worker_state.nof_threads; i ++) {
-      //     cpu_set_t cpu_set_dci;
-      //     CPU_ZERO(&cpu_set_dci);
-      //     CPU_SET(worker_id * (3+worker_state.nof_threads) + i + 3, 
-      //       &cpu_set_dci);
-      //     assert(pthread_setaffinity_np(dci_threads[i].native_handle(), 
-      //       sizeof(cpu_set_t), &cpu_set_dci) == 0);
-      //   }
-      // }
     }
 
     if(sibs_thread.joinable()){

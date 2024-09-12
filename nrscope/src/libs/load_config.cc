@@ -142,6 +142,8 @@ int load_config(std::vector<Radio>& radios, std::string file_name){
         radios[i].nof_rnti_worker_groups = 1;
       }
 
+      radios[i].nof_threads = radios[i].nof_rnti_worker_groups;
+
       if(config_yaml[setting_name]["nof_bwps"]){
         radios[i].nof_bwps = config_yaml[setting_name]["nof_bwps"].as<int>();
       }else{

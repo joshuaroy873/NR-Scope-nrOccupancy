@@ -74,7 +74,7 @@ class Radio{
     resampler_kit rk[RESAMPLE_WORKER_NUM];
     bool rk_initialized = false;
 
-    bool cpu_affinity = false;
+    bool cpu_affinity;
 
     std::string log_name;
     bool local_log;

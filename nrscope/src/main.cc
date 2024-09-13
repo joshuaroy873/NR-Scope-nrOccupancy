@@ -9,22 +9,7 @@
 #include "srsran/common/band_helper.h"
 #include "srsran/phy/common/phy_common_nr.h"
 
-// void my_handler(int s){
-//   printf("Caught signal %d\n",s);
-//   exit(1); 
-// }
-
 int main(int argc, char** argv){
-  // srsran_debug_handle_crash(argc, argv);
-
-  // struct sigaction sigIntHandler;
-
-  // sigIntHandler.sa_handler = my_handler;
-  // sigemptyset(&sigIntHandler.sa_mask);
-  // sigIntHandler.sa_flags = 0;
-
-  // sigaction(SIGINT, &sigIntHandler, NULL);
-
   /* Initialize ASN decoder */
   // init_asn_decoder("sample.sib");
 

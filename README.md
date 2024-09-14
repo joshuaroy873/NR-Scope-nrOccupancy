@@ -51,7 +51,7 @@ sudo ldconfig
 # to double check, libs should appear at /usr/local/lib and header liquid.h should appear at /usr/local/include/liquid/
 ```
 
-For different USRP daughterboard, different `config.yaml` should be used.
+For different USRP daughterboard, different `config.yaml` should be used. Please refer to the sample `config.yaml` in `./nrscope/config/config.yaml` and the explanatory comment in it.
 CBX:
 
 ```

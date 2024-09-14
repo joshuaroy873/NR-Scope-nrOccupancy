@@ -16,7 +16,7 @@ Radio::Radio() :
   radio = nullptr;
 
   nof_trials = 100;
-  nof_trials_scan = 200;
+  nof_trials_scan = 500;
   sf_round = 0;
   srsran_searcher_args_t.max_srate_hz = 92.16e6;
   srsran_searcher_args_t.ssb_min_scs = srsran_subcarrier_spacing_15kHz;
@@ -81,17 +81,13 @@ static int copy_cpp_to_c_complex_arr(std::complex<float>* src,
 
 int Radio::ScanInitandStart(){
 
-  // Static rf parameters
-  rf_args.srate_hz = 11520000;
-  rf_args.rx_gain = 30;
-  rf_args.device_args = "type=x300";
-  rf_args.nof_antennas = 1;
-  rf_args.nof_carriers = 1;
-  rf_args.log_level = "debug";
-  rf_args.dl_freq = srsran_band_helper::get_freq_from_gscn(5279);
+  srsran_assert(raido_shared->init(rf_args, nullptr) == 
+    SRSRAN_SUCCESS, "Failed Radio initialisation");
+  radio = std::move(raido_shared);
 
   // Static cell searcher parameters  
-  args_t.srate_hz = rf_args.srate_hz;
+  args_t.srate_hz = rf_args.srsran_srate_hz;
+  rf_args.dl_freq = args_t.base_carrier.dl_center_frequency_hz;
   args_t.rf_device_name = rf_args.device_name;
   args_t.rf_device_args = rf_args.device_args;
   args_t.rf_log_level = "info";
@@ -105,8 +101,8 @@ int Radio::ScanInitandStart(){
   double ssb_center_freq_min_hz;
   double ssb_center_freq_max_hz;
 
-  // Store the double args_t.base_carrier.dl_center_frequency_hz and cs_args.center_freq_hz in a mirror int version
-  // for precise diff calculation
+  /* Store the double args_t.base_carrier.dl_center_frequency_hz and 
+  cs_args.center_freq_hz in a mirror int version for precise diff calculation*/
   long long dl_center_frequency_hz_int_ver;
   long long cs_args_ssb_freq_hz_int_ver;
 
@@ -114,20 +110,80 @@ int Radio::ScanInitandStart(){
   uint32_t gscn_high;
   uint32_t gscn_step;
 
-  // initialize radio
-  srsran_assert(raido_shared->init(rf_args, nullptr) == SRSRAN_SUCCESS, "Failed Radio initialisation");
-  radio = std::move(raido_shared);
   radio->set_rx_srate(rf_args.srate_hz);
+
+  if (fabs(rf_args.srsran_srate_hz - rf_args.srate_hz) < 0.1) {
+    resample_needed = false;
+  } else {
+    resample_needed = true;
+  }
+  std::cout << "resample_needed: " << resample_needed << std::endl;
+  
   radio->set_rx_gain(rf_args.rx_gain);
   std::cout << "Initialized radio; start cell scanning" << std::endl;
 
+  pre_resampling_slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / 
+    SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
+  std::cout << "pre_resampling_slot_sz: " << pre_resampling_slot_sz 
+  << std::endl;
+  slot_sz = (uint32_t)(rf_args.srsran_srate_hz / 1000.0f / 
+    SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
+  std::cout << "slot_sz: " << slot_sz << std::endl;
+  // Allocate receive buffer
+  rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) *
+    pre_resampling_slot_sz);
+  srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) *
+  pre_resampling_slot_sz * sizeof(cf_t));
+  /* the actual slot size after resampling */
+  uint32_t actual_slot_szs[CS_RESAMPLE_WORKER_NUM]; 
+
+  // Allocate pre-resampling receive buffer
+  pre_resampling_rx_buffer = srsran_vec_cf_malloc(
+      SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
+  srsran_vec_zero(pre_resampling_rx_buffer, 
+    SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz * 
+    sizeof(cf_t));
+
+  // initialize resampling tool
+  // resampling rate (output/input)
+  float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;
+  // resampling filter stop-band attenuation [dB]    
+  float As=60.0f;
+  msresamp_crcf q[CS_RESAMPLE_WORKER_NUM];
+  uint32_t temp_x_sz;
+  uint32_t temp_y_sz;
+  std::complex<float> * temp_x;
+  std::complex<float> * temp_y[CS_RESAMPLE_WORKER_NUM];
+  if (resample_needed) {
+    for (uint8_t i = 0; i < CS_RESAMPLE_WORKER_NUM; i++) {
+      q[i] = msresamp_crcf_create(r,As);
+    }
+
+    float delay = resample_needed ? msresamp_crcf_get_delay(q[0]) : 0;
+    // add a few zero padding
+    temp_x_sz = SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * 
+      pre_resampling_slot_sz + (int)ceilf(delay) + 10;
+    temp_x = (std::complex<float> *)malloc(temp_x_sz * 
+      sizeof(std::complex<float>));
+
+    temp_y_sz = (uint32_t)(temp_x_sz * r * 2);
+    for (uint8_t i = 0; i < CS_RESAMPLE_WORKER_NUM; i++) {
+      temp_y[i] = (std::complex<float> *)malloc(temp_y_sz * 
+        sizeof(std::complex<float>));
+    }
+  }
+
   // Traverse GSCN per band
-  for (const srsran_band_helper::nr_band_ss_raster& ss_raster : srsran_band_helper::nr_band_ss_raster_table) {
-    std::cout << "Start scaning band " << ss_raster.band << " with scs idx " << ss_raster.scs << std::endl;
-    std::cout << "gscn " << ss_raster.gscn_first << " to gscn " << ss_raster.gscn_last << std::endl;
+  for (const srsran_band_helper::nr_band_ss_raster& ss_raster : 
+    srsran_band_helper::nr_band_ss_raster_table) {
+    std::cout << "Start scaning band " << ss_raster.band 
+      << " with scs idx " << ss_raster.scs << std::endl;
+    std::cout << "gscn " << ss_raster.gscn_first << " to gscn " 
+      << ss_raster.gscn_last << std::endl;
 
     // adjust the RF's central meas freq to the first GSCN point of the band
-    cs_args_ssb_freq_hz_int_ver = (long long)srsran_band_helper::get_freq_from_gscn(ss_raster.gscn_first);
+    cs_args_ssb_freq_hz_int_ver = 
+      (long long)srsran_band_helper::get_freq_from_gscn(ss_raster.gscn_first);
     dl_center_frequency_hz_int_ver = cs_args_ssb_freq_hz_int_ver;
     rf_args.dl_freq = cs_args_ssb_freq_hz_int_ver;
     args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
@@ -143,15 +199,9 @@ int Radio::ScanInitandStart(){
     args_t.set_ssb_from_band(ssb_scs);
     args_t.base_carrier.scs = args_t.ssb_scs;
     if(args_t.duplex_mode == SRSRAN_DUPLEX_MODE_TDD){
-      args_t.base_carrier.ul_center_frequency_hz = args_t.base_carrier.dl_center_frequency_hz;
+      args_t.base_carrier.ul_center_frequency_hz = 
+        args_t.base_carrier.dl_center_frequency_hz;
     }
-
-    // Allocate receive buffer
-    slot_sz = (uint32_t)(rf_args.srate_hz / 1000.0f / SRSRAN_NOF_SLOTS_PER_SF_NR(ssb_scs));
-    rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
-    std::cout << "slot_sz: " << slot_sz << std::endl;
-    std::cout << "rx_buffer size: " << SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz << std::endl;
-    srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
 
     cs_args.ssb_scs = args_t.ssb_scs;
     cs_args.ssb_pattern = args_t.ssb_pattern;
@@ -159,12 +209,17 @@ int Radio::ScanInitandStart(){
     uint32_t ssb_scs_hz = SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
 
     // calculate the bandpass 
-    std::cout << "Update RF's meas central freq to " << cs_args.ssb_freq_hz << std::endl;
-    ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs); // here might be a logic error
-    ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-    ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-    std::cout << "Update min ssb center detect boundary to " << ssb_center_freq_min_hz << std::endl;
-    std::cout << "Update max ssb center detect boundary to " << ssb_center_freq_max_hz << std::endl;
+    std::cout << "Update RF's meas central freq to " 
+      << cs_args.ssb_freq_hz << std::endl;
+    ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
+    ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - 
+      (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+    ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + 
+      (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+    std::cout << "Update min ssb center detect boundary to " 
+      << ssb_center_freq_min_hz << std::endl;
+    std::cout << "Update max ssb center detect boundary to " 
+      << ssb_center_freq_max_hz << std::endl;
 
     // Set RF
     radio->release_freq(0);
@@ -178,7 +233,8 @@ int Radio::ScanInitandStart(){
 
       std::cout << "Start scaning GSCN number " << gscn << std::endl;
       // Get SSB center frequency for this GSCN point
-      cs_args_ssb_freq_hz_int_ver = (long long)srsran_band_helper::get_freq_from_gscn(gscn);
+      cs_args_ssb_freq_hz_int_ver = 
+        (long long)srsran_band_helper::get_freq_from_gscn(gscn);
       cs_args.ssb_freq_hz = cs_args_ssb_freq_hz_int_ver;
       std::cout << "Absolute freq " << cs_args.ssb_freq_hz << std::endl; 
 
@@ -190,11 +246,14 @@ int Radio::ScanInitandStart(){
       bool offset_not_scs_aligned = false;
       bool not_in_bandpass_range = false;
 
-      // Calculate frequency offset between the base-band center frequency and the SSB absolute frequency
-      long long offset_hz = std::abs(cs_args_ssb_freq_hz_int_ver - dl_center_frequency_hz_int_ver);
+      /* Calculate frequency offset between the base-band center frequency 
+      and the SSB absolute frequency */
+      long long offset_hz = std::abs(cs_args_ssb_freq_hz_int_ver - 
+        dl_center_frequency_hz_int_ver);
        
       if (offset_hz % ssb_scs_hz != 0) {
-        std::cout << "the offset " << offset_hz << " is NOT multiple of the subcarrier spacing " << ssb_scs_hz << std::endl;
+        std::cout << "the offset " << offset_hz << 
+          " is NOT multiple of the subcarrier spacing " << ssb_scs_hz << std::endl;
         offset_not_scs_aligned = true;
       }
 
@@ -206,12 +265,17 @@ int Radio::ScanInitandStart(){
 
       if (offset_not_scs_aligned || not_in_bandpass_range) {
         // update and measure
-        std::cout << "Update RF's meas central freq to " << cs_args.ssb_freq_hz << std::endl;
+        std::cout << "Update RF's meas central freq to " 
+          << cs_args.ssb_freq_hz << std::endl;
         ssb_bw_hz = SRSRAN_SSB_BW_SUBC * SRSRAN_SUBC_SPACING_NR(cs_args.ssb_scs);
-        ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-        ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
-        std::cout << "Update min ssb center detect boundary to " << ssb_center_freq_min_hz << std::endl;
-        std::cout << "Update max ssb center detect boundary to " << ssb_center_freq_max_hz << std::endl;
+        ssb_center_freq_min_hz = args_t.base_carrier.dl_center_frequency_hz - 
+          (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+        ssb_center_freq_max_hz = args_t.base_carrier.dl_center_frequency_hz + 
+          (args_t.srate_hz * 0.7 - ssb_bw_hz) / 2.0;
+        std::cout << "Update min ssb center detect boundary to " << 
+          ssb_center_freq_min_hz << std::endl;
+        std::cout << "Update max ssb center detect boundary to " << 
+          ssb_center_freq_max_hz << std::endl;
 
         rf_args.dl_freq = cs_args.ssb_freq_hz;
         args_t.base_carrier.dl_center_frequency_hz = rf_args.dl_freq;
@@ -222,10 +286,10 @@ int Radio::ScanInitandStart(){
       }
 
       srsran_searcher_cfg_t.srate_hz = args_t.srate_hz;
-      // Currently looks like there is some coarse correlation issue
-      // that the next several GSCN can possibly detect the same ssb
-      // Just need to add some "deduplicate" logic when using the scanned cell info
-      // TO-DO: maybe fix this at a later point
+      /* Currently looks like there is some coarse correlation issue
+        that the next several GSCN can possibly detect the same ssb
+        Just need to add some "deduplicate" logic when using the scanned cell info
+        TO-DO: maybe fix this at a later point */
       srsran_searcher_cfg_t.center_freq_hz = cs_args.ssb_freq_hz;
       srsran_searcher_cfg_t.ssb_freq_hz = cs_args.ssb_freq_hz;
       srsran_searcher_cfg_t.ssb_scs = args_t.ssb_scs;
@@ -242,12 +306,13 @@ int Radio::ScanInitandStart(){
       args_t.base_carrier.ssb_center_freq_hz = cs_args.ssb_freq_hz;
 
       srsran::rf_buffer_t rf_buffer = {};
-      rf_buffer.set_nof_samples(slot_sz);
-      rf_buffer.set(0, rx_buffer);
+      rf_buffer.set_nof_samples(pre_resampling_slot_sz);
+      rf_buffer.set(0, pre_resampling_rx_buffer);
 
       for(uint32_t trial=0; trial < nof_trials_scan; trial++){
         if (trial == 0) {
-          srsran_vec_cf_zero(rx_buffer, slot_sz);
+          srsran_vec_cf_zero(rx_buffer, pre_resampling_slot_sz);
+          srsran_vec_cf_zero(pre_resampling_rx_buffer, pre_resampling_slot_sz);
         }
 
         srsran::rf_timestamp_t& rf_timestamp = last_rx_time;
@@ -255,6 +320,35 @@ int Radio::ScanInitandStart(){
         if (not radio->rx_now(rf_buffer, rf_timestamp)) {
           return SRSRAN_ERROR;
         }
+
+        if (resample_needed) {
+          copy_c_to_cpp_complex_arr_and_zero_padding(pre_resampling_rx_buffer, 
+            temp_x, pre_resampling_slot_sz, temp_x_sz);
+          uint32_t splitted_nx = pre_resampling_slot_sz / CS_RESAMPLE_WORKER_NUM;
+          std::vector <std::thread> ssb_scan_resample_threads;
+          for (uint8_t k = 0; k < CS_RESAMPLE_WORKER_NUM; k++) {
+            ssb_scan_resample_threads.emplace_back(&resample_partially, &q[k], 
+              temp_x, temp_y[k], k, splitted_nx, &actual_slot_szs[k]);
+          }
+          for (uint8_t k = 0; k < CS_RESAMPLE_WORKER_NUM; k++){
+            if(ssb_scan_resample_threads[k].joinable()){
+              ssb_scan_resample_threads[k].join();
+            }
+          }
+          // sequentially merge back
+          cf_t * buf_split_ptr = rx_buffer;
+          for (uint8_t k = 0; k < CS_RESAMPLE_WORKER_NUM; k++){
+            copy_cpp_to_c_complex_arr(temp_y[k], buf_split_ptr, 
+              actual_slot_szs[k]);
+            buf_split_ptr += actual_slot_szs[k];
+          }
+        } else {
+          // pre_resampling_slot_sz should be the same as slot_sz as 
+          // resample ratio is 1 in this case
+          srsran_vec_cf_copy(rx_buffer, pre_resampling_rx_buffer, 
+            pre_resampling_slot_sz);
+        }
+
         *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
 
         cs_ret = srsran_searcher.run_slot(rx_buffer, slot_sz);
@@ -273,14 +367,23 @@ int Radio::ScanInitandStart(){
           scan_log_node.freq = cs_args.ssb_freq_hz;
           scan_log_node.pci = cs_ret.ssb_res.N_id;
           NRScopeLog::push_node(scan_log_node, rf_index);
+          printf("scan log triggered here\n");
         }
       }
     }
-
-    free(rx_buffer);
   }
 
-  NRScopeLog::exit_logger();
+  free(rx_buffer);
+  if (resample_needed) {
+    for (uint8_t k = 0; k < CS_RESAMPLE_WORKER_NUM; k++) {
+      msresamp_crcf_destroy(q[k]);
+      free(temp_y[k]);
+    }
+    free(temp_x);
+  }
+
+  // Not exit explicitly as early termination might miss last found recording
+  // NRScopeLog::exit_logger();
 
   return SRSRAN_SUCCESS;
 }
@@ -335,7 +438,8 @@ int Radio::RadioInitandStart(){
   rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * 
     pre_resampling_slot_sz * RING_BUF_SIZE);
   std::cout << "slot_sz: " << slot_sz << std::endl;
-  srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
+  srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * 
+  pre_resampling_slot_sz * RING_BUF_SIZE * sizeof(cf_t));
   /* the actual slot size after resampling */
   uint32_t actual_slot_szs[RESAMPLE_WORKER_NUM]; 
 
@@ -344,7 +448,8 @@ int Radio::RadioInitandStart(){
       SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
   std::cout << "pre_resampling_slot_sz: " << pre_resampling_slot_sz << std::endl;
   srsran_vec_zero(pre_resampling_rx_buffer, 
-    SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
+    SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz * 
+    sizeof(cf_t));
 
   cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
   cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
@@ -367,8 +472,9 @@ int Radio::RadioInitandStart(){
 
   // initialize resampling tool
   // resampling rate (output/input)
-  float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;       
-  float As=60.0f;         // resampling filter stop-band attenuation [dB]
+  float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;
+  // resampling filter stop-band attenuation [dB]     
+  float As=60.0f;
   msresamp_crcf q[RESAMPLE_WORKER_NUM];
   uint32_t temp_x_sz;
   uint32_t temp_y_sz;

@@ -335,7 +335,8 @@ int Radio::RadioInitandStart(){
   rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * 
     pre_resampling_slot_sz * RING_BUF_SIZE);
   std::cout << "slot_sz: " << slot_sz << std::endl;
-  srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * slot_sz);
+  srsran_vec_zero(rx_buffer, SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * 
+  pre_resampling_slot_sz * RING_BUF_SIZE * sizeof(cf_t));
   /* the actual slot size after resampling */
   uint32_t actual_slot_szs[RESAMPLE_WORKER_NUM]; 
 
@@ -344,7 +345,8 @@ int Radio::RadioInitandStart(){
       SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
   std::cout << "pre_resampling_slot_sz: " << pre_resampling_slot_sz << std::endl;
   srsran_vec_zero(pre_resampling_rx_buffer, 
-    SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz);
+    SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs) * pre_resampling_slot_sz * 
+    sizeof(cf_t));
 
   cs_args.center_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
   cs_args.ssb_freq_hz = args_t.base_carrier.dl_center_frequency_hz;
@@ -367,8 +369,9 @@ int Radio::RadioInitandStart(){
 
   // initialize resampling tool
   // resampling rate (output/input)
-  float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;       
-  float As=60.0f;         // resampling filter stop-band attenuation [dB]
+  float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;
+  // resampling filter stop-band attenuation [dB]     
+  float As=60.0f;
   msresamp_crcf q[RESAMPLE_WORKER_NUM];
   uint32_t temp_x_sz;
   uint32_t temp_y_sz;

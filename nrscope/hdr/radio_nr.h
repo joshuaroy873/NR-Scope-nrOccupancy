@@ -16,6 +16,8 @@
 #include <chrono>
 
 #define RESAMPLE_WORKER_NUM 8
+// For cell scan
+#define CS_RESAMPLE_WORKER_NUM 8
 
 class Radio{
   public:

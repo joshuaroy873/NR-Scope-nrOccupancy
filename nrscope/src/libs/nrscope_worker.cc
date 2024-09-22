@@ -73,10 +73,12 @@ void NRScopeWorker::CopySlotandBuffer(uint64_t sf_round_,
                                       srsran_slot_cfg_t slot_, 
                                       srsran_ue_sync_nr_outcome_t outcome_,
                                       cf_t* rx_buffer_) {
+  task_scheduler_lock.lock();
   sf_round = sf_round_;
   slot = slot_;
   outcome = outcome_;
   srsran_vec_cf_copy(rx_buffer, rx_buffer_, worker_state.slot_sz);
+  task_scheduler_lock.lock();
 }
 
 int NRScopeWorker::InitSIBDecoder(){
@@ -125,7 +127,7 @@ int NRScopeWorker::InitDCIDecoders() {
 }
 
 int NRScopeWorker::SyncState(WorkState* task_scheduler_state) {
-  
+  task_scheduler_lock.lock();
   worker_state.args_t = task_scheduler_state->args_t;
   worker_state.cell = task_scheduler_state->cell;
   worker_state.cs_ret = task_scheduler_state->cs_ret;
@@ -170,6 +172,7 @@ int NRScopeWorker::SyncState(WorkState* task_scheduler_state) {
   for (long unsigned int i = 0; i < worker_state.nof_known_rntis; i ++) {
     worker_state.known_rntis[i] = task_scheduler_state->known_rntis[i];
   }
+  task_scheduler_lock.unlock();
 
   return SRSRAN_SUCCESS;
 }
@@ -263,6 +266,7 @@ void NRScopeWorker::Run() {
     worker_locks[worker_id].lock();
     busy = true;
     worker_locks[worker_id].unlock();
+    struct timeval t0, t1;
 
     // std::cout << "Processing sf_round: " << sf_round << ", sfn: " << outcome.sfn
     //  << ", slot.idx: " << slot.idx << std::endl; 
@@ -295,7 +299,7 @@ void NRScopeWorker::Run() {
 
     std::thread sibs_thread;
     /* If sib1 is not found, we run the sibs_thread; if it's found, we skip. */
-    if (worker_state.sib1_inited) {
+    if (worker_state.sib1_inited and !worker_state.sib1_found) {
       if (worker_state.cpu_affinity){
         cpu_set_t cpu_set_sib;
         CPU_ZERO(&cpu_set_sib);
@@ -335,7 +339,7 @@ void NRScopeWorker::Run() {
       dl_prb_bits_rate.resize(worker_state.nof_known_rntis);
       ul_prb_bits_rate.resize(worker_state.nof_known_rntis);
 
-      
+      gettimeofday(&t0, NULL);
       if (worker_state.cpu_affinity) {
         for (uint32_t i = 0; i < worker_state.nof_threads; i ++) {
           cpu_set_t cpu_set_dci;
@@ -361,6 +365,17 @@ void NRScopeWorker::Run() {
           std::ref(ul_prb_bits_rate));
         }
       }
+
+      for (uint32_t i = 0; i < worker_state.nof_threads; i++){
+        if(dci_threads[i].joinable()){
+          dci_threads[i].join();
+        }
+      }
+      gettimeofday(&t1, NULL);
+      std::cout << "sf_round: " << (int)slot_result.sf_round
+      << "sfn: " << (int)slot_result.outcome.sfn 
+      << "slot: " << (int)slot_result.slot.idx 
+      << "time: " << (int)(t1.tv_usec - t0.tv_usec) << std::endl;
     }
 
     if(sibs_thread.joinable()){
@@ -372,11 +387,7 @@ void NRScopeWorker::Run() {
     }
 
     if(worker_state.dci_inited){
-      for (uint32_t i = 0; i < worker_state.nof_threads; i++){
-        if(dci_threads[i].joinable()){
-          dci_threads[i].join();
-        }
-      }
+      
       MergeResults();
       slot_result.dci_feedback_results = results;
     }
@@ -390,8 +401,10 @@ void NRScopeWorker::Run() {
     /* Post the result into the result queue*/
     queue_lock.lock();
     global_slot_results.push_back(slot_result);
-    busy = false;
     queue_lock.unlock();
+    worker_locks[worker_id].lock();
+    busy = false;
+    worker_locks[worker_id].unlock();
   }
 }
 }

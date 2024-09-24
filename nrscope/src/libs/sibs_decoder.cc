@@ -13,6 +13,7 @@ SIBsDecoder::~SIBsDecoder(){
 
 int SIBsDecoder::SIBDecoderandReceptionInit(WorkState* state,
                                             cf_t* input[SRSRAN_MAX_PORTS]){  
+  std::cout << "Initializing SIB decoder" << std::endl;
   memcpy(&coreset0_t, &state->coreset0_t, sizeof(srsran_coreset_t));
 
   dci_cfg.bwp_dl_initial_bw   = 275;
@@ -75,7 +76,7 @@ int SIBsDecoder::SIBDecoderandReceptionInit(WorkState* state,
   }
 
   // task_scheduler_nrscope->sib1_inited = true;
-  // std::cout << "SIB Decoder Initialized.." << std::endl;
+  std::cout << "SIB Decoder Initialized.." << std::endl;
 
   return SRSRAN_SUCCESS;
 }

@@ -73,12 +73,10 @@ void NRScopeWorker::CopySlotandBuffer(uint64_t sf_round_,
                                       srsran_slot_cfg_t slot_, 
                                       srsran_ue_sync_nr_outcome_t outcome_,
                                       cf_t* rx_buffer_) {
-  task_scheduler_lock.lock();
   sf_round = sf_round_;
   slot = slot_;
   outcome = outcome_;
   srsran_vec_cf_copy(rx_buffer, rx_buffer_, worker_state.slot_sz);
-  task_scheduler_lock.lock();
 }
 
 int NRScopeWorker::InitSIBDecoder(){
@@ -127,7 +125,6 @@ int NRScopeWorker::InitDCIDecoders() {
 }
 
 int NRScopeWorker::SyncState(WorkState* task_scheduler_state) {
-  task_scheduler_lock.lock();
   worker_state.args_t = task_scheduler_state->args_t;
   worker_state.cell = task_scheduler_state->cell;
   worker_state.cs_ret = task_scheduler_state->cs_ret;
@@ -172,7 +169,6 @@ int NRScopeWorker::SyncState(WorkState* task_scheduler_state) {
   for (long unsigned int i = 0; i < worker_state.nof_known_rntis; i ++) {
     worker_state.known_rntis[i] = task_scheduler_state->known_rntis[i];
   }
-  task_scheduler_lock.unlock();
 
   return SRSRAN_SUCCESS;
 }

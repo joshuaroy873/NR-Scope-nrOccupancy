@@ -140,7 +140,7 @@ int TaskSchedulerNRScope::DecodeMIB(cell_searcher_args_t* args_t_,
     ERROR("Error checking table 13-11");
     return SRSRAN_ERROR;
   }
-  // std::cout << "After calling coreset_zero_t_f_nrscope" << std::endl;
+  std::cout << "After calling coreset_zero_t_f_nrscope" << std::endl;
 
   task_scheduler_state.cell.u = (int)args_t_->ssb_scs; 
   task_scheduler_state.coreset0_args_t.n_0 = (coreset_zero_cfg.O * 
@@ -159,7 +159,7 @@ int TaskSchedulerNRScope::DecodeMIB(cell_searcher_args_t* args_t_,
   task_scheduler_state.cs_ret = *cs_ret_;
   memcpy(&task_scheduler_state.srsran_searcher_cfg_t, srsran_searcher_cfg_t_, 
     sizeof(srsue::nr::cell_search::cfg_t));
-
+  
   // initiate resampler here
   resample_ratio = resample_ratio_;
   float As=60.0f;
@@ -241,10 +241,21 @@ int TaskSchedulerNRScope::UpdatewithResult(SlotResult now_result) {
         task_scheduler_state.rach_found = true;
       } else {
         /* We already found the RACH, we just append the new RNTIs */
-        task_scheduler_state.nof_known_rntis += now_result.new_rnti_number;
         for (uint32_t i = 0; i < now_result.new_rnti_number; i++) {
-          task_scheduler_state.known_rntis.push_back(
-            now_result.new_rntis_found[i]);
+          bool is_in = false;
+          for (unsigned long int j = 0; 
+              j < task_scheduler_state.known_rntis.size(); j ++){
+            if (now_result.new_rntis_found[i] == 
+                task_scheduler_state.known_rntis[j]){
+              is_in = true;
+              break;
+            }
+          }
+          if (!is_in) {
+            task_scheduler_state.nof_known_rntis += 1;
+            task_scheduler_state.known_rntis.push_back(
+              now_result.new_rntis_found[i]);
+          }
         }
       }
 

@@ -15,8 +15,8 @@ Radio::Radio() :
   raido_shared = std::make_shared<srsran::radio>();
   radio = nullptr;
 
-  nof_trials = 100;
-  nof_trials_scan = 500;
+  nof_trials = 2000;
+  nof_trials_scan = 200;
   sf_round = 0;
   srsran_searcher_args_t.max_srate_hz = 92.16e6;
   srsran_searcher_args_t.ssb_min_scs = srsran_subcarrier_spacing_15kHz;
@@ -845,6 +845,8 @@ int Radio::DecodeAndProcess(){
         RING_BUF_MODULUS sf index; we copy wanted data to 0 sf idx
         assumption: no way when we are decoding this sf the fetch thread has 
         go around the whole ring and modify this sf again */
+      std::cout << "pre_resampling_sf_sz: " << pre_resampling_sf_sz 
+        << std::endl;
       srsran_vec_cf_copy(rx_buffer, rx_buffer + 
         (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1) * 
         pre_resampling_sf_sz)) + (slot_idx * slot_sz), slot_sz);
@@ -856,7 +858,6 @@ int Radio::DecodeAndProcess(){
 
       if (first_time) {
         /* If the next result is not set */
-        NRScopeTask::task_scheduler_lock.lock();
         task_scheduler_nrscope.next_result.sf_round = sf_round;
         task_scheduler_nrscope.next_result.slot.idx = slot.idx;
         if (outcome.sfn == 1023){
@@ -866,7 +867,6 @@ int Radio::DecodeAndProcess(){
           task_scheduler_nrscope.next_result.outcome.sfn = outcome.sfn + 1;
         }
         
-        NRScopeTask::task_scheduler_lock.unlock();
       }
 
       if (task_scheduler_nrscope.AssignTask(sf_round, slot, outcome, rx_buffer) 

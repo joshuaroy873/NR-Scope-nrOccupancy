@@ -1,11 +1,11 @@
-NG-Scope-5G
-===========
+NR-Scope
+========
 
-Implement on top of srsRAN_4G UE code, decode the DCI and SIB information for 5G SA base station.
+Implement on top of srsRAN_4G UE code, decode the DCI and SIB information for 5G SA base station. Please refer to the [wiki page](https://github.com/PrincetonUniversity/NG-Scope-5G/wiki) for feature description and detailed build instruction.
 
 ## Requirements
 
-We tested this system on Ubuntu 22.04 system and it may support other version of Ubuntu. To build this project and make it run properly, the following libraries are needed. Please refer to the [wiki page](https://github.com/PrincetonUniversity/NG-Scope-5G/wiki) for feature description and detailed build instruction.
+We tested this system on Ubuntu 22.04 system and it may support other version of Ubuntu. To build this project and make it run properly, the following libraries are needed. 
 
 [UHD libraries](https://files.ettus.com/manual/page_install.html):
 
@@ -52,7 +52,6 @@ sudo ldconfig
 ```
 
 For different USRP daughterboard, different `config.yaml` should be used. Please refer to the sample `config.yaml` in `./nrscope/config/config.yaml` and the explanatory comment in it.
-
 
 CBX:
 

@@ -74,17 +74,19 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
   asn1::rrc_nr::bwp_dl_ded_s * bwp_dl_ded_s_ptr = NULL;
   asn1::rrc_nr::bwp_ul_ded_s * bwp_ul_ded_s_ptr = NULL;
 
-  // assume ul bwp n and dl bwp n should be activated and used at the same time (lso for sure for TDD)
-  if (bwp_id == 0) {
-    bwp_dl_ded_s_ptr = 
-      &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp);
-    bwp_ul_ded_s_ptr = 
-      &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp);
-  }
-  else if (bwp_id <= 3) {
+  // assume ul bwp n and dl bwp n should be activated and used at the same time 
+  // (lso for sure for TDD)
+  // if (bwp_id == 0) {
+  //   bwp_dl_ded_s_ptr = 
+  //     &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp);
+  //   bwp_ul_ded_s_ptr = 
+  //     &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp);
+  // }
+  // else 
+  if (bwp_id <= 3) {
     for (uint8_t i = 0; i < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
         dl_bwp_to_add_mod_list.size(); i++) {
-      if (bwp_id == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
+      if (bwp_id+1 == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
           dl_bwp_to_add_mod_list[i].bwp_id) {
         if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
             dl_bwp_to_add_mod_list[i].bwp_ded_present) {
@@ -101,7 +103,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg_present) {
       for (uint8_t i = 0; i < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
           ul_cfg.ul_bwp_to_add_mod_list.size(); i++) {
-        if (bwp_id == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.
+        if (bwp_id+1 == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.
             ul_bwp_to_add_mod_list[i].bwp_id) {
           if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.
               ul_bwp_to_add_mod_list[i].bwp_ded_present) {
@@ -299,8 +301,9 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
   arg_scs.coreset_offset_scs = (base_carrier.ssb_center_freq_hz - 
     coreset1_center_freq_hz) / cell.abs_pdcch_scs;
   std::cout << "current offset: " << arg_scs.coreset_offset_scs << std::endl;
+  std::cout << "bwp_id: " << bwp_id << std::endl;
   
-   // set ra search space directly from the RRC Setup
+  // set ra search space directly from the RRC Setup
   pdcch_cfg.search_space[0].nof_candidates[0] = bwp_dl_ded_s_ptr->
     pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
     nrof_candidates.aggregation_level1;
@@ -316,6 +319,25 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
   pdcch_cfg.search_space[0].nof_candidates[4] = bwp_dl_ded_s_ptr->
     pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
     nrof_candidates.aggregation_level16;
+  // } else {
+  //   std::cout << "common" << std::endl;
+  //   pdcch_cfg.search_space[0].nof_candidates[0] = sib1.serving_cell_cfg_common.
+  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
+  //     common_search_space_list[0].nrof_candidates.aggregation_level1;
+  //   pdcch_cfg.search_space[0].nof_candidates[1] = sib1.serving_cell_cfg_common.
+  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
+  //     common_search_space_list[0].nrof_candidates.aggregation_level2;
+  //   pdcch_cfg.search_space[0].nof_candidates[2] = sib1.serving_cell_cfg_common.
+  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
+  //     common_search_space_list[0].nrof_candidates.aggregation_level4;
+  //   pdcch_cfg.search_space[0].nof_candidates[3] = sib1.serving_cell_cfg_common.
+  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
+  //     common_search_space_list[0].nrof_candidates.aggregation_level8;
+  //   pdcch_cfg.search_space[0].nof_candidates[4] = sib1.serving_cell_cfg_common.
+  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
+  //     common_search_space_list[0].nrof_candidates.aggregation_level16;
+  // }
+  
 
   /* for carrier aggregation, we don't consider this situation. */
   dci_cfg.carrier_indicator_size = 0; 
@@ -460,8 +482,8 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
         break;
     }
   } else {
-    ERROR("No PUSCH resource allocation found, use type 1\n");
-    dci_cfg.pusch_alloc_type = srsran_resource_alloc_type1;
+    ERROR("No PUSCH resource allocation found, use type 0\n");
+    dci_cfg.pusch_alloc_type = srsran_resource_alloc_type0;
   }
 
   // get_nof_rbgs(uint32_t bwp_nof_prb, uint32_t bwp_start, bool config1_or_2)
@@ -524,6 +546,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
       dci_cfg.harq_ack_codebok = srsran_pdsch_harq_ack_codebook_none;
       break;
   }  
+  std::cout << "before ack codebook" << std::endl;
 
   // For DCI 0_1
   ///< Set to true if HARQ-ACK codebook is set to dynamic with 2 sub-codebooks

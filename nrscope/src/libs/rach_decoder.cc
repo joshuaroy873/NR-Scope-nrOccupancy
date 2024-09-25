@@ -357,7 +357,7 @@ int RachDecoder::DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
     if (state->rach_found) {
       result->found_rach = true;
       result->new_rnti_number += 1;
-      result->new_rntis_found.emplace_back(c_rnti);
+      result->new_rntis_found.emplace_back(tc_rnti);
       continue;
     }
 

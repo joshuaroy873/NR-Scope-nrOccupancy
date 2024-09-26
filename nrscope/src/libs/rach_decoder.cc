@@ -362,6 +362,7 @@ int RachDecoder::DecodeandParseMS4fromSlot(srsran_slot_cfg_t* slot,
     }
 
     srsran_sch_cfg_nr_t pdsch_cfg = {};
+    pdsch_cfg.dmrs.typeA_pos = state->cell.mib.dmrs_typeA_pos;
     dci_rach[dci_id].ctx.coreset_start_rb = start_rb;
 
     if (srsran_ra_dl_dci_to_grant_nr(&pdsch_carrier, slot, &pdsch_hl_cfg, 

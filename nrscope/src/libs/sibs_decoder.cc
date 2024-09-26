@@ -141,6 +141,7 @@ int SIBsDecoder::DecodeandParseSIB1fromSlot(srsran_slot_cfg_t* slot,
   printf("SIBDecoder -- Found DCI: %s\n", str);
 
   pdsch_cfg = {};
+  pdsch_cfg.dmrs.typeA_pos = state->cell.mib.dmrs_typeA_pos;
 
   if (srsran_ra_dl_dci_to_grant_nr(&base_carrier, slot, &pdsch_hl_cfg, 
       &dci_sibs, &pdsch_cfg, &pdsch_cfg.grant) < SRSRAN_SUCCESS) {

@@ -53,6 +53,8 @@ int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_
   q->disable_cfo     = args->disable_cfo;
   q->cfo_alpha       = isnormal(args->cfo_alpha) ? args->cfo_alpha : UE_SYNC_NR_DEFAULT_CFO_ALPHA;
 
+  q->rf_device       = args->rf_device;
+
   // Initialise SSB
   srsran_ssb_args_t ssb_args = {};
   ssb_args.max_srate_hz      = args->max_srate_hz;
@@ -436,11 +438,21 @@ int srsran_ue_sync_nr_zerocopy_twinrx_nrscope(srsran_ue_sync_nr_t* q, cf_t** buf
         ERROR("Error running find");
         return SRSRAN_ERROR;
       }
+
+      if (q->do_agc) {
+        srsran_agc_process(&q->agc, buffer[0], q->sf_sz);
+      }
       break;
     case SRSRAN_UE_SYNC_NR_STATE_TRACK:
       if (ue_sync_nr_run_track(q, buffer[0]) < SRSRAN_SUCCESS) {
         ERROR("Error running track");
         return SRSRAN_ERROR;
+      }
+
+      if (q->sf_idx == 5) {
+        if (q->do_agc) {
+          srsran_agc_process(&q->agc, buffer[0], q->sf_sz);
+        }
       }
       break;
   }
@@ -605,4 +617,17 @@ int srsran_ue_sync_nr_feedback(srsran_ue_sync_nr_t* q, const srsran_csi_trs_meas
   srsran_combine_csi_trs_measurements(&q->feedback, measurements, &q->feedback);
 
   return SRSRAN_SUCCESS;
+}
+
+int srsran_ue_sync_nr_start_agc(srsran_ue_sync_nr_t* q,
+                                SRSRAN_AGC_CALLBACK(set_gain_callback),
+                                float init_gain_value)
+{
+  uint32_t nframes = 10;
+  int n     = srsran_agc_init_uhd(&q->agc, SRSRAN_AGC_MODE_PEAK_AMPLITUDE, nframes, set_gain_callback, q->recv_obj);
+  q->do_agc = n == 0 ? true : false;
+  if (q->do_agc) {
+    srsran_agc_set_gain(&q->agc, init_gain_value);
+  }
+  return n;
 }

@@ -19,6 +19,8 @@
 // For cell scan
 #define CS_RESAMPLE_WORKER_NUM 4
 
+#define TARGET_STOPBAND_SUPPRESSION_DB 60.0f;
+
 class Radio{
   public:
     int                                           rf_index;

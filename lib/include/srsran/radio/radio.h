@@ -94,11 +94,6 @@ public:
   void        handle_rf_msg(srsran_rf_error_t error);
   static void rf_msg_callback(void* arg, srsran_rf_error_t error);
 
-  /* for AGC */
-  srsran_rf_t * get_first_rf() {
-    return &rf_devices[0];
-  }
-
 private:
   std::vector<srsran_rf_t>                                rf_devices  = {};
   std::vector<srsran_rf_info_t>                           rf_info     = {};

@@ -45,6 +45,14 @@ int srsran_agc_init_acc(srsran_agc_t* q, srsran_agc_mode_t mode, uint32_t nof_fr
   return SRSRAN_SUCCESS;
 }
 
+int srsran_agc_set_min_max_gain(srsran_agc_t* q, float min_gain, float max_gain)
+{
+  q->min_gain_db = min_gain;
+  q->max_gain_db = max_gain;
+  srsran_agc_reset(q);
+  return SRSRAN_SUCCESS;
+}
+
 int srsran_agc_init_uhd(srsran_agc_t*     q,
                         srsran_agc_mode_t mode,
                         uint32_t          nof_frames,

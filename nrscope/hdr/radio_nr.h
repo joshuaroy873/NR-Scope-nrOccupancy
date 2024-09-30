@@ -87,6 +87,10 @@ class Radio{
     std::string google_credential;
     std::string google_dataset_id;
 
+    /* AGC */
+    float min_rx_gain;
+    float max_rx_gain;
+
     Radio();  //constructor
     ~Radio(); //deconstructor
 

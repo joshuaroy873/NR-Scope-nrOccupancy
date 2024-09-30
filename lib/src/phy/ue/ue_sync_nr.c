@@ -53,8 +53,6 @@ int srsran_ue_sync_nr_init(srsran_ue_sync_nr_t* q, const srsran_ue_sync_nr_args_
   q->disable_cfo     = args->disable_cfo;
   q->cfo_alpha       = isnormal(args->cfo_alpha) ? args->cfo_alpha : UE_SYNC_NR_DEFAULT_CFO_ALPHA;
 
-  q->rf_device       = args->rf_device;
-
   // Initialise SSB
   srsran_ssb_args_t ssb_args = {};
   ssb_args.max_srate_hz      = args->max_srate_hz;
@@ -621,13 +619,17 @@ int srsran_ue_sync_nr_feedback(srsran_ue_sync_nr_t* q, const srsran_csi_trs_meas
 
 int srsran_ue_sync_nr_start_agc(srsran_ue_sync_nr_t* q,
                                 SRSRAN_AGC_CALLBACK(set_gain_callback),
-                                float init_gain_value)
+                                float init_gain_value,
+                                float min_rx_gain,
+                                float max_rx_gain)
 {
   uint32_t nframes = 10;
-  int n     = srsran_agc_init_uhd(&q->agc, SRSRAN_AGC_MODE_PEAK_AMPLITUDE, nframes, set_gain_callback, q->recv_obj);
-  q->do_agc = n == 0 ? true : false;
+  int n1 = srsran_agc_init_uhd(&q->agc, SRSRAN_AGC_MODE_PEAK_AMPLITUDE, 
+    nframes, set_gain_callback, q->recv_obj);
+  int n2 = srsran_agc_set_min_max_gain(&q->agc, min_rx_gain, max_rx_gain); 
+  q->do_agc = (n1 == 0 && n2 == 0) ? true : false;
   if (q->do_agc) {
     srsran_agc_set_gain(&q->agc, init_gain_value);
   }
-  return n;
+  return n1 + n2;
 }

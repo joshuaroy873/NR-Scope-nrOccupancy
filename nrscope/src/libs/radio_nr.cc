@@ -754,7 +754,8 @@ int Radio::SyncandDownlinkInit(){
     return SRSRAN_ERROR;
   }
 
-  srsran_ue_sync_nr_start_agc(&ue_sync_nr, radio_set_rx_gain_wrapper, 85);
+  srsran_ue_sync_nr_start_agc(&ue_sync_nr, radio_set_rx_gain_wrapper, 
+    rf_args.rx_gain, min_rx_gain, max_rx_gain);
 
   return SRSRAN_SUCCESS;
 }

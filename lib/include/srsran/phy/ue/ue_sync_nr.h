@@ -60,8 +60,6 @@ typedef struct SRSRAN_API {
   // Receive callback
   void* recv_obj;                               ///< Receive object
   SRSRAN_RECV_CALLBACK_TEMPLATE(recv_callback); ///< Receive callback
-
-  void* rf_device; ///< for AGC
 } srsran_ue_sync_nr_args_t;
 
 /**
@@ -107,11 +105,8 @@ typedef struct SRSRAN_API {
   float resample_ratio;
 
   // AGC
-  void* rf_device; // srsran_rf_t *
   srsran_agc_t agc;
   bool         do_agc;
-  uint32_t     agc_period;
-
 } srsran_ue_sync_nr_t;
 
 typedef struct SRSRAN_API {
@@ -213,6 +208,8 @@ SRSRAN_API int srsran_ue_sync_nr_feedback(srsran_ue_sync_nr_t* q, const srsran_c
 
 SRSRAN_API int srsran_ue_sync_nr_start_agc(srsran_ue_sync_nr_t* q,
                                 SRSRAN_AGC_CALLBACK(set_gain_callback),
-                                float init_gain_value);
+                                float init_gain_value,
+                                float min_rx_gain,
+                                float max_rx_gain);
 
 #endif // SRSRAN_UE_SYNC_NR_H

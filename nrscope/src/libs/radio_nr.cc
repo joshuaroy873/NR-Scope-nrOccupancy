@@ -478,6 +478,7 @@ int Radio::RadioInitandStart(){
 
   // initialize resampling tool
   // resampling rate (output/input)
+
   float r = (float)rf_args.srsran_srate_hz/(float)rf_args.srate_hz;
   // resampling filter stop-band attenuation [dB]     
   float As=TARGET_STOPBAND_SUPPRESSION_DB;

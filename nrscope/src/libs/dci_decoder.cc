@@ -76,14 +76,15 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
 
   // assume ul bwp n and dl bwp n should be activated and used at the same time 
   // (lso for sure for TDD)
-  // if (bwp_id == 0) {
-  //   bwp_dl_ded_s_ptr = 
-  //     &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp);
-  //   bwp_ul_ded_s_ptr = 
-  //     &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp);
-  // }
-  // else 
-  if (bwp_id <= 3) {
+  if (bwp_id == 0 && 
+      master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp_present) {
+    bwp_dl_ded_s_ptr = 
+      &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp);
+    bwp_ul_ded_s_ptr = 
+      &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.init_ul_bwp);
+  }
+  else if (bwp_id <= 3 && 
+    !master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp_present) {
     for (uint8_t i = 0; i < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
         dl_bwp_to_add_mod_list.size(); i++) {
       if (bwp_id+1 == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
@@ -104,6 +105,41 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
       for (uint8_t i = 0; i < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
           ul_cfg.ul_bwp_to_add_mod_list.size(); i++) {
         if (bwp_id+1 == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.
+            ul_bwp_to_add_mod_list[i].bwp_id) {
+          if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.
+              ul_bwp_to_add_mod_list[i].bwp_ded_present) {
+            bwp_ul_ded_s_ptr = &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
+              ul_cfg.ul_bwp_to_add_mod_list[i].bwp_ded);
+            break;
+          }
+          else {
+            printf("bwp id %u does not have a ded ul config in RRCSetup", bwp_id);
+          }
+        }
+      }
+    }
+  }else if (bwp_id <= 3 && 
+    master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.init_dl_bwp_present) {
+    for (uint8_t i = 0; i < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
+        dl_bwp_to_add_mod_list.size(); i++) {
+      if (bwp_id == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
+          dl_bwp_to_add_mod_list[i].bwp_id) {
+        if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
+            dl_bwp_to_add_mod_list[i].bwp_ded_present) {
+          bwp_dl_ded_s_ptr = &(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
+            dl_bwp_to_add_mod_list[i].bwp_ded);
+          break;
+        }
+        else {
+          printf("bwp id %u does not have a ded dl config in RRCSetup", bwp_id);
+        }
+      }
+    }
+
+    if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg_present) {
+      for (uint8_t i = 0; i < master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
+          ul_cfg.ul_bwp_to_add_mod_list.size(); i++) {
+        if (bwp_id == master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.
             ul_bwp_to_add_mod_list[i].bwp_id) {
           if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.ul_cfg.
               ul_bwp_to_add_mod_list[i].bwp_ded_present) {
@@ -850,7 +886,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     pdsch_serving_cell_cfg_present ? master_cell_group.sp_cell_cfg.
     sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().max_mimo_layers_present ?
     master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg.
-    setup().max_mimo_layers : 2 : 2;
+    setup().max_mimo_layers : 4 : 4;
   
   carrier_ul = base_carrier;
   carrier_ul.nof_prb = dci_cfg.bwp_ul_active_bw;

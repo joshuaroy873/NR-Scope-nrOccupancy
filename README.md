@@ -1,26 +1,28 @@
 NR-Scope
 ========
 
+NR-Scope is a telemtry tool that decodes the DCI, SIBs and RACH information from a 5G SA base station and it's published in CoNEXT 2024, please check our [paper](https://doi.org/10.1145/3680121.3697808)! And please cite our tool if you use this tool!
+
 ```
 @inproceedings{wan_nrscope_2024,
-author = {Wan, Haoran and Cao, Xuyang and Marder, Alexander and Jamieson, Kyle},
-title = {NR-Scope: A Practical 5G Standalone Telemetry Tool},
-year = {2024},
-isbn = {979-8-4007-1108-4/24/12},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/3680121.3697808},
-doi = {10.1145/3680121.3697808},
-booktitle = {Companion of the 20th International Conference on Emerging Networking EXperiments and Technologies},
-pages = {1–8},
-numpages = {8},
-keywords = {5G network; Telemetry; Wireless network; Network measurement},
-location = {Los Angeles, USA},
-series = {CoNEXT 2024}
+  author = {Wan, Haoran and Cao, Xuyang and Marder, Alexander and Jamieson, Kyle},
+  title = {NR-Scope: A Practical 5G Standalone Telemetry Tool},
+  year = {2024},
+  isbn = {979-8-4007-1108-4/24/12},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/3680121.3697808},
+  doi = {10.1145/3680121.3697808},
+  booktitle = {Companion of the 20th International Conference on Emerging Networking EXperiments and Technologies},
+  pages = {1–8},
+  numpages = {8},
+  keywords = {5G network; Telemetry; Wireless network; Network measurement},
+  location = {Los Angeles, USA},
+  series = {CoNEXT 2024}
 }
 ```
 
-NR-Scope is a telemtry tool that decodes the DCI, SIBs and RACH information from a 5G SA base station. The main features are listed as follow:
+The main features are listed as follow:
 
 1. Supports 5G SA cells with 15kHz and 30kHz SCS, tested with 10MHz, 15 MHz, 20MHz and 40MHz cell bandwidth (wider bandwidth is working in progress 🏗 ).
 2. 5G SA cell search and MIB decoding.

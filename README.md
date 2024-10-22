@@ -1,7 +1,7 @@
 NR-Scope
 ========
 
-NR-Scope is a telemtry tool that decodes the DCI, SIBs and RACH information from a 5G SA base station and it's published in CoNEXT 2024, please check our [paper](https://doi.org/10.1145/3680121.3697808)! And please cite our paper if you use this tool!
+NR-Scope is a telemetry tool that decodes the DCI, SIBs and RACH information from a 5G SA base station and it's published in CoNEXT 2024, please check our [paper](https://doi.org/10.1145/3680121.3697808)! And please cite our paper if you use this tool!
 
 We welcome contributions.  If you use NR-Scope and would like to contribute improvements, modifications, bug fixes, and the like, please initiate a pull request and one of our team will review your contribution.
 

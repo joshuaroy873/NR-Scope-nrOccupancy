@@ -1,7 +1,7 @@
 NR-Scope
 ========
 
-**NR-Scope** is a 5G wireless network telemetry tool that decodes the DCI, SIBs and RACH information from a 5G Standalone (New Radio) base station.  It is distinct from [NG-Scope](https://github.com/PrincetonUniversity/NG-Scope), our prior 4G cellular network telemetry tool.
+**NR-Scope** is a 5G wireless network telemetry tool for 5G Standalone network measurement and performance optimization.  NR-Scope decodes DCI, SIB and RACH information from a 5G Standalone (New Radio) base station.  It is distinct from [NG-Scope](https://github.com/PrincetonUniversity/NG-Scope), our prior 4G cellular network telemetry tool.
 
 NR-Scope is [published](https://doi.org/10.1145/3680121.3697808) in ACM CoNEXT 2024: if you use this tool, we ask that you cite our paper and reach out to the developers at the email address `ng-scope-dev` *at* `lists.cs.princeton.edu`
 

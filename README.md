@@ -6,27 +6,27 @@ NR-Scope
 NR-Scope is [published](https://doi.org/10.1145/3680121.3697808) in ACM CoNEXT 2024: if you use this tool, we ask that you cite our paper and reach out to the developers at the email address `ng-scope-dev` *at* `lists.cs.princeton.edu`
 
 ```
-@inproceedings{wan_nrscope_2024,
+@inproceedings{10.1145/3680121.3697808,
   author = {Wan, Haoran and Cao, Xuyang and Marder, Alexander and Jamieson, Kyle},
   title = {NR-Scope: A Practical 5G Standalone Telemetry Tool},
   year = {2024},
-  isbn = {979-8-4007-1108-4/24/12},
+  isbn = {9798400711084},
   publisher = {Association for Computing Machinery},
   address = {New York, NY, USA},
   url = {https://doi.org/10.1145/3680121.3697808},
   doi = {10.1145/3680121.3697808},
-  booktitle = {Companion of the 20th International Conference on Emerging Networking EXperiments and Technologies},
+  booktitle = {Proceedings of the 20th International Conference on Emerging Networking EXperiments and Technologies},
+  pages = {73–80},
   numpages = {8},
-  keywords = {5G network; Telemetry; Wireless network; Network measurement},
-  location = {Los Angeles, USA},
-  series = {CoNEXT 2024}
+  keywords = {5G network, network measurement, telemetry, wireless network},
+  location = {Los Angeles, CA, USA},
+  series = {CoNEXT '24}
 }
 ```
 
 We welcome contributions.  If you use NR-Scope and would like to contribute improvements, modifications, bug fixes, and the like, please initiate a pull request on this repository and one of our team will review your contribution.
 
 NR-Scope and NG-Scope are open source products of NSF Award CNS-2223556 (IMR: MT).  Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.
-
 
 # Features
 

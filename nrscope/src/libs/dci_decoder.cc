@@ -566,6 +566,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     /* < PUSCH DMRS maximum length */
     dci_cfg.pusch_dmrs_max_len = srsran_dmrs_sch_len_1; 
   }
+  pusch_hl_cfg.dmrs_max_length = dci_cfg.pusch_dmrs_max_len;
 
   /// Format 1_1 specific configuration (for PDSCH only)
   switch (master_cell_group.phys_cell_group_cfg.pdsch_harq_ack_codebook){
@@ -684,6 +685,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     dci_cfg.pdsch_dmrs_type = srsran_dmrs_sch_type_1;
     dci_cfg.pdsch_dmrs_max_len = srsran_dmrs_sch_len_1; 
   }
+  pdsch_hl_cfg.dmrs_max_length = dci_cfg.pdsch_dmrs_max_len;
 
   pdsch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;
   pusch_hl_cfg.typeA_pos = cell.mib.dmrs_typeA_pos;

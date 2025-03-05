@@ -427,7 +427,11 @@ int TaskSchedulerNRScope::AssignTask(uint64_t sf_round,
     }
   }
   
-  if (!found_worker) {
+  if (!found_worker && workers[nof_workers-1].get()->initializing) {
+    std::cout << "Workers are initializing, skip sf_rount: " << sf_round << 
+      ", sfn: " << outcome.sfn << ", slot: " << slot.idx ;
+    return SRSRAN_ERROR;
+  } else if (!found_worker) {
     ERROR("No available worker, if this constantly happens not in the intial"
           "stage (SIBs, RACH, DCI decoders initialization), please consider "
           "increasing the number of workers.");

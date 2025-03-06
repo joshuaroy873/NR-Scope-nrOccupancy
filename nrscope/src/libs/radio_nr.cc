@@ -881,7 +881,7 @@ int Radio::DecodeAndProcess(){
 
       if (task_scheduler_nrscope.AssignTask(sf_round, slot, outcome, rx_buffer) 
           < SRSRAN_SUCCESS) {
-        ERROR("Assign task failed");
+        // ERROR("Assign task failed");
         /* Push empty slot result to the queue */
         SlotResult empty_result = {};
         empty_result.sf_round = sf_round;

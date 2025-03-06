@@ -21,6 +21,8 @@ NRScopeWorker::NRScopeWorker() :
   worker_state.sib1_found = false;
   worker_state.rach_found = false;
 
+  initializing = false;
+
   worker_state.nof_known_rntis = 0;
   worker_state.known_rntis.resize(worker_state.nof_known_rntis);
   sem_init(&smph_has_job, 0, 0); 
@@ -81,17 +83,20 @@ void NRScopeWorker::CopySlotandBuffer(uint64_t sf_round_,
 
 int NRScopeWorker::InitSIBDecoder(){
   /* Will always be called before any tasks */
+  initializing = true;
   if(sibs_decoder.SIBDecoderandReceptionInit(&worker_state, 
      rf_buffer_t.to_cf_t()) < SRSASN_SUCCESS){
     return SRSRAN_ERROR;
   }
   std::cout << "SIBs decoder initialized..." << std::endl;
+  initializing = false;
   return SRSRAN_SUCCESS;
 }
 
 int NRScopeWorker::InitRACHDecoder() {
   // std::thread rach_init_thread {&RachDecoder::rach_decoder_init, 
   //  &rach_decoder, task_scheduler_nrscope.sib1, args_t.base_carrier};
+  initializing = true;
   rach_decoder.RACHDecoderInit(worker_state);
   if(rach_decoder.RACHReceptionInit(&worker_state, rf_buffer_t.to_cf_t()) < 
       SRSASN_SUCCESS){
@@ -99,10 +104,12 @@ int NRScopeWorker::InitRACHDecoder() {
     return SRSRAN_ERROR;
   }
   std::cout << "RACH decoder initialized.." << std::endl;
+  initializing = false;
   return SRSRAN_SUCCESS;
 }
 
 int NRScopeWorker::InitDCIDecoders() {
+  initializing = true;
   sharded_results.resize(worker_state.nof_threads);
   nof_sharded_rntis.resize(worker_state.nof_threads);
   sharded_rntis.resize(worker_state.nof_threads);
@@ -121,6 +128,7 @@ int NRScopeWorker::InitDCIDecoders() {
       dci_decoders.push_back(std::unique_ptr<DCIDecoder> (decoder));
     }
   }
+  initializing = false;
   return SRSRAN_SUCCESS;
 }
 

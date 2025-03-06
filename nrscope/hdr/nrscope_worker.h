@@ -17,6 +17,7 @@ public:
   RachDecoder rach_decoder; 
   SIBsDecoder sibs_decoder;
   std::vector<std::unique_ptr <DCIDecoder> > dci_decoders;
+  bool initializing;
 
   /* Job indicator */
   sem_t smph_has_job; 

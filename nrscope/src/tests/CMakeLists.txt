@@ -47,6 +47,3 @@ if(PUSH_TO_GOOGLE)
   # target_link_libraries(google_client_cc ${GOOGLE_CLOUD_CPP_STRORAGE_LIBRARIES})
 endif()
 
-if (LIBASN5G)
-  target_link_libraries(test_libs ${LIBASN5G_LIBRARY})
-endif(LIBASN5G)

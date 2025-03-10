@@ -36,6 +36,3 @@ endif()
 #                                 ${Boost_LIBRARIES}
 #                                 ${YAML_CPP_LIBRARIES})
 
-if (LIBASN5G)
-  target_link_libraries(nrscope_libs ${LIBASN5G_LIBRARY})
-endif(LIBASN5G)

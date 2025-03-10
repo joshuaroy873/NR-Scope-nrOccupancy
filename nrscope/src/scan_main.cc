@@ -4,7 +4,6 @@
 
 #include "nrscope/hdr/nrscope_def.h"
 #include "nrscope/hdr/load_config.h"
-#include "nrscope/hdr/asn_decoder.h"
 
 #include "srsran/common/band_helper.h"
 #include "srsran/phy/common/phy_common_nr.h"

@@ -163,19 +163,6 @@ endif()
 # Threads
 find_package(Threads REQUIRED)
 
-# Support for ASN1 decoding of SIB messages
-find_library(LIBASN5G
-    NAMES libasn5g.so
-    PATHS /usr/lib/x86_64-linux-gnu/
-)
-if (LIBASN5G)
-  message(STATUS "libasn5g found: ${LIBASN5G}.")
-  set(LIBASN5G_LIBRARY "-lasn5g")
-  add_definitions(-DENABLE_ASN5G)
-else (LIBASN5G)
-  message(WARNING "libasn5g not found. 5G SIB and MIB decoding won't be supported by NG-Scope")
-endif (LIBASN5G)
-
 
 
 # FFT

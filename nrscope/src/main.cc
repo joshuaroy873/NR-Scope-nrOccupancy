@@ -4,14 +4,11 @@
 
 #include "nrscope/hdr/nrscope_def.h"
 #include "nrscope/hdr/load_config.h"
-#include "nrscope/hdr/asn_decoder.h"
 
 #include "srsran/common/band_helper.h"
 #include "srsran/phy/common/phy_common_nr.h"
 
 int main(int argc, char** argv){
-  /* Initialize ASN decoder */
-  // init_asn_decoder("sample.sib");
 
   // Initialise logging infrastructure
   srslog::init();
@@ -51,8 +48,6 @@ int main(int argc, char** argv){
       t.join();
     }
   } 
-
-  // terminate_asn_decoder();
 
   return NR_SUCCESS;
 }

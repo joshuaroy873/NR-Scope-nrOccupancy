@@ -36,9 +36,10 @@ RUN ldconfig
 
 WORKDIR /NR-Scope
 COPY . .
+RUN rm -rf build
 WORKDIR build
 RUN cmake ../
 RUN make clean
-RUN make all -j ${nof_proc}
+RUN make all
 WORKDIR nrscope/src
 RUN install nrscope /usr/local/bin

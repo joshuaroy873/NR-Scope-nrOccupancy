@@ -249,6 +249,7 @@ static int ue_sync_nr_recv(srsran_ue_sync_nr_t* q, cf_t** buffer, srsran_timesta
 
   uint32_t buffer_offset = 0;
   uint32_t nof_samples   = q->sf_sz;
+  printf("nof_samples: %d\n", nof_samples);
 
   if (q->next_rf_sample_offset > 0) {
     // Discard a number of samples from RF

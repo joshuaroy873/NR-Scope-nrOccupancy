@@ -24,7 +24,7 @@ Radio::Radio() :
   nof_trials = 2000;
   nof_trials_scan = 200;
   sf_round = 0;
-  srsran_searcher_args_t.max_srate_hz = 92.16e6;
+  srsran_searcher_args_t.max_srate_hz = 184.32e6;
   srsran_searcher_args_t.ssb_min_scs = srsran_subcarrier_spacing_15kHz;
   srsran_searcher.init(srsran_searcher_args_t);
 
@@ -684,8 +684,7 @@ static int slot_sync_recv_callback(void* ptr,
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
-  // std::cout << "[xuyang debug 3] find fetch nsamples: " 
-  //    << nsamples << std::endl;
+  std::cout << "[xuyang debug 3] find fetch nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;

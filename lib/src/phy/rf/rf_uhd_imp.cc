@@ -1315,14 +1315,12 @@ int rf_uhd_recv_with_time_multi(void*    h,
     }
   }
 
-  std::cout << "nsamples: " << nsamples << std::endl;
   // Receive stream in multiple blocks
   while (rxd_samples_total < nsamples and trials < RF_UHD_IMP_MAX_RX_TRIALS) {
     void* buffs_ptr[SRSRAN_MAX_CHANNELS] = {};
 
     size_t num_samps_left = nsamples - rxd_samples_total;
     size_t num_rx_samples = SRSRAN_MIN(handler->rx_nof_samples, num_samps_left);
-    std::cout << "num_rx_samples: " << num_rx_samples << std::endl;
 
     for (uint32_t i = 0; i < handler->nof_rx_channels; i++) {
       if (data[i] != nullptr) {
@@ -1346,10 +1344,8 @@ int rf_uhd_recv_with_time_multi(void*    h,
     uhd::rx_metadata_t::error_code_t& error_code = md.error_code;
 
     rxd_samples_total += rxd_samples;
-    std::cout << "rxd_samples_total: " << rxd_samples_total << std::endl;
 
     trials++;
-    std::cout << "trials: " << trials << std::endl;
 
     if (error_code == uhd::rx_metadata_t::ERROR_CODE_OVERFLOW) {
       log_overflow(handler);

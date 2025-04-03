@@ -505,7 +505,6 @@ int srsran_ssb_set_cfg(srsran_ssb_t* q, const srsran_ssb_cfg_t* cfg)
   q->cfg       = *cfg;
   q->symbol_sz = symbol_sz;
   q->sf_sz     = (uint32_t)round(1e-3 * cfg->srate_hz);
-  printf("q->sf_sz in ssb.c: %d\n", q->sf_sz);
   q->ssb_sz    = SRSRAN_SSB_DURATION_NSYMB * (q->symbol_sz + q->cp_sz);
 
   // Initialise correlation

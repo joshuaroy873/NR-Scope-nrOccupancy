@@ -1565,7 +1565,6 @@ int srsran_ssb_find(srsran_ssb_t*                  q,
 
   // Set the PBCH message result with default value (CRC unmatched), meaning no cell is found
   SRSRAN_MEM_ZERO(pbch_msg, srsran_pbch_msg_nr_t, 1);
-  printf("q->ssb_sz: %d, q->sf_sz: %d\n", q->ssb_sz, q->sf_sz);
 
   // Copy tail from previous execution into the start of this
   srsran_vec_cf_copy(q->sf_buffer, &q->sf_buffer[q->sf_sz], q->ssb_sz);

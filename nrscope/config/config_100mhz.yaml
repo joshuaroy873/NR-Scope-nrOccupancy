@@ -15,7 +15,7 @@ usrp_setting_0:
   rf_log_level: "debug"
   nof_rnti_worker_groups: 4 # number of of threads for DCI decoding, each will divide the UEs into small groups
   nof_bwps: 1 # number of BWP of the cell
-  nof_workers: 10 # using worker pool to asynchronously process the slot data
+  nof_workers: 4 # using worker pool to asynchronously process the slot data
   cpu_affinity: false # pin the worker's thread into CPU or not.
 
   log_name: "a.csv"

@@ -42,7 +42,7 @@
  * Correlation size in function of the symbol size. It selects a power of two number at least 8 times bigger than the
  * given symbol size but not bigger than 2^13 points.
  */
-#define SSB_CORR_SZ(SYMB_SZ) SRSRAN_MIN(1U << (uint32_t)ceil(log2((double)(SYMB_SZ)) + 3.0), 1U << 13U)
+#define SSB_CORR_SZ(SYMB_SZ) SRSRAN_MIN(1U << (uint32_t)ceil(log2((double)(SYMB_SZ)) + 3.0), 1U << 14U)
 
 /*
  * Default NR-PBCH DMRS normalised correlation (RSRP/EPRE) threshold

@@ -1344,6 +1344,7 @@ int rf_uhd_recv_with_time_multi(void*    h,
     uhd::rx_metadata_t::error_code_t& error_code = md.error_code;
 
     rxd_samples_total += rxd_samples;
+
     trials++;
 
     if (error_code == uhd::rx_metadata_t::ERROR_CODE_OVERFLOW) {

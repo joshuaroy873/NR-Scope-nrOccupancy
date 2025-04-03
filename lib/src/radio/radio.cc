@@ -310,7 +310,7 @@ bool radio::rx_now(rf_buffer_interface& buffer, rf_timestamp_interface& rxd_time
 
   // Calculate number of samples, considering the decimation ratio
   uint32_t nof_samples = buffer.get_nof_samples() * ratio;
-  // std::cout << "nof_samples: " << nof_samples << std::endl;
+
   // Check decimation buffer protection
   if (ratio > 1 && nof_samples > rx_buffer[0].size()) {
     // This is a corner case that could happen during sample rate change transitions, as it does not have a negative

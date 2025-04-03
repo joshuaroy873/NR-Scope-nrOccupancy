@@ -3,7 +3,7 @@
 #include <semaphore>
 #include <chrono>
 
-#define RING_BUF_SIZE 10000
+#define RING_BUF_SIZE 10
 #define RING_BUF_MODULUS (RING_BUF_SIZE - 1)
 
 static SRSRAN_AGC_CALLBACK(radio_set_rx_gain_wrapper)
@@ -24,7 +24,7 @@ Radio::Radio() :
   nof_trials = 2000;
   nof_trials_scan = 200;
   sf_round = 0;
-  srsran_searcher_args_t.max_srate_hz = 92.16e6;
+  srsran_searcher_args_t.max_srate_hz = 184.32e6;
   srsran_searcher_args_t.ssb_min_scs = srsran_subcarrier_spacing_15kHz;
   srsran_searcher.init(srsran_searcher_args_t);
 
@@ -684,8 +684,7 @@ static int slot_sync_recv_callback(void* ptr,
 
   cf_t* buffer_ptr[SRSRAN_MAX_CHANNELS] = {};
   buffer_ptr[0]                         = buffer[0];
-  // std::cout << "[xuyang debug 3] find fetch nsamples: " 
-  //    << nsamples << std::endl;
+  // std::cout << "[xuyang debug 3] find fetch nsamples: " << nsamples << std::endl;
   srsran::rf_buffer_t rf_buffer(buffer_ptr, nsamples);
 
   srsran::rf_timestamp_t a;
@@ -787,8 +786,8 @@ int Radio::FetchAndResample(){
 
     std::cout << "current_produce_at: " << (!in_sync ? 0 : 
         (next_produce_at % RING_BUF_MODULUS + 1)) << std::endl;
-      std::cout << "current_produce_ptr: " << (rf_buffer_t.to_cf_t())[0] << 
-      std::endl;
+    std::cout << "current_produce_ptr: " << (rf_buffer_t.to_cf_t())[0] << 
+        std::endl;
 
     /* note fetching the raw samples will temporarily touch area out of the 
       target sf boundary yet after resampling, all meaningful data will reside 

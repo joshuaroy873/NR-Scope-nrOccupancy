@@ -32,7 +32,7 @@ NR-Scope and NG-Scope are open source products of NSF Award CNS-2223556 (IMR: MT
 
 The main features are as follows:
 
-1. Supports 5G SA cells with 15kHz and 30kHz SCS, tested with 10MHz, 15 MHz, 20MHz and 40MHz cell bandwidth (wider bandwidth is working in progress 🏗 ).
+1. Supports 5G SA cells with 15kHz and 30kHz SCS, tested with 10MHz, 15 MHz, 20MHz, 40MHz and 100MHz cell bandwidth.
 2. 5G SA cell search and MIB decoding.
 3. SIB 1 and all other SIBs decoding.
 4. RRCSetup (MSG 4) decoding for continuously UE attatch detection.

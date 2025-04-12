@@ -65,12 +65,6 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
   }
   pdcch_cfg.coreset[0] = coreset0_t; 
 
-  // parameter settings
-  pdcch_cfg.search_space_present[0]      = true;
-  pdcch_cfg.search_space_present[1]      = false;
-  pdcch_cfg.search_space_present[2]      = false;
-  pdcch_cfg.ra_search_space_present      = false;
-
   asn1::rrc_nr::bwp_dl_ded_s * bwp_dl_ded_s_ptr = NULL;
   asn1::rrc_nr::bwp_ul_ded_s * bwp_ul_ded_s_ptr = NULL;
 
@@ -177,34 +171,39 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     return SRSRAN_ERROR;
   }
 
-  if(bwp_dl_ded_s_ptr->pdcch_cfg.is_setup()){
-    pdcch_cfg.search_space[0].id = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
-                                   search_spaces_to_add_mod_list[0].
-                                   search_space_id;
-    pdcch_cfg.search_space[0].coreset_id = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
-                                           ctrl_res_set_to_add_mod_list[0].
-                                           ctrl_res_set_id;
-    
-    printf("pdcch_cfg.search_space[0].coreset_id in bwp%u: %u\n", bwp_id, 
-      pdcch_cfg.search_space[0].coreset_id);
+  pdcch_cfg.ra_search_space_present      = false;
 
-    pdcch_cfg.search_space[0].type = srsran_search_space_type_ue;
-    if(bwp_dl_ded_s_ptr->pdcch_cfg.setup().
-       search_spaces_to_add_mod_list[0].search_space_type.ue_specific().
-       dci_formats.formats0_minus1_and_minus1_minus1){
-      pdcch_cfg.search_space[0].formats[0] = srsran_dci_format_nr_1_1;
-      pdcch_cfg.search_space[0].formats[1] = srsran_dci_format_nr_0_1;
-      dci_cfg.monitor_0_0_and_1_0 = false;
-      dci_cfg.monitor_common_0_0 = false;
-    }else if(bwp_dl_ded_s_ptr->pdcch_cfg.setup().
-             search_spaces_to_add_mod_list[0].search_space_type.ue_specific().
-             dci_formats.formats0_minus0_and_minus1_minus0){
-      pdcch_cfg.search_space[0].formats[0] = srsran_dci_format_nr_1_0; 
-      pdcch_cfg.search_space[0].formats[1] = srsran_dci_format_nr_0_0;
-      dci_cfg.monitor_0_1_and_1_1 = false;
+  if(bwp_dl_ded_s_ptr->pdcch_cfg.is_setup()){
+    for (uint32_t ss_id = 0; ss_id < bwp_dl_ded_s_ptr->pdcch_cfg.setup().
+         search_spaces_to_add_mod_list.size(); ++ss_id) {
+      pdcch_cfg.search_space_present[ss_id] = true;
+      pdcch_cfg.search_space[ss_id].id = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
+                                   search_spaces_to_add_mod_list[ss_id].
+                                   search_space_id;
+      pdcch_cfg.search_space[ss_id].coreset_id = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
+                                            ctrl_res_set_to_add_mod_list[ss_id].
+                                            ctrl_res_set_id;
+      
+      printf("pdcch_cfg.search_space[%d].coreset_id in bwp%u: %u\n", ss_id, 
+        bwp_id, pdcch_cfg.search_space[ss_id].coreset_id);
+
+      pdcch_cfg.search_space[ss_id].type = srsran_search_space_type_ue;
+      if(bwp_dl_ded_s_ptr->pdcch_cfg.setup().
+        search_spaces_to_add_mod_list[ss_id].search_space_type.ue_specific().
+        dci_formats.formats0_minus1_and_minus1_minus1){
+        pdcch_cfg.search_space[ss_id].formats[0] = srsran_dci_format_nr_1_1;
+        pdcch_cfg.search_space[ss_id].formats[1] = srsran_dci_format_nr_0_1;
+        dci_cfg.monitor_0_0_and_1_0 = false;
+        dci_cfg.monitor_common_0_0 = false;
+      }else if(bwp_dl_ded_s_ptr->pdcch_cfg.setup().
+              search_spaces_to_add_mod_list[ss_id].search_space_type.
+              ue_specific().dci_formats.formats0_minus0_and_minus1_minus0){
+        pdcch_cfg.search_space[ss_id].formats[0] = srsran_dci_format_nr_1_0; 
+        pdcch_cfg.search_space[ss_id].formats[1] = srsran_dci_format_nr_0_0;
+        dci_cfg.monitor_0_1_and_1_1 = false;
+      }
+      pdcch_cfg.search_space[ss_id].nof_formats  = 2;
     }
-    pdcch_cfg.search_space[0].nof_formats  = 2;
-    pdcch_cfg.coreset[0] = coreset0_t; 
   }else{
     // Use some default settings
     pdcch_cfg.search_space[0].id           = 2;
@@ -215,8 +214,8 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     dci_cfg.monitor_0_0_and_1_0 = false;
     dci_cfg.monitor_common_0_0 = false;
     pdcch_cfg.search_space[0].nof_formats  = 2;
-    pdcch_cfg.coreset[0] = coreset0_t; 
   }
+  pdcch_cfg.coreset[0] = coreset0_t; 
   
   // all the Coreset information is from RRCSetup
   for (uint32_t crst_id = 0; crst_id < bwp_dl_ded_s_ptr->pdcch_cfg.setup().
@@ -349,21 +348,25 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
   std::cout << "bwp_id: " << bwp_id << std::endl;
   
   // set ra search space directly from the RRC Setup
-  pdcch_cfg.search_space[0].nof_candidates[0] = bwp_dl_ded_s_ptr->
-    pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
-    nrof_candidates.aggregation_level1;
-  pdcch_cfg.search_space[0].nof_candidates[1] = bwp_dl_ded_s_ptr->
-    pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
-    nrof_candidates.aggregation_level2;
-  pdcch_cfg.search_space[0].nof_candidates[2] = bwp_dl_ded_s_ptr->
-    pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
-    nrof_candidates.aggregation_level4;
-  pdcch_cfg.search_space[0].nof_candidates[3] = bwp_dl_ded_s_ptr->
-    pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
-    nrof_candidates.aggregation_level8;
-  pdcch_cfg.search_space[0].nof_candidates[4] = bwp_dl_ded_s_ptr->
-    pdcch_cfg.setup().search_spaces_to_add_mod_list[0].
-    nrof_candidates.aggregation_level16;
+  for (uint32_t ss_id = 0; ss_id < bwp_dl_ded_s_ptr->
+    pdcch_cfg.setup().search_spaces_to_add_mod_list.size(); ss_id ++) {
+    pdcch_cfg.search_space[ss_id].nof_candidates[0] = bwp_dl_ded_s_ptr->
+      pdcch_cfg.setup().search_spaces_to_add_mod_list[ss_id].
+      nrof_candidates.aggregation_level1;
+    pdcch_cfg.search_space[ss_id].nof_candidates[1] = bwp_dl_ded_s_ptr->
+      pdcch_cfg.setup().search_spaces_to_add_mod_list[ss_id].
+      nrof_candidates.aggregation_level2;
+    pdcch_cfg.search_space[ss_id].nof_candidates[2] = bwp_dl_ded_s_ptr->
+      pdcch_cfg.setup().search_spaces_to_add_mod_list[ss_id].
+      nrof_candidates.aggregation_level4;
+    pdcch_cfg.search_space[ss_id].nof_candidates[3] = bwp_dl_ded_s_ptr->
+      pdcch_cfg.setup().search_spaces_to_add_mod_list[ss_id].
+      nrof_candidates.aggregation_level8;
+    pdcch_cfg.search_space[ss_id].nof_candidates[4] = bwp_dl_ded_s_ptr->
+      pdcch_cfg.setup().search_spaces_to_add_mod_list[ss_id].
+      nrof_candidates.aggregation_level16;
+  }
+  
   // } else {
   //   std::cout << "common" << std::endl;
   //   pdcch_cfg.search_space[0].nof_candidates[0] = sib1.serving_cell_cfg_common.
@@ -385,7 +388,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
   
 
   /* for carrier aggregation, we don't consider this situation. */
-  dci_cfg.carrier_indicator_size = 0; 
+  dci_cfg.carrier_indicator_size = 3; 
   
   /* if the supplementary_ul in sp_cell_cfg_ded is present. */
   dci_cfg.enable_sul = false; 
@@ -597,7 +600,6 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
   // For DCI 0_1
   ///< Set to true if HARQ-ACK codebook is set to dynamic with 2 sub-codebooks
   dci_cfg.dynamic_dual_harq_ack_codebook = false;
-
   dci_cfg.nof_dl_bwp = master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
     dl_bwp_to_add_mod_list.size();
   dci_cfg.nof_dl_time_res = bwp_dl_ded_s_ptr->pdsch_cfg.setup().
@@ -609,10 +611,30 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     );
   dci_cfg.nof_aperiodic_zp = bwp_dl_ded_s_ptr->pdsch_cfg.setup().
     aperiodic_zp_csi_rs_res_sets_to_add_mod_list.size();
-  dci_cfg.pdsch_nof_cbg = bwp_dl_ded_s_ptr->pdsch_cfg.setup().
-    max_nrof_code_words_sched_by_dci_present ? 
-    bwp_dl_ded_s_ptr->pdsch_cfg.setup().
-    max_nrof_code_words_sched_by_dci : 0;
+  // maxCodeBlockGroupsPerTransportBlock
+  if (master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.
+      pdsch_serving_cell_cfg_present && master_cell_group.sp_cell_cfg.
+      sp_cell_cfg_ded.pdsch_serving_cell_cfg_present) {
+    switch(master_cell_group.sp_cell_cfg.
+      sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().code_block_group_tx.
+      setup().max_code_block_groups_per_transport_block) {
+      case asn1::rrc_nr::pdsch_code_block_group_tx_s::
+           max_code_block_groups_per_transport_block_e_::n2: 
+        dci_cfg.pdsch_nof_cbg = 2;
+        break;
+      case asn1::rrc_nr::pdsch_code_block_group_tx_s::
+           max_code_block_groups_per_transport_block_e_::n4: 
+        dci_cfg.pdsch_nof_cbg = 4;
+        break;
+      case asn1::rrc_nr::pdsch_code_block_group_tx_s::
+           max_code_block_groups_per_transport_block_e_::n8: 
+        dci_cfg.pdsch_nof_cbg = 8;
+        break;
+      default:
+        dci_cfg.pdsch_nof_cbg = 0;
+        break;
+    }
+  }
   dci_cfg.nof_dl_to_ul_ack = bwp_ul_ded_s_ptr->pucch_cfg.setup().
     dl_data_to_ul_ack.size();
   dci_cfg.pdsch_inter_prb_to_prb = bwp_dl_ded_s_ptr->pdsch_cfg.setup().
@@ -630,8 +652,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     }
   }
 
-  // Only consider one serving cell
-  dci_cfg.multiple_scell = false; 
+  dci_cfg.multiple_scell = true; 
   dci_cfg.pdsch_tci = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
     ctrl_res_set_to_add_mod_list[0].tci_present_in_dci_present ? true : false; 
   dci_cfg.pdsch_cbg_flush = master_cell_group.sp_cell_cfg.
@@ -898,6 +919,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().max_mimo_layers_present ?
     master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg.
     setup().max_mimo_layers : 4 : 4;
+  printf("carrier_dl.max_mimo_layer: %d\n", carrier_dl.max_mimo_layers);
   
   carrier_ul = base_carrier;
   carrier_ul.nof_prb = dci_cfg.bwp_ul_active_bw;

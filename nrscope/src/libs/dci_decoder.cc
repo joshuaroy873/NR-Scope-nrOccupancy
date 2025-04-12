@@ -367,29 +367,6 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
       nrof_candidates.aggregation_level16;
   }
   
-  // } else {
-  //   std::cout << "common" << std::endl;
-  //   pdcch_cfg.search_space[0].nof_candidates[0] = sib1.serving_cell_cfg_common.
-  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
-  //     common_search_space_list[0].nrof_candidates.aggregation_level1;
-  //   pdcch_cfg.search_space[0].nof_candidates[1] = sib1.serving_cell_cfg_common.
-  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
-  //     common_search_space_list[0].nrof_candidates.aggregation_level2;
-  //   pdcch_cfg.search_space[0].nof_candidates[2] = sib1.serving_cell_cfg_common.
-  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
-  //     common_search_space_list[0].nrof_candidates.aggregation_level4;
-  //   pdcch_cfg.search_space[0].nof_candidates[3] = sib1.serving_cell_cfg_common.
-  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
-  //     common_search_space_list[0].nrof_candidates.aggregation_level8;
-  //   pdcch_cfg.search_space[0].nof_candidates[4] = sib1.serving_cell_cfg_common.
-  //     dl_cfg_common.init_dl_bwp.pdcch_cfg_common.setup().
-  //     common_search_space_list[0].nrof_candidates.aggregation_level16;
-  // }
-  
-
-  /* for carrier aggregation, we don't consider this situation. */
-  dci_cfg.carrier_indicator_size = 3; 
-  
   /* if the supplementary_ul in sp_cell_cfg_ded is present. */
   dci_cfg.enable_sul = false; 
   if(master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.supplementary_ul_present){
@@ -652,7 +629,10 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     }
   }
 
-  dci_cfg.multiple_scell = true; 
+  /* for carrier aggregation*/
+  dci_cfg.carrier_indicator_size = 0; 
+  dci_cfg.multiple_scell = false; 
+
   dci_cfg.pdsch_tci = bwp_dl_ded_s_ptr->pdcch_cfg.setup().
     ctrl_res_set_to_add_mod_list[0].tci_present_in_dci_present ? true : false; 
   dci_cfg.pdsch_cbg_flush = master_cell_group.sp_cell_cfg.
@@ -936,6 +916,10 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     }
   }
 
+  memcpy(&dci_cfg_ca, &dci_cfg, sizeof(srsran_dci_cfg_nr_t));
+  dci_cfg_ca.multiple_scell = true;
+  dci_cfg_ca.carrier_indicator_size = 3;
+
   if (srsran_ue_dl_nr_init_nrscope(&ue_dl_dci, input, &ue_dl_args, arg_scs)) {
     ERROR("Error UE DL");
     return SRSRAN_ERROR;
@@ -944,7 +928,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     ERROR("Error setting SCH NR carrier");
     return SRSRAN_ERROR;
   }
-  if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl_dci, &pdcch_cfg, &dci_cfg)) {
+  if (srsran_ue_dl_nr_set_pdcch_config(&ue_dl_dci, &pdcch_cfg, &dci_cfg_ca)) {
     ERROR("Error setting CORESET");
     return SRSRAN_ERROR;
   }
@@ -1030,7 +1014,7 @@ int DCIDecoder::DecodeandParseDCIfromSlot(srsran_slot_cfg_t* slot,
   int total_ul_dci = 0;  
 
   for (uint32_t rnti_idx = 0; rnti_idx < n_rntis; rnti_idx++){
-    
+    // With carrier aggregation
     memcpy(ue_dl_tmp, &ue_dl_dci, sizeof(srsran_ue_dl_nr_t));
     memcpy(slot_tmp, slot, sizeof(srsran_slot_cfg_t));
 
@@ -1043,6 +1027,40 @@ int DCIDecoder::DecodeandParseDCIfromSlot(srsran_slot_cfg_t* slot,
     }
 
     int nof_ul_dci = srsran_ue_dl_nr_find_ul_dci(ue_dl_tmp, slot_tmp, 
+      sharded_rntis[dci_decoder_id][rnti_idx], srsran_rnti_type_c, 
+      dci_ul_tmp, 4);
+
+    if(nof_dl_dci > 0){
+      dci_dl[rnti_idx] = dci_dl_tmp[0];
+      total_dl_dci += nof_dl_dci;
+    }
+
+    if(nof_ul_dci > 0){
+      dci_ul[rnti_idx] = dci_ul_tmp[0];
+      total_ul_dci += nof_ul_dci;
+    }
+
+    if (nof_ul_dci > 0 || nof_dl_dci > 0) {
+      // The UE is either using CA or not, so if we find the DCI with CA,
+      // we don't need to try further.
+      continue;
+    }
+ 
+    // Set the DCI size for the non-carrier aggregation UEs.
+    if (srsran_ue_dl_nr_set_pdcch_config(ue_dl_tmp, &pdcch_cfg, &dci_cfg)) {
+      ERROR("Error setting CORESET");
+      return SRSRAN_ERROR;
+    }
+
+    nof_dl_dci = srsran_ue_dl_nr_find_dl_dci_nrscope_dciloop(ue_dl_tmp, 
+      slot_tmp, sharded_rntis[dci_decoder_id][rnti_idx], srsran_rnti_type_c, 
+      dci_dl_tmp, 4);
+
+    if (nof_dl_dci < SRSRAN_SUCCESS) {
+      ERROR("Error in blind search");
+    }
+
+    nof_ul_dci = srsran_ue_dl_nr_find_ul_dci(ue_dl_tmp, slot_tmp, 
       sharded_rntis[dci_decoder_id][rnti_idx], srsran_rnti_type_c, 
       dci_ul_tmp, 4);
 

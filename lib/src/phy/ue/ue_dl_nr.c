@@ -986,7 +986,6 @@ static int ue_dl_nr_find_dci_ss_nrscope_dciloop(srsran_ue_dl_nr_t*           q,
   for (uint32_t format_idx = 0; format_idx < SRSRAN_MIN(search_space->nof_formats, SRSRAN_DCI_FORMAT_NR_COUNT);
         format_idx++) {
     srsran_dci_format_nr_t dci_format = search_space->formats[format_idx];
-    printf("format_idx: %d\n", format_idx);
 
     // Calculate number of DCI bits
     uint32_t dci_nof_bits = srsran_dci_nr_size(&q->dci, search_space->type, dci_format);

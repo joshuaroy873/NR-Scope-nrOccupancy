@@ -919,12 +919,10 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     sp_cell_cfg_ded.pdsch_serving_cell_cfg.setup().max_mimo_layers_present ?
     master_cell_group.sp_cell_cfg.sp_cell_cfg_ded.pdsch_serving_cell_cfg.
     setup().max_mimo_layers : 4 : 4;
-  printf("carrier_dl.max_mimo_layer: %d\n", carrier_dl.max_mimo_layers);
   
   carrier_ul = base_carrier;
   carrier_ul.nof_prb = dci_cfg.bwp_ul_active_bw;
   carrier_ul.max_mimo_layers = dci_cfg.nof_ul_layers;
-  printf("carrier_ul.max_mimo_layers: %d\n", carrier_ul.max_mimo_layers);
 
   dci_cfg.nof_rb_groups = 0;
   if(dci_cfg.pdsch_alloc_type == srsran_resource_alloc_type0){
@@ -992,8 +990,8 @@ int DCIDecoder::DecodeandParseDCIfromSlot(srsran_slot_cfg_t* slot,
     n_rntis = rnti_e - rnti_s;
   }
 
-  std::cout << "DCI decoder " << dci_decoder_id 
-    << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
+  // std::cout << "DCI decoder " << dci_decoder_id 
+  //   << " processing: [" << rnti_s << ", " << rnti_e << ")" << std::endl;
 
   DCIFeedback new_result;
   sharded_results[dci_decoder_id] = new_result;

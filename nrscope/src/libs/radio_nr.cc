@@ -832,8 +832,8 @@ int Radio::DecodeAndProcess(){
   task_scheduler_nrscope.task_scheduler_state.sib1_inited = true;
   while (true) {
     sem_wait(&smph_sf_data_prod_cons); 
-    std::cout << "current_consume_at: " << (first_time ? 0 : 
-      ((next_consume_at % RING_BUF_MODULUS + 1))) << std::endl;
+    // std::cout << "current_consume_at: " << (first_time ? 0 : 
+    //   ((next_consume_at % RING_BUF_MODULUS + 1))) << std::endl;
     outcome.timestamp = last_rx_time.get(0);  
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);
@@ -854,16 +854,16 @@ int Radio::DecodeAndProcess(){
         RING_BUF_MODULUS sf index; we copy wanted data to 0 sf idx
         assumption: no way when we are decoding this sf the fetch thread has 
         go around the whole ring and modify this sf again */
-      std::cout << "pre_resampling_sf_sz: " << pre_resampling_sf_sz 
-        << std::endl;
+      // std::cout << "pre_resampling_sf_sz: " << pre_resampling_sf_sz 
+      //   << std::endl;
       srsran_vec_cf_copy(rx_buffer, rx_buffer + 
         (first_time ? 0 : ((next_consume_at % RING_BUF_MODULUS + 1) * 
         pre_resampling_sf_sz)) + (slot_idx * slot_sz), slot_sz);
 
-      std::cout << "decode slot: " << (int) slot.idx << "; current_consume_ptr: " 
-        << rx_buffer + (first_time ? 0 : 
-        ((next_consume_at % RING_BUF_MODULUS + 1) * pre_resampling_sf_sz)) + 
-        (slot_idx * slot_sz) << std::endl; 
+      // std::cout << "decode slot: " << (int) slot.idx << "; current_consume_ptr: " 
+      //   << rx_buffer + (first_time ? 0 : 
+      //   ((next_consume_at % RING_BUF_MODULUS + 1) * pre_resampling_sf_sz)) + 
+      //   (slot_idx * slot_sz) << std::endl; 
 
       if (first_time) {
         /* If the next result is not set */

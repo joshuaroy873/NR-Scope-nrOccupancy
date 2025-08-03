@@ -336,15 +336,15 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
     sib1.serving_cell_cfg_common.dl_cfg_common.freq_info_dl.offset_to_point_a * 
     SRSRAN_SUBC_SPACING_NR(srsran_subcarrier_spacing_15kHz) * 
     NRSCOPE_NSC_PER_RB_NR;
-  std::cout << "pointA: " << pointA << std::endl;
+  // std::cout << "pointA: " << pointA << std::endl;
 
   double coreset1_center_freq_hz = pointA + srsran_coreset_get_bw(&coreset1_t) / 
     2 * cell.abs_pdcch_scs * NRSCOPE_NSC_PER_RB_NR;
-  std::cout << "previous offset: " << arg_scs.coreset_offset_scs << std::endl;
+  // std::cout << "previous offset: " << arg_scs.coreset_offset_scs << std::endl;
   arg_scs.coreset_offset_scs = (base_carrier.ssb_center_freq_hz - 
     coreset1_center_freq_hz) / cell.abs_pdcch_scs;
-  std::cout << "current offset: " << arg_scs.coreset_offset_scs << std::endl;
-  std::cout << "bwp_id: " << bwp_id << std::endl;
+  // std::cout << "current offset: " << arg_scs.coreset_offset_scs << std::endl;
+  // std::cout << "bwp_id: " << bwp_id << std::endl;
   
   // set ra search space directly from the RRC Setup
   for (uint32_t ss_id = 0; ss_id < bwp_dl_ded_s_ptr->
@@ -571,7 +571,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
       dci_cfg.harq_ack_codebok = srsran_pdsch_harq_ack_codebook_none;
       break;
   }  
-  std::cout << "before ack codebook" << std::endl;
+  // std::cout << "before ack codebook" << std::endl;
 
   // For DCI 0_1
   ///< Set to true if HARQ-ACK codebook is set to dynamic with 2 sub-codebooks
@@ -664,7 +664,7 @@ int DCIDecoder::DCIDecoderandReceptionInit(WorkState* state,
       dci_cfg.pdsch_alloc_type = srsran_resource_alloc_type1;
       break;
   }
-  std::cout << "pdsch resource alloc: " << dci_cfg.pdsch_alloc_type << std::endl;
+  // std::cout << "pdsch resource alloc: " << dci_cfg.pdsch_alloc_type << std::endl;
 
   if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a_present){
     if(bwp_dl_ded_s_ptr->pdsch_cfg.setup().dmrs_dl_for_pdsch_map_type_a.setup().

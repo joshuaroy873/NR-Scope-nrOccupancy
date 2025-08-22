@@ -35,6 +35,7 @@ Radio::Radio() :
   sync_cfg = {};
 
   sem_init(&smph_sf_data_prod_cons, 0, 0); 
+  sem_init(&smph_sf_data_finished, 0, 9999);
 }
 
 Radio::~Radio() {
@@ -783,6 +784,11 @@ int Radio::FetchAndResample(){
     args_t.ssb_scs) * pre_resampling_slot_sz;
 
   while(true){
+    int current_value;
+    sem_getvalue(&smph_sf_data_finished, &current_value); 
+    std::cout << "current value: " << current_value << std::endl;
+    sem_wait(&smph_sf_data_finished);
+    
     outcome.timestamp = last_rx_time.get(0);  
     struct timeval t0, t1;
     gettimeofday(&t0, NULL);   
@@ -854,6 +860,7 @@ int Radio::DecodeAndProcess(){
     // consume a sf data
     for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); 
         slot_idx++){
+      std::cout << "slot_idx: " << slot_idx << std::endl;
       srsran_slot_cfg_t slot = {0};
       slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 
         10 + slot_idx;
@@ -889,25 +896,41 @@ int Radio::DecodeAndProcess(){
         } else {
           task_scheduler_nrscope.next_result.outcome.sfn = outcome.sfn + 1;
         }
-        
-      }
+        // reinitialize the sem
+        if (slot_idx == 0) {
+          // std::cout << "Reinitializing smph_sf_data_finished" << std::endl;
+          int desired_value = 0; // Or any other desired reset value
+          int current_value;
 
-      if (task_scheduler_nrscope.AssignTask(sf_round, slot, outcome, rx_buffer) 
+          do {
+              sem_getvalue(&smph_sf_data_finished, &current_value); // Get current value
+              if (current_value > desired_value) {
+                  sem_trywait(&smph_sf_data_finished); // Decrement if greater than desired
+              } else {
+                  break; // Stop if at or below desired value
+              }
+          } while(1);
+        }
+      }
+      
+      // Add the data into a circular buffer
+      if (task_scheduler_nrscope.StoreSlotData(sf_round, slot, outcome, rx_buffer) 
           < SRSRAN_SUCCESS) {
-        // ERROR("Assign task failed");
-        /* Push empty slot result to the queue */
-        SlotResult empty_result = {};
-        empty_result.sf_round = sf_round;
-        empty_result.slot = slot;
-        empty_result.outcome = outcome;
-        empty_result.sib_result = false;
-        empty_result.rach_result = false;
-        empty_result.dci_result = false;
-        NRScopeTask::queue_lock.lock();
-        NRScopeTask::global_slot_results.push_back(empty_result);
-        NRScopeTask::queue_lock.unlock();
+        ERROR("Store slot data failed");
+      //   /* Push empty slot result to the queue */
+      //   SlotResult empty_result = {};
+      //   empty_result.sf_round = sf_round;
+      //   empty_result.slot = slot;
+      //   empty_result.outcome = outcome;
+      //   empty_result.sib_result = false;
+      //   empty_result.rach_result = false;
+      //   empty_result.dci_result = false;
+      //   NRScopeTask::queue_lock.lock();
+      //   NRScopeTask::global_slot_results.push_back(empty_result);
+      //   NRScopeTask::queue_lock.unlock();
       }
     } // slot iteration
+    sem_post(&smph_sf_data_finished);
 
     gettimeofday(&t1, NULL);
     std::cout << "consumer time_spend: " << (int)(t1.tv_usec - t0.tv_usec) 

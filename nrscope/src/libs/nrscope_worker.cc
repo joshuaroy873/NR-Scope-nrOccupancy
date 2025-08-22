@@ -7,7 +7,11 @@ namespace NRScopeTask{
 std::vector<SlotResult> global_slot_results;
 std::mutex queue_lock;
 std::mutex task_scheduler_lock;
+std::mutex slot_data_lock;
 std::mutex worker_locks[128];
+
+sem_t smph_data;   // counts ready slots
+sem_t smph_idle;   // counts idle workers
 
 NRScopeWorker::NRScopeWorker() : 
   rf_buffer_t(1),
@@ -267,9 +271,10 @@ void NRScopeWorker::Run() {
   while (true) {
     /* When there is a job, the semaphore is set and buffer is copied */
     sem_wait(&smph_has_job);
-    worker_locks[worker_id].lock();
-    busy = true;
-    worker_locks[worker_id].unlock();
+    // worker_locks[worker_id].lock();
+    // busy = true;
+    busy.store(true, std::memory_order_release);
+    // worker_locks[worker_id].unlock();
     struct timeval t0, t1;
 
     // std::cout << "Processing sf_round: " << sf_round << ", sfn: " << outcome.sfn
@@ -406,9 +411,10 @@ void NRScopeWorker::Run() {
     queue_lock.lock();
     global_slot_results.push_back(slot_result);
     queue_lock.unlock();
-    worker_locks[worker_id].lock();
-    busy = false;
-    worker_locks[worker_id].unlock();
+    // worker_locks[worker_id].lock();
+    busy.store(false, std::memory_order_release);
+    sem_post(&smph_idle);
+    // worker_locks[worker_id].unlock();
   }
 }
 }

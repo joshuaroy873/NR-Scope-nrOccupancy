@@ -74,6 +74,7 @@ class Radio{
     /* a better coordination between producer (fetch) and consumer 
        (resample and decode) */
     sem_t smph_sf_data_prod_cons;
+    sem_t smph_sf_data_finished;
 
     bool resample_needed;
     resampler_kit rk[RESAMPLE_WORKER_NUM];

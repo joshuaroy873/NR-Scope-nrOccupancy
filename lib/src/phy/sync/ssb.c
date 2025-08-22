@@ -467,6 +467,7 @@ int srsran_ssb_set_cfg(srsran_ssb_t* q, const srsran_ssb_cfg_t* cfg)
     return SRSRAN_ERROR;
   }
 
+  q->max_symbol_sz = 16668;
   // Verify symbol size
   if (q->max_symbol_sz < symbol_sz) {
     ERROR("New symbol size (%d) exceeds maximum symbol size (%d)", symbol_sz, q->max_symbol_sz);

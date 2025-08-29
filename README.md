@@ -47,7 +47,10 @@ The main features are as follows:
 13. Non-initial (BWP id > 0) and plaintext (configured in SIB 1 or MSG 4) BWPs decoding in separate DCI decoder threads.
 14. Threaded resampling function for better-fidelity TwinRX USRP X310 daughterboard (better signal quality but doesn't support 5G sampling rate without resampling).
 15. Worker pool function is implemented. Each worker works on the slot data asynchronously. Now the processing doesn't need to keep up with the short slot time, and the throughput is increase through more workers.
-16. Stay tuned... 😄
+16. Band list can be configured for cell scan functions.
+17. A circular buffer is used for slot data dispatch among workers, now the CPU/worker number requirement is largely reduced.
+18. PCI can be configured in the config.yaml. If configured, NR-Scope will proceed only if the detected cell's PCI matches what is configured.
+19. Stay tuned... 😄
 
 Please refer to the [wiki page](https://github.com/PrincetonUniversity/NG-Scope-5G/wiki) for more feature description and documentation.
 
@@ -55,7 +58,7 @@ Please refer to the [wiki page](https://github.com/PrincetonUniversity/NG-Scope-
 
 If you are working with srsRAN base stations, please check out the `srsran` branch. The only difference is that during DCI decoding, the 64 QAM MCS table is selected, while the `main` branch uses 256 QAM MCS table, which is widely used in the commercial base stations. This MCS table information could be encrypted during the communication, thus it's set manually.
 
-The `main` branch will decode the DCIs based on the RRCSetup decoded during the RACH, and will try to decode DCIs both with and without carrier aggregation bits. According to our experience with T-Mobile cells, it can decode the DCIs for most of the UEs in the RAN. In the `fixed_rnti` branch, we add another worker group to manually include the RRCReconfiguration information in their DCI decoders, because the RRCReconfiguration is encrypted and can't be decoded by NR-Scope. In this case, NR-Scope can decode nearly all of the UEs in the cells we tested with (~ 99%). Also, you can set a known RNTI in the config file in `fixed_rnti` branch, then this RNTI will be assigned to the worker group using the manually configuered RRCReconfiguration. 
+The `main` branch will decode the DCIs based on the RRCSetup decoded during the RACH, and will try to decode DCIs both with and without carrier aggregation bits. According to our experience with T-Mobile cells, it can decode the DCIs for most of the UEs in the RAN. In the `fixed_rnti` branch, we add another worker group to manually include the RRCReconfiguration information in their DCI decoders, because the RRCReconfiguration is encrypted and can't be decoded by NR-Scope. In this case, NR-Scope can decode nearly all of the UEs in the cells we tested with (~ 99%). Also, you can set a known RNTI in the config file in `fixed_rnti` branch, then this RNTI will be assigned to the worker group using the manually configuered RRCReconfiguration.
 
 For a commercial cell, if you see a lot of RACH information but can't find further DCIs, this is because that the UEs are using updated configuration in the RRCReconfiguration. Please raise an issue and discuss with us, and if you could provide the RRCReconfiguration (from your phone), we can help you config NR-Scope properly.
 

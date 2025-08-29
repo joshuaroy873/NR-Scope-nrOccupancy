@@ -279,7 +279,8 @@ int Radio::ScanInitandStart(){
       }
 
       // The SSB absolute frequency is invalid if it is outside the bandpass range 
-      if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or (cs_args.ssb_freq_hz > ssb_center_freq_max_hz)) {
+      if ((cs_args.ssb_freq_hz < ssb_center_freq_min_hz) or 
+          (cs_args.ssb_freq_hz > ssb_center_freq_max_hz)) {
         std::cout << "SSB freq not in RF bandpass range" << std::endl;
         not_in_bandpass_range = true;
       }
@@ -647,11 +648,20 @@ int Radio::RadioInitandStart(){
       *(last_rx_time.get_ptr(0)) = rf_timestamp.get(0);
       cs_ret = srsran_searcher.run_slot(rx_buffer, slot_sz);
       // std::cout << "Slot_sz: " << slot_sz << std::endl;
-      if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND ){
-        // printf("found cell in this slot\n");
-        // srsran_vec_fprint_c(stdout, rx_buffer, slot_sz);
-        break;
-      }
+      if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND){
+        if (pci == 9999) {
+          // pci not configured, return the first detected cell
+          break;
+        } else {
+          if (cs_ret.ssb_res.N_id == pci) {
+            // pci configured and the pci matches, return
+            break;
+          } else{
+            // pci configured but not match, skip the current cell
+            cs_ret.result = srsue::nr::cell_search::ret_t::CELL_NOT_FOUND;
+          }
+        }
+      } 
     }
     if(cs_ret.result == srsue::nr::cell_search::ret_t::CELL_FOUND){
       std::cout << "Cell Found!" << std::endl;
@@ -860,7 +870,7 @@ int Radio::DecodeAndProcess(){
     // consume a sf data
     for(int slot_idx = 0; slot_idx < SRSRAN_NOF_SLOTS_PER_SF_NR(arg_scs.scs); 
         slot_idx++){
-      std::cout << "slot_idx: " << slot_idx << std::endl;
+      // std::cout << "slot_idx: " << slot_idx << std::endl;
       srsran_slot_cfg_t slot = {0};
       slot.idx = (outcome.sf_idx) * SRSRAN_NSLOTS_PER_FRAME_NR(arg_scs.scs) / 
         10 + slot_idx;

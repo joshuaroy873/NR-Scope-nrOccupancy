@@ -4,7 +4,7 @@ namespace NRScopeLog{
   std::vector<std::string> filename;
   std::vector<std::string> rach_filename;
   std::vector< std::queue<LogNode> > log_queue;
-  std::vector <std::queue<RACHLogNode> > rach_log_queue;
+  std::vector< std::queue<RACHLogNode> > rach_log_queue;
   std::vector< std::queue<ScanLogNode> > scan_log_queue;
   std::thread log_thread;
   std::mutex lock;

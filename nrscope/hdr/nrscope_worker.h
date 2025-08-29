@@ -21,7 +21,7 @@ public:
 
   /* Job indicator */
   sem_t smph_has_job; 
-  bool busy;
+  std::atomic<bool> busy;
   int worker_id;
 
   /* Worker thread */

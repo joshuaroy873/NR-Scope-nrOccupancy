@@ -128,7 +128,7 @@ static const std::chrono::milliseconds RF_UHD_IMP_ASYNCH_MSG_SLEEP_MS = std::chr
 /**
  * Maximum of Rx Trials
  */
-static const uint32_t RF_UHD_IMP_MAX_RX_TRIALS = 100;
+static const uint32_t RF_UHD_IMP_MAX_RX_TRIALS = 400;
 
 /**
  * Timeout for end of burst ack.
@@ -709,6 +709,8 @@ static int uhd_init(rf_uhd_handler_t* handler, char* args, uint32_t nof_channels
       mcr = "122.88e6";
     } else if (device_addr["type"] == "e3x0") {
       mcr = "30.72e6";
+    } else if (device_addr["type"] == "x4xx") {
+      mcr = "245.76e6";
     }
 
     device_addr.set("master_clock_rate", mcr);

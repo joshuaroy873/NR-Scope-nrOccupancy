@@ -23,6 +23,13 @@ public:
   /* The next slot result that task_scheduler expects*/
   SlotResult next_result;
 
+  /* Slot data queue storage buffer */
+  std::vector<SlotData> slot_data;
+  std::atomic<uint32_t> slot_data_len;
+  std::atomic<uint32_t> next_slot_idx;
+  std::atomic<uint32_t> current_slot_idx;
+  std::thread task_thread;
+
   bool local_log;
   bool to_google;
   /* USRP's index */
@@ -55,11 +62,18 @@ public:
 
   void UpdateNextResult();
 
+  int ClaimIdleWorker();
+
   /* Assign the current slot to one worker*/
   int AssignTask(uint64_t sf_round,
                  srsran_slot_cfg_t slot, 
                  srsran_ue_sync_nr_outcome_t outcome,
                  cf_t* rx_buffer_);
+
+  int StoreSlotData(uint64_t sf_round,
+                    srsran_slot_cfg_t slot, 
+                    srsran_ue_sync_nr_outcome_t outcome,
+                    cf_t* rx_buffer_);
 
   /* resampler tools */
   float resample_ratio;
@@ -73,6 +87,7 @@ public:
 
 private:
   void Run();
+  void TasksDispatch();
 };
 
 }

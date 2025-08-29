@@ -39,6 +39,26 @@ int TaskSchedulerNRScope::InitandStart(bool local_log_,
     SRSRAN_NOF_SLOTS_PER_SF_NR(args_t.ssb_scs));
   task_scheduler_state.cpu_affinity = cpu_affinity;
   nof_workers = nof_workers_;
+
+  // Maintain a ringbuffer of 1024 slot data.
+  slot_data_len = 1 << 12;
+  next_slot_idx = 0;
+  current_slot_idx = 0;
+
+  slot_data = std::vector<SlotData>(slot_data_len);
+  for (auto& s: slot_data) {
+    s.sf_round = 0;
+    s.slot = {};
+    s.outcome = {};
+    s.slot_size = task_scheduler_state.slot_sz;
+    s.rx_buffer = srsran_vec_cf_malloc(SRSRAN_NOF_SLOTS_PER_SF_NR(
+      args_t.ssb_scs) * task_scheduler_state.slot_sz);
+    s.processed.store(true, std::memory_order_release);
+  }
+
+  sem_init(&smph_data, 0, 0);
+  sem_init(&smph_idle, 0, nof_workers); // initially all idle
+
   std::cout << "Starting workers..." << std::endl;
   for (uint32_t i = 0; i < nof_workers; i ++) {
     NRScopeWorker *worker = new NRScopeWorker();
@@ -54,6 +74,9 @@ int TaskSchedulerNRScope::InitandStart(bool local_log_,
 
   scheduler_thread = std::thread{&TaskSchedulerNRScope::Run, this};
   scheduler_thread.detach();
+
+  task_thread = std::thread{&TaskSchedulerNRScope::TasksDispatch, this};
+  task_thread.detach();
 
   return SRSRAN_SUCCESS;
 }
@@ -415,6 +438,57 @@ void TaskSchedulerNRScope::Run() {
   }
 }
 
+int TaskSchedulerNRScope::ClaimIdleWorker() {
+  for (;;) {
+    for (uint32_t i = 0; i < nof_workers; ++i) {
+      bool expected = false;
+      if (workers[i]->busy.compare_exchange_strong(expected, true,
+            std::memory_order_acq_rel, std::memory_order_relaxed)) {
+        return i;
+      }
+    }
+    // We only get here on a rare race; spin briefly
+    std::this_thread::yield();
+  }
+}
+
+void TaskSchedulerNRScope::TasksDispatch() {
+  while(true) {
+    sem_wait(&smph_data);
+    sem_wait(&smph_idle);
+
+    // Claim a worker
+    uint32_t wi = ClaimIdleWorker();
+    NRScopeWorker& w = *workers[wi];
+
+    const uint32_t i = current_slot_idx.load(std::memory_order_relaxed);
+    SlotData_& s = slot_data[i];
+
+    // std::cout << "Slot Data " << i << ", sf_round: " << s.sf_round << 
+    //   ", sfn: " << s.outcome.sfn << ", slot: " << s.slot.idx << std::endl;
+
+    // Acquire pairs with producer’s release to see fully-written data
+    if (s.processed.load(std::memory_order_acquire)) {
+      // Shouldn’t happen (we were signalled), but be defensive
+      sem_post(&smph_idle);
+      w.busy.store(false, std::memory_order_release);
+      continue;
+    }
+
+    w.CopySlotandBuffer(
+      slot_data[current_slot_idx].sf_round,
+      slot_data[current_slot_idx].slot,
+      slot_data[current_slot_idx].outcome,
+      slot_data[current_slot_idx].rx_buffer);
+    
+    s.processed.store(true, std::memory_order_release);
+    current_slot_idx.store((i + 1) % slot_data_len, std::memory_order_relaxed);
+    
+    w.SyncState(&task_scheduler_state);
+    sem_post(&w.smph_has_job);
+  }
+}
+
 int TaskSchedulerNRScope::AssignTask(uint64_t sf_round,
                                      srsran_slot_cfg_t slot, 
                                      srsran_ue_sync_nr_outcome_t outcome,
@@ -457,6 +531,38 @@ int TaskSchedulerNRScope::AssignTask(uint64_t sf_round,
     return SRSRAN_SUCCESS;
   }
 
+}
+
+int TaskSchedulerNRScope::StoreSlotData(uint64_t sf_round,
+                                     srsran_slot_cfg_t slot, 
+                                     srsran_ue_sync_nr_outcome_t outcome,
+                                     cf_t* rx_buffer_){
+  const uint32_t i = next_slot_idx.load(std::memory_order_relaxed);
+  SlotData_& s = slot_data[i];
+
+  // Check full 
+  if (!slot_data[i].processed.load(std::memory_order_acquire)) {
+    // Ring full → drop-newest (or switch to drop-oldest if you prefer)
+    // dropped_slots.fetch_add(1, std::memory_order_relaxed);
+    ERROR("Overwriting the unprocessed data... Consider improving processing"
+          "throughput.");
+    // return SRSRAN_SUCCESS;
+  }
+
+  s.sf_round = sf_round;
+  s.slot = slot;
+  s.outcome = outcome;
+  srsran_vec_cf_copy(s.rx_buffer, rx_buffer_, s.slot_size);
+  s.processed.store(false, std::memory_order_release);
+
+  std::cout << "Storing " << i << ", sf_round: " << s.sf_round << 
+      ", sfn: " << s.outcome.sfn << ", subframe: " << s.outcome.sf_idx << 
+      ", slot: " << s.slot.idx << std::endl;
+
+  uint32_t next = (i + 1) % slot_data_len;
+  next_slot_idx.store(next, std::memory_order_relaxed);
+  sem_post(&smph_data);
+  return SRSRAN_SUCCESS;
 }
 
 }

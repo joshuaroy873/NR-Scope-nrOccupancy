@@ -268,13 +268,27 @@ typedef struct SlotResult_ SlotResult;
     /* The + operator depends on the SCS, so it's not defined here. */
   };
 
+typedef struct SlotData_ SlotData;
+  struct SlotData_{
+    std::atomic<bool> processed;
+    uint64_t sf_round;
+    srsran_slot_cfg_t slot;
+    srsran_ue_sync_nr_outcome_t outcome;
+    uint32_t slot_size;
+    cf_t* rx_buffer;
+  };
+
 bool CompareSlotResult (SlotResult a, SlotResult b);
 
 namespace NRScopeTask{
   extern std::vector<SlotResult> global_slot_results;
   extern std::mutex queue_lock;
+  extern std::mutex slot_data_lock;
   extern std::mutex task_scheduler_lock;
   extern std::mutex worker_locks[128];
+
+  extern sem_t smph_data;   // counts ready slots
+  extern sem_t smph_idle;   // counts idle workers
 }
 
 
